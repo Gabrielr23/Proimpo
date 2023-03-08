@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record model="ir.ui.view" id="view_project_task_form_inherit">
+        <field name="name">project.task.form.inherit</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='recurrence']/group[1]" position="inside">
+                <group>
+                    <field name="repeat_user_ids" options="{'no_create': True, 'no_open': True}" widget="many2many_avatar_user" />
+                    <field name="repeat_stage_id" />
+                    <field name="repeat_deadline" />
+                    <label for="repeat_deadline_count" string="Schedule Deadline" attrs="{'invisible': [('repeat_deadline','=',False)]}" />
+                    <div attrs="{'invisible': [('repeat_deadline','=',False)]}">
+                        <div class="o_row">
+                            <field name="repeat_deadline_count"/>
+                            <field name="repeat_deadline_unit"/>
+                        </div>
+                        after task create date
+                    </div>
+                    <label for="repeat_name" />
+                    <div>
+                        <field name="repeat_name" />
+                        <div>
+                            You can use a python expression with the 'object', 'time' and 'today' variables.
+                            <br/>
+                            e.g "{} {}".format(object.name, today.strftime('%b %Y'))
+                        </div>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
