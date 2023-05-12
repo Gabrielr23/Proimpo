@@ -2,7 +2,7 @@
 <odoo noupdate="1">
 
     <record id="payment.payment_acquirer_payulatam_this" model="payment.acquirer">
-        <field name="provider">payulatam_this</field>
+        <field name="provider">payulatam</field>
         <field name="redirect_form_view_id" ref="redirect_form"/>
         <field name="support_authorization">False</field>
         <field name="support_fees_computation">False</field>
@@ -11,8 +11,8 @@
     </record>
 
     <record id="payment_method_payulatam_this" model="account.payment.method">
-        <field name="name">payulatam_this</field>
-        <field name="code">payulatam_this</field>
+        <field name="name">payulatam</field>
+        <field name="code">payulatam</field>
         <field name="payment_type">inbound</field>
     </record>
 
