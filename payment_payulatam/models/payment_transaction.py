@@ -17,7 +17,6 @@ _logger = logging.getLogger(__name__)
 class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
     
-    alias_domain = self.env["ir.config_parameter"].sudo().get_param("url.thisislivingshop")
     @api.model
     def _compute_reference(self, provider, prefix=None, separator='-', **kwargs):
         """ Override of payment to ensure that PayU Latam requirements for references are satisfied.
@@ -56,6 +55,7 @@ class PaymentTransaction(models.Model):
         :return: The dict of acquirer-specific processing values
         :rtype: dict
         """
+        alias_domain = self.env["ir.config_parameter"].sudo().get_param("url.thisislivingshop")
         res = super()._get_specific_rendering_values(processing_values)
         if self.provider != 'payulatam':
             return res
