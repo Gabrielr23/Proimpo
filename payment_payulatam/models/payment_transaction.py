@@ -16,10 +16,10 @@ _logger = logging.getLogger(__name__)
 
 class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
-
+    
+    alias_domain = self.env["ir.config_parameter"].sudo().get_param("url.thisislivingshop")
     @api.model
     def _compute_reference(self, provider, prefix=None, separator='-', **kwargs):
-        alias_domain = self.env["ir.config_parameter"].sudo().get_param("url.thisislivingshop")
         """ Override of payment to ensure that PayU Latam requirements for references are satisfied.
 
         PayU Latam requirements for transaction are as follows:
