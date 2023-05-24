@@ -19,6 +19,7 @@ class PaymentTransaction(models.Model):
 
     @api.model
     def _compute_reference(self, provider, prefix=None, separator='-', **kwargs):
+        alias_domain = self.env["ir.config_parameter"].sudo().get_param("url.thisislivingshop")
         """ Override of payment to ensure that PayU Latam requirements for references are satisfied.
 
         PayU Latam requirements for transaction are as follows:
@@ -73,7 +74,7 @@ class PaymentTransaction(models.Model):
             'accountId': self.acquirer_id.payulatam_account_id,
             'buyerFullName': self.partner_name,
             'buyerEmail': self.partner_email,
-            'responseUrl': urls.url_join('https://www.thisislivingshop.com', PayuLatamController._return_url),
+            'responseUrl': urls.url_join(alias_domain, PayuLatamController._return_url),
             'confirmationUrl': urls.url_join(self.get_base_url(), PayuLatamController._webhook_url),
             'api_url': api_url,
         }
