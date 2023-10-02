@@ -1,0 +1,2 @@
+#id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+#access_control_credit_limit,control_credit_limit.control_credit_limit,model_control_credit_limit_control_credit_limit,group_cartera,1,1,1,1
