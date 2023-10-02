@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  
+  <record id="hr_salary_extra_view_form" model="ir.ui.view">
+    <field name="name">hr.salary.rule.view.form.inherit</field>
+    <field name="model">hr.salary.rule</field>
+    <field name="inherit_id" ref="hr_payroll_account.hr_salary_rule_view_form"/>
+    <field name="arch" type="xml">
+      <field name="active" position="after">
+        <field name="when_apply"/>
+      </field>
+			  
+			<field name="account_credit" position="after">
+        <field name="account_debit_comercial" options="{'no_create': True}"/>
+			  <field name="account_credit_comercial" options="{'no_create': True}"/>
+			  <field name="account_debit_operativa" options="{'no_create': True}"/>
+			  <field name="account_credit_operativa" options="{'no_create': True}"/>
+			  <field name="debit_partner" options="{'no_create': True}"/>
+			  <field name="credit_partner" options="{'no_create': True}"/>
+      </field>
+    </field>
+  </record>
+
+</odoo>

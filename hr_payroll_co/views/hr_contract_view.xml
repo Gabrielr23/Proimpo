@@ -1,0 +1,38 @@
+<odoo>
+
+  <record id="hr_contract_input_ux_form_inherit" model="ir.ui.view">
+    <field name="name">hr.contract.view.ux.form.inherit</field>
+    <field name="model">hr.contract</field>
+    <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+    <field name="arch" type="xml">
+        
+      <xpath expr="//group[@name='top_info_right']/field[@name='hr_responsible_id']" position="after">
+        <field name="area_contable"/>
+      </xpath>  
+		    <!-- <field name="hr_responsible_id" position="after">
+          <field name="area_contable"/>
+        </field> -->
+
+      <page name="information" position="after">
+        <page string="Configuración" name="setting">
+          <field name="setting_ids" widget="section_and_note_one2many" mode="tree,kanban">
+            <tree editable="bottom" string="Configuración" default_order="code">
+              <field name="rule_parameter_id" options="{'no_create': True}" domain="[('type','=','contrat')]"/>
+					    <field name="code" readonly="1"/>
+              <field name="date_from"/>
+				    	<field name="data_type" readonly="1"/>
+              <field name="parameter_text" attrs="{'readonly': [('data_type', '!=', 'T')]}"/>
+					    <field name="parameter_float" attrs="{'readonly': [('data_type', '!=', 'N')]}"/>
+	        	  <field name="parameter_boolean" widget="boolean_toggle" attrs="{'readonly': [('data_type', '!=', 'B')]}"/>
+					    <field name="parameter_date" attrs="{'readonly': [('data_type', '!=', 'D')]}"/>
+        			<field name="parameter_partner_id" options="{'no_create': True}" attrs="{'readonly': [('data_type', '!=', 'A')]}"/>
+				      <field name="parameter_account_id" options="{'no_create': True}" attrs="{'readonly': [('data_type', '!=', 'C')]}"/>
+              <field name="contract_id" invisible="1"/>
+            </tree>
+          </field>
+        </page>
+      </page>
+    </field>
+  </record>
+
+</odoo>

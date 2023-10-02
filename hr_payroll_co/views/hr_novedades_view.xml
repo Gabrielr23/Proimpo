@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2022 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+    <data>
+		
+<!-- Novedades -->
+
+        <record id="hr_novedades_filter" model="ir.ui.view">
+            <field name="name">hr.novedades.search</field>
+            <field name="model">hr.novedades</field>
+            <field name="arch" type="xml">
+                <search string="Search novedades">
+                    <field name="input_id" string="Novedad"/>
+                    <field name="employee_id"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>                    
+                </search>
+            </field>
+        </record>
+    
+	<record model="ir.ui.view" id="hr_novedades_view">
+		<field name="name">Novedades de nomina</field>
+		<field name="model">hr.novedades</field>
+		<field name="type">form</field>
+			<field name="arch" type="xml">
+			
+				<form string="Novedades de nomina">
+				    <header>
+                      <!-- button string="Confirm" name="action_confirm" states="draft" type="object" class="oe_highlight"/>
+                      <button string="Approve" name="action_approve" type="object" class="oe_highlight" attrs="{'invisible': ['|', ('can_approve', '=', False), ('state', '!=', 'confirm')]}"/>
+                      <button string="Validate" name="action_validate" states="validate1" type="object" groups="hr_holidays.group_hr_holidays_manager" class="oe_highlight"/>
+                      <button string="Refuse" name="action_refuse" type="object" attrs="{'invisible': ['|', ('can_approve', '=', False), ('state', 'not in', ('confirm','validate1','validate'))]}"/>
+                      <button string="Mark as Draft" name="action_draft" type="object"
+                            attrs="{'invisible': ['|', ('can_reset', '=', False), ('state', 'not in', ['confirm', 'refuse'])]}"/>
+                      <field name="state" widget="statusbar" statusbar_visible="confirm,validate"/ -->
+                    </header>
+				    <sheet>
+					    <group>
+						    <group>
+				               <field name="input_id" options="{'no_create': True}"></field>
+                               <field name="date_from"></field>
+                               <field name="date_to"></field>
+						    </group>
+                            <group>							
+                               <field name="employee_id" domain="[('active','=','true')]" options="{'no_create': True}"></field>
+                               <field name="value"></field>
+                               <field name="account_analytic_id" options="{'no_create': True}"></field>
+							</group>   
+					    </group> 
+					</sheet>	
+				</form>
+			</field>
+	</record>
+
+	<record model="ir.ui.view" id="hr_novedades_tree">
+		<field name="name">Novedades de nomina</field>
+		<field name="model">hr.novedades</field>
+		<field name="type">tree</field>
+		<field name="arch" type="xml">
+			<tree string='Novedades de nomina'>
+				  <field name="input_id"></field>
+                  <field name="date_from"></field>
+                  <field name="date_to"></field>
+                  <field name="employee_id"></field>
+                  <field name="value"></field>
+                  <field name="account_analytic_id"></field>
+			</tree>
+		</field>
+	</record>
+	
+	<record id="hr_novedades_action" model="ir.actions.act_window">
+			 <field name="name">Novedades de nomina</field>
+			 <field name="res_model">hr.novedades</field>
+			 <field name="view_mode">tree,form</field>
+	</record>
+	
+	<menuitem id="hr_novedades" name="Novedades de nomina"
+	 parent="hr_payroll.menu_hr_payroll_payslips" action="hr_novedades_action" sequence="90"/>		    
+                
+    </data>
+</odoo>
+
+
+
+

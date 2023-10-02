@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2018 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+  <!-- payslip run -->
+
+  <record id="view_hr_payslip_run_co_form" model="ir.ui.view">
+    <field name="name">hr.payslip.run.co.form.inherit</field>
+    <field name="model">hr.payslip.run</field>
+    <field name="inherit_id" ref="hr_payroll.hr_payslip_run_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_validate']" position="after">
+        <button name="action_validate_without_calculate" type="object" string="Contabilizar sin recalcular" states="verify,draft" class="oe_highlight" context="{'payslip_generate_pdf': True}" confirm="Are you sure you want to proceed ?"/>
+        <button name="action_cancel" type="object" string="Cancelar" states="verify,draft" confirm="Are you sure you want to proceed ?"/>
+        <button name="action_draft" type="object" string="Establecer en borrador" states="verify,draft" confirm="Are you sure you want to proceed ?"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_hr_account_payslip_co_form" model="ir.ui.view">
+    <field name="name">hr.account.payslip.co.form.inherit</field>
+    <field name="model">hr.payslip</field>
+    <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_payslip_done']" position="replace">
+        <button string="Contabilizar nómina" name="action_payslip_done" type="object" attrs="{'invisible': [('state', 'not in',('verify','draft'))]}" class="oe_highlight" context="{'payslip_generate_pdf': True}" confirm="Are you sure you want to proceed ?"/>
+      </xpath>
+    </field>
+  </record>
+
+
+
+
+    <!-- record id="hr_payslip_run_form_inherit" model="ir.ui.view">
+        <field name="name">hr.payslip.run.form.inherit</field>
+        <field name="model">hr.payslip.run</field>
+        <field name="inherit_id" ref="hr_payroll.hr_payslip_run_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='close_payslip_run']" position="after">
+                <button name="generate_payslip_run" type="object" string="Calcular hojas" states="draft" class="oe_highlight"/>
+                <button name="generate_voucher_run" type="object" string="Generar pagos" states="close" class="oe_highlight"/>
+                <button name="unlink_voucher_run" type="object" string="Romper conciliación" states="paid" class="oe_highlight"/>
+            </xpath>
+			<field name="journal_id" position="after">
+                <field name="journal_voucher_id" attrs="{'invisible':[('state','=','draft')]}" options="{'no_create': True}" domain="[('type', 'in', ['cash', 'bank'])]"/>
+                <field name="date_pago" attrs="{'invisible':[('state','=','draft')]}"/>
+			</field>                
+            <field name="slip_ids" position="before">
+				<group name="properties" col="4">
+                  <field name="liquida"/>
+                  <field name="tipo_liquida" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+                  <field name="struct_id" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}" options="{'no_create': True}"/>
+                  <field name="motivo_retiro" attrs="{'invisible':[('liquida','=',False)]}"/>                  
+                </group>  
+                <group col="4">
+						 <field name="date_liquidacion" attrs="{'invisible':[('liquida','=',False)]}"/> 
+						 <field name="date_prima" attrs="{'invisible':[('liquida','=',False)]}"/>
+						 <field name="date_cesantias" attrs="{'invisible':[('liquida','=',False)]}"/>
+						 <field name="date_vacaciones" attrs="{'invisible':[('liquida','=',False)]}"/>
+		        </group>
+		    </field>  
+        </field>    
+    </record  -->
+ 
+ 
+            
+     <!-- record id="view_hr_payslip_co_form" model="ir.ui.view">
+        <field name="name">hr.payslip.co.form.inherit</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+	
+            <xpath expr="//button[@name='action_payslip_cancel']" position="attributes">
+                <attribute name="states">draft,hr_check,confirm,verify,done</attribute>
+            </xpath>
+			<xpath expr="//button[@name='action_payslip_cancel']" position="after">
+				<button name="process_payment" type="object" string="Generar pago" states="done" class="oe_highlight"/>
+				<button name="process_unlink_payment" type="object" string="Romper conciliación" states="paid" class="oe_highlight"/>
+                <button name="get_xls_file" type="object" string="Descargar detalle" states="draft"/>
+			</xpath>
+			<field name="payslip_run_id" position="after">
+                <field name="journal_voucher_id" attrs="{'invisible':[('state','=','draft')]}" options="{'no_create': True}" domain="[('type', 'in', ['cash', 'bank'])]"/>
+				<field name="date_pago" attrs="{'invisible':[('state','=','draft')]}"/>
+				<field name="payment_id" attrs="{'invisible':[('state','=','draft')]}" readonly="1"/>
+				<field name="move_bank_id" attrs="{'invisible':[('state','=','draft')]}" readonly="1"/>
+            </field>
+            <field name="credit_note" position="after">
+                <group name="properties" colspan="4">
+                  <field name="liquida"/>
+                  <field name="recupera"/>
+                </group>                  			
+				<group name="properties" colspan="4">                  
+                  <field name="tipo_liquida" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+                  <field name="struct_liquida_id" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+                  <field name="motivo_retiro" attrs="{'invisible':[('liquida','=',False)]}"/>                  
+                </group>  
+            </field>
+            <field name="credit_note" position="after">
+            <group  colspan="4">
+						 <field name="date_liquidacion" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/> 
+						 <field name="date_prima" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+						 <field name="date_cesantias" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+						 <field name="date_vacaciones" attrs="{'invisible':[('liquida','=',False)],'required':[('liquida','&lt;&gt;',False)]}"/>
+			</group>
+		    </field>
+			
+            <xpath expr="//notebook[last()]" position="inside">
+                    <page string="Detalle cálculos">
+                        <group>
+						    <field name="details_ids" readonly="1" nolabel="1">
+								<tree string="Detalle">
+								    <field name="salary_rule_id"/>
+									<field name="date_from"/>
+									<field name="date_to"/>
+									<field name="days_neto"/>
+									<field name="wage_total"/>
+									<field name="wage_average"/>
+									<field name="variable_total"/>
+									<field name="variable_average" />
+									<field name="subsidio_transporte"/>
+									<field name="total_average"/>
+									<field name="amount"/>										
+								</tree>
+							</field>
+                        </group>
+                    </page>
+            </xpath>
+            			
+        </field>    
+    </record -->
+ 
+                
+</odoo>
+
+
+
+

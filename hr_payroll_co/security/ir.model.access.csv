@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_contract_parameter_value,access_hr_contract_parameter_value,model_hr_contract_parameter_value,,1,0,0,0
+access_hr_contract_parameter_value_manager,access_hr_contract_parameter_value_manager,model_hr_contract_parameter_value,hr_payroll.group_hr_payroll_manager,1,1,1,1
+access_hr_novedades,access_hr_novedades,model_hr_novedades,,1,0,0,0
+access_hr_novedades,access_hr_novedades,model_hr_novedades,hr_payroll.group_hr_payroll_manager,1,1,1,1

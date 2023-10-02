@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2018 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+    <data>
+		
+<!-- salary rule -->
+
+        <record model="ir.ui.view" id="salary_rule_mayor_view">
+           <field name="name">salary_rule_mayor_view</field>
+           <field name="model">hr.salary.rule</field>
+           <field name="inherit_id" ref="hr_payroll_account.hr_salary_rule_form_inherit"/>
+           <field name="type">form</field>
+           <field name="arch" type="xml">
+			  <field name="account_debit" position="attributes">
+                 <attribute name="domain">[('company_id', '=', company_id),('internal_type', '!=', 'view')]</attribute>
+                 <attribute name="options">{'no_create': True}</attribute>
+              </field>			   
+			  <field name="account_credit" position="attributes">
+                 <attribute name="domain">[('company_id', '=', company_id),('internal_type', '!=', 'view')]</attribute>
+                 <attribute name="options">{'no_create': True}</attribute>
+              </field>		
+			  <field name="analytic_account_id" position="attributes">
+                 <attribute name="domain">[('company_id', '=', company_id),('type', '=', 'normal')]</attribute>
+                 <attribute name="options">{'no_create': True}</attribute>
+              </field>			                                                 	                 
+           </field>
+        </record>				
+
+
+    <record id="hr_salary_extra_view_form" model="ir.ui.view">
+        <field name="name">hr.salary.rule.view.form.inherit</field>
+        <field name="model">hr.salary.rule</field>
+        <field name="inherit_id" ref="hr_payroll.hr_salary_rule_form"/>
+        <field name="arch" type="xml">
+            <field name="appears_on_payslip" position="after">
+               <field name="vacaciones"/>
+               <field name="vacaciones_final"/>
+               <field name="prima"/>
+               <field name="cesantias"/>
+               <field name="promedio"/>
+               <field name="type_distri"/>
+            </field>
+            <field name="register_id" position="after">
+               <field name="register_credit_id"/>
+               <!--field name="account_bank_type"/ -->
+            </field>
+        </field>    
+    </record>
+
+<!-- contribution_register -->
+
+    <record id="hr_contribution_register_inherit_form" model="ir.ui.view">
+        <field name="name">hr.contribution.register.inherit.form</field>
+        <field name="model">hr.contribution.register</field>
+        <field name="inherit_id" ref="hr_payroll.hr_contribution_register_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+               <field name="partner_id"/>
+            </field>
+        </field>    
+    </record>
+                
+    </data>
+</odoo>
+
+
+
+

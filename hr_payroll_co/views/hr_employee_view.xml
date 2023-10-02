@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2018 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+
+    <record id="hr_employee_co_inherit_form" model="ir.ui.view">
+        <field name="name">hr.employee.co.inherit.form</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <field name="children" position="after">
+               <field name="sabado"/>
+            </field>
+        </field>    
+    </record>
+                
+
+</odoo>
+
+
+
+
