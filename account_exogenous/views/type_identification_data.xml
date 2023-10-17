@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<openerp>
+    <!-- tipos de identificación  -->
+    <data noupdate="1">
+
+        <record model="account.type.ident" id="account.type_ident_11">
+            <field name="name">Registro civil de nacimiento</field>
+            <field name="code">11</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_12">
+            <field name="name">Tarjeta de identidad</field>
+            <field name="code">12</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_13">
+            <field name="name">Cédula de ciudadanía</field>
+            <field name="code">13</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_21">
+            <field name="name">Tarjeta de extranjería</field>
+            <field name="code">21</field>
+        </record>
+        
+        <record model="account.type.ident" id="account.type_ident_22">
+            <field name="name">Cédula de extranjería</field>
+            <field name="code">22</field>
+        </record>
+        
+        <record model="account.type.ident" id="account.type_ident_31">
+            <field name="name">NIT</field>
+            <field name="code">31</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_41">
+            <field name="name">Pasaporte</field>
+            <field name="code">41</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_42">
+            <field name="name">Tipo de documento extranjero</field>
+            <field name="code">42</field>
+        </record>
+
+        <record model="account.type.ident" id="account.type_ident_43">
+            <field name="name">Documento definido para información exógena</field>
+            <field name="code">43</field>
+        </record>
+
+
+    </data>
+</openerp>
+        

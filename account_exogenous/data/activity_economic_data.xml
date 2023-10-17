@@ -1,0 +1,1990 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <!-- actividad económica -->
+    <data noupdate="1">
+    
+        <record model="account.activity.economic" id="AE_0111">
+            <field name="name">Cultivo de cereales (excepto arroz), legumbres y semillas oleaginosas.</field>
+            <field name="code">0111</field>
+        </record>
+        <record model="account.activity.economic" id="AE_0112">
+            <field name="name">Cultivo de arroz.</field>
+            <field name="code">0112</field>
+        </record>
+        <record model="account.activity.economic" id="AE_0113">
+            <field name="name">Cultivo de hortalizas, raíces y tubérculos.</field>
+            <field name="code">0113</field>
+        </record>
+        <record model="account.activity.economic" id="AE_0114">
+            <field name="name">Cultivo de tabaco.</field>
+            <field name="code">0114</field>
+        </record>
+        <record model="account.activity.economic" id="AE_0115">
+            <field name="name">Cultivo de plantas textiles.</field>
+            <field name="code">0115</field>
+        </record>
+<record model="account.activity.economic" id="AE_0119">
+            <field name="name">Otros cultivos transitorios n.c.p.</field>
+            <field name="code">0119</field>
+        </record>
+<record model="account.activity.economic" id="AE_0121">
+            <field name="name">Cultivo de frutas tropicales y subtropicales.</field>
+            <field name="code">0121</field>
+        </record>
+<record model="account.activity.economic" id="AE_0122">
+            <field name="name">Cultivo de plátano y banano.</field>
+            <field name="code">0122</field>
+        </record>
+<record model="account.activity.economic" id="AE_0123">
+            <field name="name">Cultivo de café.</field>
+            <field name="code">0123</field>
+        </record>
+<record model="account.activity.economic" id="AE_0124">
+            <field name="name">Cultivo de caña de azúcar.</field>
+            <field name="code">0124</field>
+        </record>
+<record model="account.activity.economic" id="AE_0125">
+            <field name="name">Cultivo de flor de corte.</field>
+            <field name="code">0125</field>
+        </record>
+<record model="account.activity.economic" id="AE_0126">
+            <field name="name">Cultivo de palma para aceite (palma africana) y otros frutos oleaginosos.</field>
+            <field name="code">0126</field>
+        </record>
+<record model="account.activity.economic" id="AE_0127">
+            <field name="name">Cultivo de plantas con las que se preparan bebidas.</field>
+            <field name="code">0127</field>
+        </record>
+<record model="account.activity.economic" id="AE_0128">
+            <field name="name">Cultivo de especias y de plantas aromáticas y medicinales.</field>
+            <field name="code">0128</field>
+        </record>
+<record model="account.activity.economic" id="AE_0129">
+            <field name="name">Otros cultivos permanentes n.c.p.</field>
+            <field name="code">0129</field>
+        </record>
+<record model="account.activity.economic" id="AE_0130">
+            <field name="name">Propagación de plantas (actividades de los viveros, excepto viveros forestales).</field>
+            <field name="code">0130</field>
+        </record>
+<record model="account.activity.economic" id="AE_0141">
+            <field name="name">Cría de ganado bovino y bufalino.</field>
+            <field name="code">0141</field>
+        </record>
+<record model="account.activity.economic" id="AE_0142">
+            <field name="name">Cría de caballos y otros equinos.</field>
+            <field name="code">0142</field>
+        </record>
+<record model="account.activity.economic" id="AE_0143">
+            <field name="name">Cría de ovejas y cabras.</field>
+            <field name="code">0143</field>
+        </record>
+<record model="account.activity.economic" id="AE_0144">
+            <field name="name">Cría de ganado porcino.</field>
+            <field name="code">0144</field>
+        </record>
+<record model="account.activity.economic" id="AE_0145">
+            <field name="name">Cría de aves de corral.</field>
+            <field name="code">0145</field>
+        </record>
+<record model="account.activity.economic" id="AE_0149">
+            <field name="name">Cría de otros animales n.c.p.</field>
+            <field name="code">0149</field>
+        </record>
+<record model="account.activity.economic" id="AE_0150">
+            <field name="name">Explotación mixta (agrícola y pecuaria).</field>
+            <field name="code">0150</field>
+        </record>
+<record model="account.activity.economic" id="AE_0161">
+            <field name="name">Actividades de apoyo a la agricultura.</field>
+            <field name="code">0161</field>
+        </record>
+<record model="account.activity.economic" id="AE_0162">
+            <field name="name">Actividades de apoyo a la ganadería.</field>
+            <field name="code">0162</field>
+        </record>
+<record model="account.activity.economic" id="AE_0163">
+            <field name="name">Actividades posteriores a la cosecha.</field>
+            <field name="code">0163</field>
+        </record>
+<record model="account.activity.economic" id="AE_0164">
+            <field name="name">Tratamiento de semillas para propagación.</field>
+            <field name="code">0164</field>
+        </record>
+<record model="account.activity.economic" id="AE_0170">
+            <field name="name">Caza ordinaria y mediante trampas y actividades de servicios conexas.</field>
+            <field name="code">0170</field>
+        </record>
+<record model="account.activity.economic" id="AE_0210">
+            <field name="name">Silvicultura y otras actividades forestales.</field>
+            <field name="code">0210</field>
+        </record>
+<record model="account.activity.economic" id="AE_0220">
+            <field name="name">Extracción de madera.</field>
+            <field name="code">0220</field>
+        </record>
+<record model="account.activity.economic" id="AE_0230">
+            <field name="name">Recolección de productos forestales diferentes a la madera.</field>
+            <field name="code">0230</field>
+        </record>
+<record model="account.activity.economic" id="AE_0240">
+            <field name="name">Servicios de apoyo a la silvicultura.</field>
+            <field name="code">0240</field>
+        </record>
+<record model="account.activity.economic" id="AE_0311">
+            <field name="name">Pesca marítima.</field>
+            <field name="code">0311</field>
+        </record>
+<record model="account.activity.economic" id="AE_0312">
+            <field name="name">Pesca de agua dulce.</field>
+            <field name="code">0312</field>
+        </record>
+<record model="account.activity.economic" id="AE_0321">
+            <field name="name">Acuicultura marítima.</field>
+            <field name="code">0321</field>
+        </record>
+<record model="account.activity.economic" id="AE_0322">
+            <field name="name">Acuicultura de agua dulce.</field>
+            <field name="code">0322</field>
+        </record>
+<record model="account.activity.economic" id="AE_0510">
+            <field name="name">Extracción de hulla (carbón de piedra).</field>
+            <field name="code">0510</field>
+        </record>
+<record model="account.activity.economic" id="AE_0520">
+            <field name="name">Extracción de carbón lignito.</field>
+            <field name="code">0520</field>
+        </record>
+<record model="account.activity.economic" id="AE_0610">
+            <field name="name">Extracción de petróleo crudo.</field>
+            <field name="code">0610</field>
+        </record>
+<record model="account.activity.economic" id="AE_0620">
+            <field name="name">Extracción de gas natural.</field>
+            <field name="code">0620</field>
+        </record>
+<record model="account.activity.economic" id="AE_0710">
+            <field name="name">Extracción de minerales de hierro.</field>
+            <field name="code">0710</field>
+        </record>
+<record model="account.activity.economic" id="AE_0721">
+            <field name="name">Extracción de minerales de uranio y de torio.</field>
+            <field name="code">0721</field>
+        </record>
+<record model="account.activity.economic" id="AE_0722">
+            <field name="name">Extracción de oro y otros metales preciosos.</field>
+            <field name="code">0722</field>
+        </record>
+<record model="account.activity.economic" id="AE_0723">
+            <field name="name">Extracción de minerales de níquel.</field>
+            <field name="code">0723</field>
+        </record>
+<record model="account.activity.economic" id="AE_0729">
+            <field name="name">Extracción de otros minerales metalíferos no ferrosos n.c.p.</field>
+            <field name="code">0729</field>
+        </record>
+<record model="account.activity.economic" id="AE_0811">
+            <field name="name">Extracción de piedra, arena, arcillas comunes, yeso y anhidrita.</field>
+            <field name="code">0811</field>
+        </record>
+<record model="account.activity.economic" id="AE_0812">
+            <field name="name">Extracción de arcillas de uso industrial, caliza, caolín y bentonitas.</field>
+            <field name="code">0812</field>
+        </record>
+<record model="account.activity.economic" id="AE_0820">
+            <field name="name">Extracción de esmeraldas, piedras preciosas y semipreciosas.</field>
+            <field name="code">0820</field>
+        </record>
+<record model="account.activity.economic" id="AE_0891">
+            <field name="name">Extracción de minerales para la fabricación de abonos y productos químicos.</field>
+            <field name="code">0891</field>
+        </record>
+<record model="account.activity.economic" id="AE_0892">
+            <field name="name">Extracción de halita (sal).</field>
+            <field name="code">0892</field>
+        </record>
+<record model="account.activity.economic" id="AE_0899">
+            <field name="name">Extracción de otros minerales no metálicos n.c.p.</field>
+            <field name="code">0899</field>
+        </record>
+<record model="account.activity.economic" id="AE_0910">
+            <field name="name">Actividades de apoyo para la extracción de petróleo y de gas natural.</field>
+            <field name="code">0910</field>
+        </record>
+<record model="account.activity.economic" id="AE_0990">
+            <field name="name">Actividades de apoyo para otras actividades de explotación de minas y canteras.</field>
+            <field name="code">0990</field>
+        </record>
+<record model="account.activity.economic" id="AE_1011">
+            <field name="name">Procesamiento y conservación de carne y productos cárnicos.</field>
+            <field name="code">1011</field>
+        </record>
+<record model="account.activity.economic" id="AE_1012">
+            <field name="name">Procesamiento y conservación de pescados, crustáceos y moluscos.</field>
+            <field name="code">1012</field>
+        </record>
+<record model="account.activity.economic" id="AE_1020">
+            <field name="name">Procesamiento y conservación de frutas, legumbres, hortalizas y tubérculos.</field>
+            <field name="code">1020</field>
+        </record>
+<record model="account.activity.economic" id="AE_1030">
+            <field name="name">Elaboración de aceites y grasas de origen vegetal y animal.</field>
+            <field name="code">1030</field>
+        </record>
+<record model="account.activity.economic" id="AE_1040">
+            <field name="name">Elaboración de productos lácteos.</field>
+            <field name="code">1040</field>
+        </record>
+<record model="account.activity.economic" id="AE_1051">
+            <field name="name">Elaboración de productos de molinería.</field>
+            <field name="code">1051</field>
+        </record>
+<record model="account.activity.economic" id="AE_1052">
+            <field name="name">Elaboración de almidones y productos derivados del almidón.</field>
+            <field name="code">1052</field>
+        </record>
+<record model="account.activity.economic" id="AE_1061">
+            <field name="name">Trilla de café.</field>
+            <field name="code">1061</field>
+        </record>
+<record model="account.activity.economic" id="AE_1062">
+            <field name="name">Descafeinado, tostión y molienda del café.</field>
+            <field name="code">1062</field>
+        </record>
+<record model="account.activity.economic" id="AE_1063">
+            <field name="name">Otros derivados del café.</field>
+            <field name="code">1063</field>
+        </record>
+<record model="account.activity.economic" id="AE_1071">
+            <field name="name">Elaboración y refinación de azúcar.</field>
+            <field name="code">1071</field>
+        </record>
+<record model="account.activity.economic" id="AE_1072">
+            <field name="name">Elaboración de panela.</field>
+            <field name="code">1072</field>
+        </record>
+<record model="account.activity.economic" id="AE_1081">
+            <field name="name">Elaboración de productos de panadería.</field>
+            <field name="code">1081</field>
+        </record>
+<record model="account.activity.economic" id="AE_1082">
+            <field name="name">Elaboración de cacao, chocolate y productos de confitería.</field>
+            <field name="code">1082</field>
+        </record>
+<record model="account.activity.economic" id="AE_1083">
+            <field name="name">Elaboración de macarrones, fideos, alcuzcuz y productos farináceos similares.</field>
+            <field name="code">1083</field>
+        </record>
+<record model="account.activity.economic" id="AE_1084">
+            <field name="name">Elaboración de comidas y platos preparados.</field>
+            <field name="code">1084</field>
+        </record>
+<record model="account.activity.economic" id="AE_1089">
+            <field name="name">Elaboración de otros productos alimenticios n.c.p.</field>
+            <field name="code">1089</field>
+        </record>
+<record model="account.activity.economic" id="AE_1090">
+            <field name="name">Elaboración de alimentos preparados para animales.</field>
+            <field name="code">1090</field>
+        </record>
+<record model="account.activity.economic" id="AE_1101">
+            <field name="name">Destilación, rectificación y mezcla de bebidas alcohólicas.</field>
+            <field name="code">1101</field>
+        </record>
+<record model="account.activity.economic" id="AE_1102">
+            <field name="name">Elaboración de bebidas fermentadas no destiladas.</field>
+            <field name="code">1102</field>
+        </record>
+<record model="account.activity.economic" id="AE_1103">
+            <field name="name">Producción de malta, elaboración de cervezas y otras bebidas malteadas.</field>
+            <field name="code">1103</field>
+        </record>
+<record model="account.activity.economic" id="AE_1104">
+            <field name="name">Elaboración de bebidas no alcohólicas, producción de aguas minerales y de otras aguas embotelladas.</field>
+            <field name="code">1104</field>
+        </record>
+<record model="account.activity.economic" id="AE_1200">
+            <field name="name">Elaboración de productos de tabaco.</field>
+            <field name="code">1200</field>
+        </record>
+<record model="account.activity.economic" id="AE_1311">
+            <field name="name">Preparación e hilatura de fibras textiles.</field>
+            <field name="code">1311</field>
+        </record>
+<record model="account.activity.economic" id="AE_1312">
+            <field name="name">Tejeduría de productos textiles.</field>
+            <field name="code">1312</field>
+        </record>
+<record model="account.activity.economic" id="AE_1313">
+            <field name="name">Acabado de productos textiles.</field>
+            <field name="code">1313</field>
+        </record>
+<record model="account.activity.economic" id="AE_1391">
+            <field name="name">Fabricación de tejidos de punto y ganchillo.</field>
+            <field name="code">1391</field>
+        </record>
+<record model="account.activity.economic" id="AE_1392">
+            <field name="name">Confección de artículos con materiales textiles, excepto prendas de vestir.</field>
+            <field name="code">1392</field>
+        </record>
+<record model="account.activity.economic" id="AE_1393">
+            <field name="name">Fabricación de tapetes y alfombras para pisos.</field>
+            <field name="code">1393</field>
+        </record>
+<record model="account.activity.economic" id="AE_1394">
+            <field name="name">Fabricación de cuerdas, cordeles, cables, bramantes y redes.</field>
+            <field name="code">1394</field>
+        </record>
+<record model="account.activity.economic" id="AE_1399">
+            <field name="name">Fabricación de otros artículos textiles n.c.p.</field>
+            <field name="code">1399</field>
+        </record>
+<record model="account.activity.economic" id="AE_1410">
+            <field name="name">Confección de prendas de vestir, excepto prendas de piel.</field>
+            <field name="code">1410</field>
+        </record>
+<record model="account.activity.economic" id="AE_1420">
+            <field name="name">Fabricación de artículos de piel.</field>
+            <field name="code">1420</field>
+        </record>
+<record model="account.activity.economic" id="AE_1430">
+            <field name="name">Fabricación de artículos de punto y ganchillo.</field>
+            <field name="code">1430</field>
+        </record>
+<record model="account.activity.economic" id="AE_1511">
+            <field name="name">Curtido y recurtido de cueros; recurtido y teñido de pieles.</field>
+            <field name="code">1511</field>
+        </record>
+<record model="account.activity.economic" id="AE_1512">
+            <field name="name">Fabricación de artículos de viaje, bolsos de mano y artículos similares elaborados en cuero, y fabricación de artículos de talabartería y guarnicionería.</field>
+            <field name="code">1512</field>
+        </record>
+<record model="account.activity.economic" id="AE_1513">
+            <field name="name">Fabricación de artículos de viaje, bolsos de mano y artículos similares; artículos de talabartería y guarnicionería elaborados en otros materiales.</field>
+            <field name="code">1513</field>
+        </record>
+<record model="account.activity.economic" id="AE_1521">
+            <field name="name">Fabricación de calzado de cuero y piel, con cualquier tipo de suela.</field>
+            <field name="code">1521</field>
+        </record>
+<record model="account.activity.economic" id="AE_1522">
+            <field name="name">Fabricación de otros tipos de calzado, excepto calzado de cuero y piel.</field>
+            <field name="code">1522</field>
+        </record>
+<record model="account.activity.economic" id="AE_1523">
+            <field name="name">Fabricación de partes del calzado.</field>
+            <field name="code">1523</field>
+        </record>
+<record model="account.activity.economic" id="AE_1610">
+            <field name="name">Aserrado, acepillado e impregnación de la madera.</field>
+            <field name="code">1610</field>
+        </record>
+<record model="account.activity.economic" id="AE_1620">
+            <field name="name">Fabricación de hojas de madera para enchapado; fabricación de tableros contrachapados, tableros laminados, tableros de partículas y otros tableros y paneles.</field>
+            <field name="code">1620</field>
+        </record>
+<record model="account.activity.economic" id="AE_1630">
+            <field name="name">Fabricación de partes y piezas de madera, de carpintería y ebanistería para la construcción.</field>
+            <field name="code">1630</field>
+        </record>
+<record model="account.activity.economic" id="AE_1640">
+            <field name="name">Fabricación de recipientes de madera.</field>
+            <field name="code">1640</field>
+        </record>
+<record model="account.activity.economic" id="AE_1690">
+            <field name="name">Fabricación de otros productos de madera; fabricación de artículos de corcho, cestería y espartería.</field>
+            <field name="code">1690</field>
+        </record>
+<record model="account.activity.economic" id="AE_1701">
+            <field name="name">Fabricación de pulpas (pastas) celulósicas; papel y cartón.</field>
+            <field name="code">1701</field>
+        </record>
+<record model="account.activity.economic" id="AE_1702">
+            <field name="name">Fabricación de papel y cartón ondulado (corrugado); fabricación de envases, empaques y de embalajes de papel y cartón.</field>
+            <field name="code">1702</field>
+        </record>
+<record model="account.activity.economic" id="AE_1709">
+            <field name="name">Fabricación de otros artículos de papel y cartón.</field>
+            <field name="code">1709</field>
+        </record>
+<record model="account.activity.economic" id="AE_1811">
+            <field name="name">Actividades de impresión.</field>
+            <field name="code">1811</field>
+        </record>
+<record model="account.activity.economic" id="AE_1812">
+            <field name="name">Actividades de servicios relacionados con la impresión.</field>
+            <field name="code">1812</field>
+        </record>
+<record model="account.activity.economic" id="AE_1820">
+            <field name="name">Producción de copias a partir de grabaciones originales.</field>
+            <field name="code">1820</field>
+        </record>
+<record model="account.activity.economic" id="AE_1910">
+            <field name="name">Fabricación de productos de hornos de coque.</field>
+            <field name="code">1910</field>
+        </record>
+<record model="account.activity.economic" id="AE_1921">
+            <field name="name">Fabricación de productos de la refinación del petróleo.</field>
+            <field name="code">1921</field>
+        </record>
+<record model="account.activity.economic" id="AE_1922">
+            <field name="name">Actividad de mezcla de combustibles.</field>
+            <field name="code">1922</field>
+        </record>
+<record model="account.activity.economic" id="AE_2011">
+            <field name="name">Fabricación de sustancias y productos químicos básicos.</field>
+            <field name="code">2011</field>
+        </record>
+<record model="account.activity.economic" id="AE_2012">
+            <field name="name">Fabricación de abonos y compuestos inorgánicos nitrogenados.</field>
+            <field name="code">2012</field>
+        </record>
+<record model="account.activity.economic" id="AE_2013">
+            <field name="name">Fabricación de plásticos en formas primarias.</field>
+            <field name="code">2013</field>
+        </record>
+<record model="account.activity.economic" id="AE_2014">
+            <field name="name">Fabricación de caucho sintético en formas primarias.</field>
+            <field name="code">2014</field>
+        </record>
+<record model="account.activity.economic" id="AE_2021">
+            <field name="name">Fabricación de plaguicidas y otros productos químicos de uso agropecuario.</field>
+            <field name="code">2021</field>
+        </record>
+<record model="account.activity.economic" id="AE_2022">
+            <field name="name">Fabricación de pinturas, barnices y revestimientos similares, tintas para impresión y masillas.</field>
+            <field name="code">2022</field>
+        </record>
+<record model="account.activity.economic" id="AE_2023">
+            <field name="name">Fabricación de jabones y detergentes, preparados para limpiar y pulir; perfumes y preparados de tocador.</field>
+            <field name="code">2023</field>
+        </record>
+<record model="account.activity.economic" id="AE_2029">
+            <field name="name">Fabricación de otros productos químicos n.c.p.</field>
+            <field name="code">2029</field>
+        </record>
+<record model="account.activity.economic" id="AE_2030">
+            <field name="name">Fabricación de fibras sintéticas y artificiales.</field>
+            <field name="code">2030</field>
+        </record>
+<record model="account.activity.economic" id="AE_2100">
+            <field name="name">Fabricación de productos farmacéuticos, sustancias químicas medicinales y productos botánicos de uso farmacéutico.</field>
+            <field name="code">2100</field>
+        </record>
+<record model="account.activity.economic" id="AE_2211">
+            <field name="name">Fabricación de llantas y neumáticos de caucho</field>
+            <field name="code">2211</field>
+        </record>
+<record model="account.activity.economic" id="AE_2212">
+            <field name="name">Reencauche de llantas usadas</field>
+            <field name="code">2212</field>
+        </record>
+<record model="account.activity.economic" id="AE_2219">
+            <field name="name">Fabricación de formas básicas de caucho y otros productos de caucho n.c.p.</field>
+            <field name="code">2219</field>
+        </record>
+<record model="account.activity.economic" id="AE_2221">
+            <field name="name">Fabricación de formas básicas de plástico.</field>
+            <field name="code">2221</field>
+        </record>
+<record model="account.activity.economic" id="AE_2229">
+            <field name="name">Fabricación de artículos de plástico n.c.p.</field>
+            <field name="code">2229</field>
+        </record>
+<record model="account.activity.economic" id="AE_2310">
+            <field name="name">Fabricación de vidrio y productos de vidrio.</field>
+            <field name="code">2310</field>
+        </record>
+<record model="account.activity.economic" id="AE_2391">
+            <field name="name">Fabricación de productos refractarios.</field>
+            <field name="code">2391</field>
+        </record>
+<record model="account.activity.economic" id="AE_2392">
+            <field name="name">Fabricación de materiales de arcilla para la construcción.</field>
+            <field name="code">2392</field>
+        </record>
+<record model="account.activity.economic" id="AE_2393">
+            <field name="name">Fabricación de otros productos de cerámica y porcelana.</field>
+            <field name="code">2393</field>
+        </record>
+<record model="account.activity.economic" id="AE_2394">
+            <field name="name">Fabricación de cemento, cal y yeso.</field>
+            <field name="code">2394</field>
+        </record>
+<record model="account.activity.economic" id="AE_2395">
+            <field name="name">Fabricación de artículos de hormigón, cemento y yeso.</field>
+            <field name="code">2395</field>
+        </record>
+<record model="account.activity.economic" id="AE_2396">
+            <field name="name">Corte, tallado y acabado de la piedra.</field>
+            <field name="code">2396</field>
+        </record>
+<record model="account.activity.economic" id="AE_2399">
+            <field name="name">Fabricación de otros productos minerales no metálicos n.c.p.</field>
+            <field name="code">2399</field>
+        </record>
+<record model="account.activity.economic" id="AE_2410">
+            <field name="name">Industrias básicas de hierro y de acero.</field>
+            <field name="code">2410</field>
+        </record>
+<record model="account.activity.economic" id="AE_2421">
+            <field name="name">Industrias básicas de metales preciosos.</field>
+            <field name="code">2421</field>
+        </record>
+<record model="account.activity.economic" id="AE_2429">
+            <field name="name">Industrias básicas de otros metales no ferrosos.</field>
+            <field name="code">2429</field>
+        </record>
+<record model="account.activity.economic" id="AE_2431">
+            <field name="name">Fundición de hierro y de acero.</field>
+            <field name="code">2431</field>
+        </record>
+<record model="account.activity.economic" id="AE_2432">
+            <field name="name">Fundición de metales no ferrosos.</field>
+            <field name="code">2432</field>
+        </record>
+<record model="account.activity.economic" id="AE_2511">
+            <field name="name">Fabricación de productos metálicos para uso estructural.</field>
+            <field name="code">2511</field>
+        </record>
+<record model="account.activity.economic" id="AE_2512">
+            <field name="name">Fabricación de tanques, depósitos y recipientes de metal, excepto los utilizados para el envase o transporte de mercancías.</field>
+            <field name="code">2512</field>
+        </record>
+<record model="account.activity.economic" id="AE_2513">
+            <field name="name">Fabricación de generadores de vapor, excepto calderas de agua caliente para calefacción central.</field>
+            <field name="code">2513</field>
+        </record>
+<record model="account.activity.economic" id="AE_2520">
+            <field name="name">Fabricación de armas y municiones.</field>
+            <field name="code">2520</field>
+        </record>
+<record model="account.activity.economic" id="AE_2591">
+            <field name="name">Forja, prensado, estampado y laminado de metal; pulvimetalurgia.</field>
+            <field name="code">2591</field>
+        </record>
+<record model="account.activity.economic" id="AE_2592">
+            <field name="name">Tratamiento y revestimiento de metales; mecanizado.</field>
+            <field name="code">2592</field>
+        </record>
+<record model="account.activity.economic" id="AE_2593">
+            <field name="name">Fabricación de artículos de cuchillería, herramientas de mano y artículos de ferretería.</field>
+            <field name="code">2593</field>
+        </record>
+<record model="account.activity.economic" id="AE_2599">
+            <field name="name">Fabricación de otros productos elaborados de metal n.c.p.</field>
+            <field name="code">2599</field>
+        </record>
+<record model="account.activity.economic" id="AE_2610">
+            <field name="name">Fabricación de componentes y tableros electrónicos.</field>
+            <field name="code">2610</field>
+        </record>
+<record model="account.activity.economic" id="AE_2620">
+            <field name="name">Fabricación de computadoras y de equipo periférico.</field>
+            <field name="code">2620</field>
+        </record>
+<record model="account.activity.economic" id="AE_2630">
+            <field name="name">Fabricación de equipos de comunicación.</field>
+            <field name="code">2630</field>
+        </record>
+<record model="account.activity.economic" id="AE_2640">
+            <field name="name">Fabricación de aparatos electrónicos de consumo.</field>
+            <field name="code">2640</field>
+        </record>
+<record model="account.activity.economic" id="AE_2651">
+            <field name="name">Fabricación de equipo de medición, prueba, navegación y control.</field>
+            <field name="code">2651</field>
+        </record>
+<record model="account.activity.economic" id="AE_2652">
+            <field name="name">Fabricación de relojes.</field>
+            <field name="code">2652</field>
+        </record>
+<record model="account.activity.economic" id="AE_2660">
+            <field name="name">Fabricación de equipo de irradiación y equipo electrónico de uso médico y terapéutico.</field>
+            <field name="code">2660</field>
+        </record>
+<record model="account.activity.economic" id="AE_2670">
+            <field name="name">Fabricación de instrumentos ópticos y equipo fotográfico.</field>
+            <field name="code">2670</field>
+        </record>
+<record model="account.activity.economic" id="AE_2680">
+            <field name="name">Fabricación de medios magnéticos y ópticos para almacenamiento de datos.</field>
+            <field name="code">2680</field>
+        </record>
+<record model="account.activity.economic" id="AE_2711">
+            <field name="name">Fabricación de motores, generadores y transformadores eléctricos.</field>
+            <field name="code">2711</field>
+        </record>
+<record model="account.activity.economic" id="AE_2712">
+            <field name="name">Fabricación de aparatos de distribución y control de la energía eléctrica.</field>
+            <field name="code">2712</field>
+        </record>
+<record model="account.activity.economic" id="AE_2720">
+            <field name="name">Fabricación de pilas, baterías y acumuladores eléctricos.</field>
+            <field name="code">2720</field>
+        </record>
+<record model="account.activity.economic" id="AE_2731">
+            <field name="name">Fabricación de hilos y cables eléctricos y de fibra óptica.</field>
+            <field name="code">2731</field>
+        </record>
+<record model="account.activity.economic" id="AE_2732">
+            <field name="name">Fabricación de dispositivos de cableado.</field>
+            <field name="code">2732</field>
+        </record>
+<record model="account.activity.economic" id="AE_2740">
+            <field name="name">Fabricación de equipos eléctricos de iluminación.</field>
+            <field name="code">2740</field>
+        </record>
+<record model="account.activity.economic" id="AE_2750">
+            <field name="name">Fabricación de aparatos de uso doméstico.</field>
+            <field name="code">2750</field>
+        </record>
+<record model="account.activity.economic" id="AE_2790">
+            <field name="name">Fabricación de otros tipos de equipo eléctrico n.c.p.</field>
+            <field name="code">2790</field>
+        </record>
+<record model="account.activity.economic" id="AE_2811">
+            <field name="name">Fabricación de motores, turbinas, y partes para motores de combustión interna.</field>
+            <field name="code">2811</field>
+        </record>
+<record model="account.activity.economic" id="AE_2812">
+            <field name="name">Fabricación de equipos de potencia hidráulica y neumática.</field>
+            <field name="code">2812</field>
+        </record>
+<record model="account.activity.economic" id="AE_2813">
+            <field name="name">Fabricación de otras bombas, compresores, grifos y válvulas.</field>
+            <field name="code">2813</field>
+        </record>
+<record model="account.activity.economic" id="AE_2814">
+            <field name="name">Fabricación de cojinetes, engranajes, trenes de engranajes y piezas de transmisión.</field>
+            <field name="code">2814</field>
+        </record>
+<record model="account.activity.economic" id="AE_2815">
+            <field name="name">Fabricación de hornos, hogares y quemadores industriales.</field>
+            <field name="code">2815</field>
+        </record>
+<record model="account.activity.economic" id="AE_2816">
+            <field name="name">Fabricación de equipo de elevación y manipulación.</field>
+            <field name="code">2816</field>
+        </record>
+<record model="account.activity.economic" id="AE_2817">
+            <field name="name">Fabricación de maquinaria y equipo de oficina (excepto computadoras y equipo periférico).</field>
+            <field name="code">2817</field>
+        </record>
+<record model="account.activity.economic" id="AE_2818">
+            <field name="name">Fabricación de herramientas manuales con motor.</field>
+            <field name="code">2818</field>
+        </record>
+<record model="account.activity.economic" id="AE_2819">
+            <field name="name">Fabricación de otros tipos de maquinaria y equipo de uso general n.c.p.</field>
+            <field name="code">2819</field>
+        </record>
+<record model="account.activity.economic" id="AE_2821">
+            <field name="name">Fabricación de maquinaria agropecuaria y forestal.</field>
+            <field name="code">2821</field>
+        </record>
+<record model="account.activity.economic" id="AE_2822">
+            <field name="name">Fabricación de máquinas formadoras de metal y de máquinas herramienta.</field>
+            <field name="code">2822</field>
+        </record>
+<record model="account.activity.economic" id="AE_2823">
+            <field name="name">Fabricación de maquinaria para la metalurgia.</field>
+            <field name="code">2823</field>
+        </record>
+<record model="account.activity.economic" id="AE_2824">
+            <field name="name">Fabricación de maquinaria para explotación de minas y canteras y para obras de construcción.</field>
+            <field name="code">2824</field>
+        </record>
+<record model="account.activity.economic" id="AE_2825">
+            <field name="name">Fabricación de maquinaria para la elaboración de alimentos, bebidas y tabaco.</field>
+            <field name="code">2825</field>
+        </record>
+<record model="account.activity.economic" id="AE_2826">
+            <field name="name">Fabricación de maquinaria para la elaboración de productos textiles, prendas de vestir y cueros.</field>
+            <field name="code">2826</field>
+        </record>
+<record model="account.activity.economic" id="AE_2829">
+            <field name="name">Fabricación de otros tipos de maquinaria y equipo de uso especial n.c.p.</field>
+            <field name="code">2829</field>
+        </record>
+<record model="account.activity.economic" id="AE_2910">
+            <field name="name">Fabricación de vehículos automotores y sus motores.</field>
+            <field name="code">2910</field>
+        </record>
+<record model="account.activity.economic" id="AE_2920">
+            <field name="name">Fabricación de carrocerías para vehículos automotores; fabricación de remolques y semirremolques.</field>
+            <field name="code">2920</field>
+        </record>
+<record model="account.activity.economic" id="AE_2930">
+            <field name="name">Fabricación de partes, piezas (autopartes) y accesorios (lujos) para vehículos automotores.</field>
+            <field name="code">2930</field>
+        </record>
+<record model="account.activity.economic" id="AE_3011">
+            <field name="name">Construcción de barcos y de estructuras flotantes.</field>
+            <field name="code">3011</field>
+        </record>
+<record model="account.activity.economic" id="AE_3012">
+            <field name="name">Construcción de embarcaciones de recreo y deporte.</field>
+            <field name="code">3012</field>
+        </record>
+<record model="account.activity.economic" id="AE_3020">
+            <field name="name">Fabricación de locomotoras y de material rodante para ferrocarriles.</field>
+            <field name="code">3020</field>
+        </record>
+<record model="account.activity.economic" id="AE_3030">
+            <field name="name">Fabricación de aeronaves, naves espaciales y de maquinaria conexa.</field>
+            <field name="code">3030</field>
+        </record>
+<record model="account.activity.economic" id="AE_3040">
+            <field name="name">Fabricación de vehículos militares de combate.</field>
+            <field name="code">3040</field>
+        </record>
+<record model="account.activity.economic" id="AE_3091">
+            <field name="name">Fabricación de motocicletas.</field>
+            <field name="code">3091</field>
+        </record>
+<record model="account.activity.economic" id="AE_3092">
+            <field name="name">Fabricación de bicicletas y de sillas de ruedas para personas con discapacidad.</field>
+            <field name="code">3092</field>
+        </record>
+<record model="account.activity.economic" id="AE_3099">
+            <field name="name">Fabricación de otros tipos de equipo de transporte n.c.p.</field>
+            <field name="code">3099</field>
+        </record>
+<record model="account.activity.economic" id="AE_3110">
+            <field name="name">Fabricación de muebles.</field>
+            <field name="code">3110</field>
+        </record>
+<record model="account.activity.economic" id="AE_3120">
+            <field name="name">Fabricación de colchones y somieres.</field>
+            <field name="code">3120</field>
+        </record>
+<record model="account.activity.economic" id="AE_3210">
+            <field name="name">Fabricación de joyas, bisutería y artículos conexos.</field>
+            <field name="code">3210</field>
+        </record>
+<record model="account.activity.economic" id="AE_3220">
+            <field name="name">Fabricación de instrumentos musicales.</field>
+            <field name="code">3220</field>
+        </record>
+<record model="account.activity.economic" id="AE_3230">
+            <field name="name">Fabricación de artículos y equipo para la práctica del deporte.</field>
+            <field name="code">3230</field>
+        </record>
+<record model="account.activity.economic" id="AE_3240">
+            <field name="name">Fabricación de juegos, juguetes y rompecabezas.</field>
+            <field name="code">3240</field>
+        </record>
+<record model="account.activity.economic" id="AE_3250">
+            <field name="name">Fabricación de instrumentos, aparatos y materiales médicos y odontológicos (incluido mobiliario).</field>
+            <field name="code">3250</field>
+        </record>
+<record model="account.activity.economic" id="AE_3290">
+            <field name="name">Otras industrias manufactureras n.c.p.</field>
+            <field name="code">3290</field>
+        </record>
+<record model="account.activity.economic" id="AE_3311">
+            <field name="name">Mantenimiento y reparación especializado de productos elaborados en metal.</field>
+            <field name="code">3311</field>
+        </record>
+<record model="account.activity.economic" id="AE_3312">
+            <field name="name">Mantenimiento y reparación especializado de maquinaria y equipo.</field>
+            <field name="code">3312</field>
+        </record>
+<record model="account.activity.economic" id="AE_3313">
+            <field name="name">Mantenimiento y reparación especializado de equipo electrónico y óptico.</field>
+            <field name="code">3313</field>
+        </record>
+<record model="account.activity.economic" id="AE_3314">
+            <field name="name">Mantenimiento y reparación especializado de equipo eléctrico.</field>
+            <field name="code">3314</field>
+        </record>
+<record model="account.activity.economic" id="AE_3315">
+            <field name="name">Mantenimiento y reparación especializado de equipo de transporte, excepto los vehículos automotores, motocicletas y bicicletas.</field>
+            <field name="code">3315</field>
+        </record>
+<record model="account.activity.economic" id="AE_3319">
+            <field name="name">Mantenimiento y reparación de otros tipos de equipos y sus componentes n.c.p.</field>
+            <field name="code">3319</field>
+        </record>
+<record model="account.activity.economic" id="AE_3320">
+            <field name="name">Instalación especializada de maquinaria y equipo industrial.</field>
+            <field name="code">3320</field>
+        </record>
+<record model="account.activity.economic" id="AE_3511">
+            <field name="name">Generación de energía eléctrica.</field>
+            <field name="code">3511</field>
+        </record>
+<record model="account.activity.economic" id="AE_3512">
+            <field name="name">Transmisión de energía eléctrica.</field>
+            <field name="code">3512</field>
+        </record>
+<record model="account.activity.economic" id="AE_3513">
+            <field name="name">Distribución de energía eléctrica.</field>
+            <field name="code">3513</field>
+        </record>
+<record model="account.activity.economic" id="AE_3514">
+            <field name="name">Comercialización de energía eléctrica.</field>
+            <field name="code">3514</field>
+        </record>
+<record model="account.activity.economic" id="AE_3520">
+            <field name="name">Producción de gas; distribución de combustibles gaseosos por tuberías.</field>
+            <field name="code">3520</field>
+        </record>
+<record model="account.activity.economic" id="AE_3530">
+            <field name="name">Suministro de vapor y aire acondicionado.</field>
+            <field name="code">3530</field>
+        </record>
+<record model="account.activity.economic" id="AE_3600">
+            <field name="name">Captación, tratamiento y distribución de agua.</field>
+            <field name="code">3600</field>
+        </record>
+<record model="account.activity.economic" id="AE_3700">
+            <field name="name">Evacuación y tratamiento de aguas residuales.</field>
+            <field name="code">3700</field>
+        </record>
+<record model="account.activity.economic" id="AE_3811">
+            <field name="name">Recolección de desechos no peligrosos.</field>
+            <field name="code">3811</field>
+        </record>
+<record model="account.activity.economic" id="AE_3812">
+            <field name="name">Recolección de desechos peligrosos.</field>
+            <field name="code">3812</field>
+        </record>
+<record model="account.activity.economic" id="AE_3821">
+            <field name="name">Tratamiento y disposición de desechos no peligrosos.</field>
+            <field name="code">3821</field>
+        </record>
+<record model="account.activity.economic" id="AE_3822">
+            <field name="name">Tratamiento y disposición de desechos peligrosos.</field>
+            <field name="code">3822</field>
+        </record>
+<record model="account.activity.economic" id="AE_3830">
+            <field name="name">Recuperación de materiales.</field>
+            <field name="code">3830</field>
+        </record>
+<record model="account.activity.economic" id="AE_3900">
+            <field name="name">Actividades de saneamiento ambiental y otros servicios de gestión de desechos.</field>
+            <field name="code">3900</field>
+        </record>
+<record model="account.activity.economic" id="AE_4111">
+            <field name="name">Construcción de edificios residenciales.</field>
+            <field name="code">4111</field>
+        </record>
+<record model="account.activity.economic" id="AE_4112">
+            <field name="name">Construcción de edificios no residenciales.</field>
+            <field name="code">4112</field>
+        </record>
+<record model="account.activity.economic" id="AE_4210">
+            <field name="name">Construcción de carreteras y vías de ferrocarril.</field>
+            <field name="code">4210</field>
+        </record>
+<record model="account.activity.economic" id="AE_4220">
+            <field name="name">Construcción de proyectos de servicio público.</field>
+            <field name="code">4220</field>
+        </record>
+<record model="account.activity.economic" id="AE_4290">
+            <field name="name">Construcción de otras obras de ingeniería civil.</field>
+            <field name="code">4290</field>
+        </record>
+<record model="account.activity.economic" id="AE_4311">
+            <field name="name">Demolición.</field>
+            <field name="code">4311</field>
+        </record>
+<record model="account.activity.economic" id="AE_4312">
+            <field name="name">Preparación del terreno.</field>
+            <field name="code">4312</field>
+        </record>
+<record model="account.activity.economic" id="AE_4321">
+            <field name="name">Instalaciones eléctricas.</field>
+            <field name="code">4321</field>
+        </record>
+<record model="account.activity.economic" id="AE_4322">
+            <field name="name">Instalaciones de fontanería, calefacción y aire acondicionado.</field>
+            <field name="code">4322</field>
+        </record>
+<record model="account.activity.economic" id="AE_4329">
+            <field name="name">Otras instalaciones especializadas.</field>
+            <field name="code">4329</field>
+        </record>
+<record model="account.activity.economic" id="AE_4330">
+            <field name="name">Terminación y acabado de edificios y obras de ingeniería civil.</field>
+            <field name="code">4330</field>
+        </record>
+<record model="account.activity.economic" id="AE_4390">
+            <field name="name">Otras actividades especializadas para la construcción de edificios y obras de ingeniería civil.</field>
+            <field name="code">4390</field>
+        </record>
+<record model="account.activity.economic" id="AE_4511">
+            <field name="name">Comercio de vehículos automotores nuevos.</field>
+            <field name="code">4511</field>
+        </record>
+<record model="account.activity.economic" id="AE_4512">
+            <field name="name">Comercio de vehículos automotores usados.</field>
+            <field name="code">4512</field>
+        </record>
+<record model="account.activity.economic" id="AE_4520">
+            <field name="name">Mantenimiento y reparación de vehículos automotores.</field>
+            <field name="code">4520</field>
+        </record>
+<record model="account.activity.economic" id="AE_4530">
+            <field name="name">Comercio de partes, piezas (autopartes) y accesorios (lujos) para vehículos automotores.</field>
+            <field name="code">4530</field>
+        </record>
+<record model="account.activity.economic" id="AE_4541">
+            <field name="name">Comercio de motocicletas y de sus partes, piezas y accesorios.</field>
+            <field name="code">4541</field>
+        </record>
+<record model="account.activity.economic" id="AE_4542">
+            <field name="name">Mantenimiento y reparación de motocicletas y de sus partes y piezas.</field>
+            <field name="code">4542</field>
+        </record>
+<record model="account.activity.economic" id="AE_4610">
+            <field name="name">Comercio al por mayor a cambio de una retribución o por contrata.</field>
+            <field name="code">4610</field>
+        </record>
+<record model="account.activity.economic" id="AE_4620">
+            <field name="name">Comercio al por mayor de materias primas agropecuarias; animales vivos.</field>
+            <field name="code">4620</field>
+        </record>
+<record model="account.activity.economic" id="AE_4631">
+            <field name="name">Comercio al por mayor de productos alimenticios.</field>
+            <field name="code">4631</field>
+        </record>
+<record model="account.activity.economic" id="AE_4632">
+            <field name="name">Comercio al por mayor de bebidas y tabaco.</field>
+            <field name="code">4632</field>
+        </record>
+<record model="account.activity.economic" id="AE_4641">
+            <field name="name">Comercio al por mayor de productos textiles, productos confeccionados para uso doméstico.</field>
+            <field name="code">4641</field>
+        </record>
+<record model="account.activity.economic" id="AE_4642">
+            <field name="name">Comercio al por mayor de prendas de vestir.</field>
+            <field name="code">4642</field>
+        </record>
+<record model="account.activity.economic" id="AE_4643">
+            <field name="name">Comercio al por mayor de calzado.</field>
+            <field name="code">4643</field>
+        </record>
+<record model="account.activity.economic" id="AE_4644">
+            <field name="name">Comercio al por mayor de aparatos y equipo de uso doméstico.</field>
+            <field name="code">4644</field>
+        </record>
+<record model="account.activity.economic" id="AE_4645">
+            <field name="name">Comercio al por mayor de productos farmacéuticos, medicinales, cosméticos y de tocador.</field>
+            <field name="code">4645</field>
+        </record>
+<record model="account.activity.economic" id="AE_4649">
+            <field name="name">Comercio al por mayor de otros utensilios domésticos n.c.p.</field>
+            <field name="code">4649</field>
+        </record>
+<record model="account.activity.economic" id="AE_4651">
+            <field name="name">Comercio al por mayor de computadores, equipo periférico y programas de informática.</field>
+            <field name="code">4651</field>
+        </record>
+<record model="account.activity.economic" id="AE_4652">
+            <field name="name">Comercio al por mayor de equipo, partes y piezas electrónicos y de telecomunicaciones.</field>
+            <field name="code">4652</field>
+        </record>
+<record model="account.activity.economic" id="AE_4653">
+            <field name="name">Comercio al por mayor de maquinaria y equipo agropecuarios.</field>
+            <field name="code">4653</field>
+        </record>
+<record model="account.activity.economic" id="AE_4659">
+            <field name="name">Comercio al por mayor de otros tipos de maquinaria y equipo n.c.p.</field>
+            <field name="code">4659</field>
+        </record>
+<record model="account.activity.economic" id="AE_4661">
+            <field name="name">Comercio al por mayor de combustibles sólidos, líquidos, gaseosos y productos conexos.</field>
+            <field name="code">4661</field>
+        </record>
+<record model="account.activity.economic" id="AE_4662">
+            <field name="name">Comercio al por mayor de metales y productos metalíferos.</field>
+            <field name="code">4662</field>
+        </record>
+<record model="account.activity.economic" id="AE_4663">
+            <field name="name">Comercio al por mayor de materiales de construcción, artículos de ferretería, pinturas, productos de vidrio, equipo y materiales de fontanería y calefacción.</field>
+            <field name="code">4663</field>
+        </record>
+<record model="account.activity.economic" id="AE_4664">
+            <field name="name">Comercio al por mayor de productos químicos básicos, cauchos y plásticos en formas primarias y productos químicos de uso agropecuario.</field>
+            <field name="code">4664</field>
+        </record>
+<record model="account.activity.economic" id="AE_4665">
+            <field name="name">Comercio al por mayor de desperdicios, desechos y chatarra.</field>
+            <field name="code">4665</field>
+        </record>
+<record model="account.activity.economic" id="AE_4669">
+            <field name="name">Comercio al por mayor de otros productos n.c.p.</field>
+            <field name="code">4669</field>
+        </record>
+<record model="account.activity.economic" id="AE_4690">
+            <field name="name">Comercio al por mayor no especializado.</field>
+            <field name="code">4690</field>
+        </record>
+<record model="account.activity.economic" id="AE_4711">
+            <field name="name">Comercio al por menor en establecimientos no especializados con surtido compuesto principalmente por alimentos, bebidas o tabaco.</field>
+            <field name="code">4711</field>
+        </record>
+<record model="account.activity.economic" id="AE_4719">
+            <field name="name">Comercio al por menor en establecimientos no especializados, con surtido compuesto principalmente por productos diferentes de alimentos (víveres en general), bebidas y tabaco.</field>
+            <field name="code">4719</field>
+        </record>
+<record model="account.activity.economic" id="AE_4721">
+            <field name="name">Comercio al por menor de productos agrícolas para el consumo en establecimientos especializados.</field>
+            <field name="code">4721</field>
+        </record>
+<record model="account.activity.economic" id="AE_4722">
+            <field name="name">Comercio al por menor de leche, productos lácteos y huevos, en establecimientos especializados.</field>
+            <field name="code">4722</field>
+        </record>
+<record model="account.activity.economic" id="AE_4723">
+            <field name="name">Comercio al por menor de carnes (incluye aves de corral), productos cárnicos, pescados y productos de mar, en establecimientos especializados.</field>
+            <field name="code">4723</field>
+        </record>
+<record model="account.activity.economic" id="AE_4724">
+            <field name="name">Comercio al por menor de bebidas y productos del tabaco, en establecimientos especializados.</field>
+            <field name="code">4724</field>
+        </record>
+<record model="account.activity.economic" id="AE_4729">
+            <field name="name">Comercio al por menor de otros productos alimenticios n.c.p., en establecimientos especializados.</field>
+            <field name="code">4729</field>
+        </record>
+<record model="account.activity.economic" id="AE_4731">
+            <field name="name">Comercio al por menor de combustible para automotores.</field>
+            <field name="code">4731</field>
+        </record>
+<record model="account.activity.economic" id="AE_4732">
+            <field name="name">Comercio al por menor de lubricantes (aceites, grasas), aditivos y productos de limpieza para vehículos automotores.</field>
+            <field name="code">4732</field>
+        </record>
+<record model="account.activity.economic" id="AE_4741">
+            <field name="name">Comercio al por menor de computadores, equipos periféricos, programas de informática y equipos de telecomunicaciones en establecimientos especializados.</field>
+            <field name="code">4741</field>
+        </record>
+<record model="account.activity.economic" id="AE_4742">
+            <field name="name">Comercio al por menor de equipos y aparatos de sonido y de video, en establecimientos especializados.</field>
+            <field name="code">4742</field>
+        </record>
+<record model="account.activity.economic" id="AE_4751">
+            <field name="name">Comercio al por menor de productos textiles en establecimientos especializados.</field>
+            <field name="code">4751</field>
+        </record>
+<record model="account.activity.economic" id="AE_4752">
+            <field name="name">Comercio al por menor de artículos de ferretería, pinturas y productos de vidrio en establecimientos especializados.</field>
+            <field name="code">4752</field>
+        </record>
+<record model="account.activity.economic" id="AE_4753">
+            <field name="name">Comercio al por menor de tapices, alfombras y cubrimientos para paredes y pisos en establecimientos especializados.</field>
+            <field name="code">4753</field>
+        </record>
+<record model="account.activity.economic" id="AE_4754">
+            <field name="name">Comercio al por menor de electrodomésticos y gasodomésticos de uso doméstico, muebles y equipos de iluminación.</field>
+            <field name="code">4754</field>
+        </record>
+<record model="account.activity.economic" id="AE_4755">
+            <field name="name">Comercio al por menor de artículos y utensilios de uso doméstico.</field>
+            <field name="code">4755</field>
+        </record>
+<record model="account.activity.economic" id="AE_4759">
+            <field name="name">Comercio al por menor de otros artículos domésticos en establecimientos especializados.</field>
+            <field name="code">4759</field>
+        </record>
+<record model="account.activity.economic" id="AE_4761">
+            <field name="name">Comercio al por menor de libros, periódicos, materiales y artículos de papelería y escritorio, en establecimientos especializados.</field>
+            <field name="code">4761</field>
+        </record>
+<record model="account.activity.economic" id="AE_4762">
+            <field name="name">Comercio al por menor de artículos deportivos, en establecimientos especializados.</field>
+            <field name="code">4762</field>
+        </record>
+<record model="account.activity.economic" id="AE_4769">
+            <field name="name">Comercio al por menor de otros artículos culturales y de entretenimiento n.c.p. en establecimientos especializados.</field>
+            <field name="code">4769</field>
+        </record>
+<record model="account.activity.economic" id="AE_4771">
+            <field name="name">Comercio al por menor de prendas de vestir y sus accesorios (incluye artículos de piel) en establecimientos especializados.</field>
+            <field name="code">4771</field>
+        </record>
+<record model="account.activity.economic" id="AE_4772">
+            <field name="name">Comercio al por menor de todo tipo de calzado y artículos de cuero y sucedáneos del cuero en establecimientos especializados.</field>
+            <field name="code">4772</field>
+        </record>
+<record model="account.activity.economic" id="AE_4773">
+            <field name="name">Comercio al por menor de productos farmacéuticos y medicinales, cosméticos y artículos de tocador en establecimientos especializados.</field>
+            <field name="code">4773</field>
+        </record>
+<record model="account.activity.economic" id="AE_4774">
+            <field name="name">Comercio al por menor de otros productos nuevos en establecimientos especializados.</field>
+            <field name="code">4774</field>
+        </record>
+<record model="account.activity.economic" id="AE_4775">
+            <field name="name">Comercio al por menor de artículos de segunda mano.</field>
+            <field name="code">4775</field>
+        </record>
+<record model="account.activity.economic" id="AE_4781">
+            <field name="name">Comercio al por menor de alimentos, bebidas y tabaco, en puestos de venta móviles.</field>
+            <field name="code">4781</field>
+        </record>
+<record model="account.activity.economic" id="AE_4782">
+            <field name="name">Comercio al por menor de productos textiles, prendas de vestir y calzado, en puestos de venta móviles.</field>
+            <field name="code">4782</field>
+        </record>
+<record model="account.activity.economic" id="AE_4789">
+            <field name="name">Comercio al por menor de otros productos en puestos de venta móviles.</field>
+            <field name="code">4789</field>
+        </record>
+<record model="account.activity.economic" id="AE_4791">
+            <field name="name">Comercio al por menor realizado a través de internet.</field>
+            <field name="code">4791</field>
+        </record>
+<record model="account.activity.economic" id="AE_4792">
+            <field name="name">Comercio al por menor realizado a través de casas de venta o por correo.</field>
+            <field name="code">4792</field>
+        </record>
+<record model="account.activity.economic" id="AE_4799">
+            <field name="name">Otros tipos de comercio al por menor no realizado en establecimientos, puestos de venta o mercados.</field>
+            <field name="code">4799</field>
+        </record>
+<record model="account.activity.economic" id="AE_4911">
+            <field name="name">Transporte férreo de pasajeros.</field>
+            <field name="code">4911</field>
+        </record>
+<record model="account.activity.economic" id="AE_4912">
+            <field name="name">Transporte férreo de carga.</field>
+            <field name="code">4912</field>
+        </record>
+<record model="account.activity.economic" id="AE_4921">
+            <field name="name">Transporte de pasajeros.</field>
+            <field name="code">4921</field>
+        </record>
+<record model="account.activity.economic" id="AE_4922">
+            <field name="name">Transporte mixto.</field>
+            <field name="code">4922</field>
+        </record>
+<record model="account.activity.economic" id="AE_4923">
+            <field name="name">Transporte de carga por carretera.</field>
+            <field name="code">4923</field>
+        </record>
+<record model="account.activity.economic" id="AE_4930">
+            <field name="name">Transporte por tuberías.</field>
+            <field name="code">4930</field>
+        </record>
+<record model="account.activity.economic" id="AE_5011">
+            <field name="name">Transporte de pasajeros marítimo y de cabotaje.</field>
+            <field name="code">5011</field>
+        </record>
+<record model="account.activity.economic" id="AE_5012">
+            <field name="name">Transporte de carga marítimo y de cabotaje.</field>
+            <field name="code">5012</field>
+        </record>
+<record model="account.activity.economic" id="AE_5021">
+            <field name="name">Transporte fluvial de pasajeros.</field>
+            <field name="code">5021</field>
+        </record>
+<record model="account.activity.economic" id="AE_5022">
+            <field name="name">Transporte fluvial de carga.</field>
+            <field name="code">5022</field>
+        </record>
+<record model="account.activity.economic" id="AE_5111">
+            <field name="name">Transporte aéreo nacional de pasajeros.</field>
+            <field name="code">5111</field>
+        </record>
+<record model="account.activity.economic" id="AE_5112">
+            <field name="name">Transporte aéreo internacional de pasajeros.</field>
+            <field name="code">5112</field>
+        </record>
+<record model="account.activity.economic" id="AE_5121">
+            <field name="name">Transporte aéreo nacional de carga.</field>
+            <field name="code">5121</field>
+        </record>
+<record model="account.activity.economic" id="AE_5122">
+            <field name="name">Transporte aéreo internacional de carga.</field>
+            <field name="code">5122</field>
+        </record>
+<record model="account.activity.economic" id="AE_5210">
+            <field name="name">Almacenamiento y depósito.</field>
+            <field name="code">5210</field>
+        </record>
+<record model="account.activity.economic" id="AE_5221">
+            <field name="name">Actividades de estaciones, vías y servicios complementarios para el transporte terrestre.</field>
+            <field name="code">5221</field>
+        </record>
+<record model="account.activity.economic" id="AE_5222">
+            <field name="name">Actividades de puertos y servicios complementarios para el transporte acuático.</field>
+            <field name="code">5222</field>
+        </record>
+<record model="account.activity.economic" id="AE_5223">
+            <field name="name">Actividades de aeropuertos, servicios de navegación aérea y demás actividades conexas al transporte aéreo.</field>
+            <field name="code">5223</field>
+        </record>
+<record model="account.activity.economic" id="AE_5224">
+            <field name="name">Manipulación de carga.</field>
+            <field name="code">5224</field>
+        </record>
+<record model="account.activity.economic" id="AE_5229">
+            <field name="name">Otras actividades complementarias al transporte.</field>
+            <field name="code">5229</field>
+        </record>
+<record model="account.activity.economic" id="AE_5310">
+            <field name="name">Actividades postales nacionales.</field>
+            <field name="code">5310</field>
+        </record>
+<record model="account.activity.economic" id="AE_5320">
+            <field name="name">Actividades de mensajería.</field>
+            <field name="code">5320</field>
+        </record>
+<record model="account.activity.economic" id="AE_5511">
+            <field name="name">Alojamiento en hoteles.</field>
+            <field name="code">5511</field>
+        </record>
+<record model="account.activity.economic" id="AE_5512">
+            <field name="name">Alojamiento en apartahoteles.</field>
+            <field name="code">5512</field>
+        </record>
+<record model="account.activity.economic" id="AE_5513">
+            <field name="name">Alojamiento en centros vacacionales.</field>
+            <field name="code">5513</field>
+        </record>
+<record model="account.activity.economic" id="AE_5514">
+            <field name="name">Alojamiento rural.</field>
+            <field name="code">5514</field>
+        </record>
+<record model="account.activity.economic" id="AE_5519">
+            <field name="name">Otros tipos de alojamientos para visitantes.</field>
+            <field name="code">5519</field>
+        </record>
+<record model="account.activity.economic" id="AE_5520">
+            <field name="name">Actividades de zonas de camping y parques para vehículos recreacionales.</field>
+            <field name="code">5520</field>
+        </record>
+<record model="account.activity.economic" id="AE_5530">
+            <field name="name">Servicio por horas</field>
+            <field name="code">5530</field>
+        </record>
+<record model="account.activity.economic" id="AE_5590">
+            <field name="name">Otros tipos de alojamiento n.c.p.</field>
+            <field name="code">5590</field>
+        </record>
+<record model="account.activity.economic" id="AE_5611">
+            <field name="name">Expendio a la mesa de comidas preparadas.</field>
+            <field name="code">5611</field>
+        </record>
+<record model="account.activity.economic" id="AE_5612">
+            <field name="name">Expendio por autoservicio de comidas preparadas.</field>
+            <field name="code">5612</field>
+        </record>
+<record model="account.activity.economic" id="AE_5613">
+            <field name="name">Expendio de comidas preparadas en cafeterías.</field>
+            <field name="code">5613</field>
+        </record>
+<record model="account.activity.economic" id="AE_5619">
+            <field name="name">Otros tipos de expendio de comidas preparadas n.c.p.</field>
+            <field name="code">5619</field>
+        </record>
+<record model="account.activity.economic" id="AE_5621">
+            <field name="name">Catering para eventos.</field>
+            <field name="code">5621</field>
+        </record>
+<record model="account.activity.economic" id="AE_5629">
+            <field name="name">Actividades de otros servicios de comidas.</field>
+            <field name="code">5629</field>
+        </record>
+<record model="account.activity.economic" id="AE_5630">
+            <field name="name">Expendio de bebidas alcohólicas para el consumo dentro del establecimiento.</field>
+            <field name="code">5630</field>
+        </record>
+<record model="account.activity.economic" id="AE_5811">
+            <field name="name">Edición de libros.</field>
+            <field name="code">5811</field>
+        </record>
+<record model="account.activity.economic" id="AE_5812">
+            <field name="name">Edición de directorios y listas de correo.</field>
+            <field name="code">5812</field>
+        </record>
+<record model="account.activity.economic" id="AE_5813">
+            <field name="name">Edición de periódicos, revistas y otras publicaciones periódicas.</field>
+            <field name="code">5813</field>
+        </record>
+<record model="account.activity.economic" id="AE_5819">
+            <field name="name">Otros trabajos de edición.</field>
+            <field name="code">5819</field>
+        </record>
+<record model="account.activity.economic" id="AE_5820">
+            <field name="name">Edición de programas de informática (software).</field>
+            <field name="code">5820</field>
+        </record>
+<record model="account.activity.economic" id="AE_5911">
+            <field name="name">Actividades de producción de películas cinematográficas, videos, programas, anuncios y comerciales de televisión.</field>
+            <field name="code">5911</field>
+        </record>
+<record model="account.activity.economic" id="AE_5912">
+            <field name="name">Actividades de posproducción de películas cinematográficas, videos, programas, anuncios y comerciales de televisión.</field>
+            <field name="code">5912</field>
+        </record>
+<record model="account.activity.economic" id="AE_5913">
+            <field name="name">Actividades de distribución de películas cinematográficas, videos, programas, anuncios y comerciales de televisión.</field>
+            <field name="code">5913</field>
+        </record>
+<record model="account.activity.economic" id="AE_5914">
+            <field name="name">Actividades de exhibición de películas cinematográficas y videos.</field>
+            <field name="code">5914</field>
+        </record>
+<record model="account.activity.economic" id="AE_5920">
+            <field name="name">Actividades de grabación de sonido y edición de música.</field>
+            <field name="code">5920</field>
+        </record>
+<record model="account.activity.economic" id="AE_6010">
+            <field name="name">Actividades de programación y transmisión en el servicio de radiodifusión sonora.</field>
+            <field name="code">6010</field>
+        </record>
+<record model="account.activity.economic" id="AE_6020">
+            <field name="name">Actividades de programación y transmisión de televisión.</field>
+            <field name="code">6020</field>
+        </record>
+<record model="account.activity.economic" id="AE_6110">
+            <field name="name">Actividades de telecomunicaciones alámbricas.</field>
+            <field name="code">6110</field>
+        </record>
+<record model="account.activity.economic" id="AE_6120">
+            <field name="name">Actividades de telecomunicaciones inalámbricas.</field>
+            <field name="code">6120</field>
+        </record>
+<record model="account.activity.economic" id="AE_6130">
+            <field name="name">Actividades de telecomunicación satelital.</field>
+            <field name="code">6130</field>
+        </record>
+<record model="account.activity.economic" id="AE_6190">
+            <field name="name">Otras actividades de telecomunicaciones.</field>
+            <field name="code">6190</field>
+        </record>
+<record model="account.activity.economic" id="AE_6201">
+            <field name="name">Actividades de desarrollo de sistemas informáticos (planificación, análisis, diseño, programación, pruebas).</field>
+            <field name="code">6201</field>
+        </record>
+<record model="account.activity.economic" id="AE_6202">
+            <field name="name">Actividades de consultoría informática y actividades de administración de instalaciones informáticas.</field>
+            <field name="code">6202</field>
+        </record>
+<record model="account.activity.economic" id="AE_6209">
+            <field name="name">Otras actividades de tecnologías de información y actividades de servicios informáticos.</field>
+            <field name="code">6209</field>
+        </record>
+<record model="account.activity.economic" id="AE_6311">
+            <field name="name">Procesamiento de datos, alojamiento (hosting) y actividades relacionadas.</field>
+            <field name="code">6311</field>
+        </record>
+<record model="account.activity.economic" id="AE_6312">
+            <field name="name">Portales web.</field>
+            <field name="code">6312</field>
+        </record>
+<record model="account.activity.economic" id="AE_6391">
+            <field name="name">Actividades de agencias de noticias.</field>
+            <field name="code">6391</field>
+        </record>
+<record model="account.activity.economic" id="AE_6399">
+            <field name="name">Otras actividades de servicio de información n.c.p.</field>
+            <field name="code">6399</field>
+        </record>
+<record model="account.activity.economic" id="AE_6411">
+            <field name="name">Banco Central.</field>
+            <field name="code">6411</field>
+        </record>
+<record model="account.activity.economic" id="AE_6412">
+            <field name="name">Bancos comerciales.</field>
+            <field name="code">6412</field>
+        </record>
+<record model="account.activity.economic" id="AE_6421">
+            <field name="name">Actividades de las corporaciones financieras.</field>
+            <field name="code">6421</field>
+        </record>
+<record model="account.activity.economic" id="AE_6422">
+            <field name="name">Actividades de las compañías de financiamiento.</field>
+            <field name="code">6422</field>
+        </record>
+<record model="account.activity.economic" id="AE_6423">
+            <field name="name">Banca de segundo piso.</field>
+            <field name="code">6423</field>
+        </record>
+<record model="account.activity.economic" id="AE_6424">
+            <field name="name">Actividades de las cooperativas financieras.</field>
+            <field name="code">6424</field>
+        </record>
+<record model="account.activity.economic" id="AE_6431">
+            <field name="name">Fideicomisos, fondos y entidades financieras similares.</field>
+            <field name="code">6431</field>
+        </record>
+<record model="account.activity.economic" id="AE_6432">
+            <field name="name">Fondos de cesantías.</field>
+            <field name="code">6432</field>
+        </record>
+<record model="account.activity.economic" id="AE_6491">
+            <field name="name">Leasing financiero (arrendamiento financiero).</field>
+            <field name="code">6491</field>
+        </record>
+<record model="account.activity.economic" id="AE_6492">
+            <field name="name">Actividades financieras de fondos de empleados y otras formas asociativas del sector solidario.</field>
+            <field name="code">6492</field>
+        </record>
+<record model="account.activity.economic" id="AE_6493">
+            <field name="name">Actividades de compra de cartera o factoring.</field>
+            <field name="code">6493</field>
+        </record>
+<record model="account.activity.economic" id="AE_6494">
+            <field name="name">Otras actividades de distribución de fondos.</field>
+            <field name="code">6494</field>
+        </record>
+<record model="account.activity.economic" id="AE_6495">
+            <field name="name">Instituciones especiales oficiales.</field>
+            <field name="code">6495</field>
+        </record>
+<record model="account.activity.economic" id="AE_6499">
+            <field name="name">Otras actividades de servicio financiero, excepto las de seguros y pensiones n.c.p.</field>
+            <field name="code">6499</field>
+        </record>
+<record model="account.activity.economic" id="AE_6511">
+            <field name="name">Seguros generales.</field>
+            <field name="code">6511</field>
+        </record>
+<record model="account.activity.economic" id="AE_6512">
+            <field name="name">Seguros de vida.</field>
+            <field name="code">6512</field>
+        </record>
+<record model="account.activity.economic" id="AE_6513">
+            <field name="name">Reaseguros.</field>
+            <field name="code">6513</field>
+        </record>
+<record model="account.activity.economic" id="AE_6514">
+            <field name="name">Capitalización.</field>
+            <field name="code">6514</field>
+        </record>
+<record model="account.activity.economic" id="AE_6521">
+            <field name="name">Servicios de seguros sociales de salud.</field>
+            <field name="code">6521</field>
+        </record>
+<record model="account.activity.economic" id="AE_6522">
+            <field name="name">Servicios de seguros sociales de riesgos profesionales.</field>
+            <field name="code">6522</field>
+        </record>
+<record model="account.activity.economic" id="AE_6531">
+            <field name="name">Régimen de prima media con prestación definida (RPM).</field>
+            <field name="code">6531</field>
+        </record>
+<record model="account.activity.economic" id="AE_6532">
+            <field name="name">Régimen de ahorro individual (RAI).</field>
+            <field name="code">6532</field>
+        </record>
+<record model="account.activity.economic" id="AE_6611">
+            <field name="name">Administración de mercados financieros.</field>
+            <field name="code">6611</field>
+        </record>
+<record model="account.activity.economic" id="AE_6612">
+            <field name="name">Corretaje de valores y de contratos de productos básicos.</field>
+            <field name="code">6612</field>
+        </record>
+<record model="account.activity.economic" id="AE_6613">
+            <field name="name">Otras actividades relacionadas con el mercado de valores.</field>
+            <field name="code">6613</field>
+        </record>
+<record model="account.activity.economic" id="AE_6614">
+            <field name="name">Actividades de las casas de cambio.</field>
+            <field name="code">6614</field>
+        </record>
+<record model="account.activity.economic" id="AE_6615">
+            <field name="name">Actividades de los profesionales de compra y venta de divisas.</field>
+            <field name="code">6615</field>
+        </record>
+<record model="account.activity.economic" id="AE_6619">
+            <field name="name">Otras actividades auxiliares de las actividades de servicios financieros n.c.p.</field>
+            <field name="code">6619</field>
+        </record>
+<record model="account.activity.economic" id="AE_6621">
+            <field name="name">Actividades de agentes y corredores de seguros</field>
+            <field name="code">6621</field>
+        </record>
+<record model="account.activity.economic" id="AE_6629">
+            <field name="name">Evaluación de riesgos y daños, y otras actividades de servicios auxiliares</field>
+            <field name="code">6629</field>
+        </record>
+<record model="account.activity.economic" id="AE_6630">
+            <field name="name">Actividades de administración de fondos.</field>
+            <field name="code">6630</field>
+        </record>
+<record model="account.activity.economic" id="AE_6810">
+            <field name="name">Actividades inmobiliarias realizadas con bienes propios o arrendados.</field>
+            <field name="code">6810</field>
+        </record>
+<record model="account.activity.economic" id="AE_6820">
+            <field name="name">Actividades inmobiliarias realizadas a cambio de una retribución o por contrata.</field>
+            <field name="code">6820</field>
+        </record>
+<record model="account.activity.economic" id="AE_6910">
+            <field name="name">Actividades jurídicas.</field>
+            <field name="code">6910</field>
+        </record>
+<record model="account.activity.economic" id="AE_6920">
+            <field name="name">Actividades de contabilidad, teneduría de libros, auditoría financiera y asesoría tributaria.</field>
+            <field name="code">6920</field>
+        </record>
+<record model="account.activity.economic" id="AE_7010">
+            <field name="name">Actividades de administración empresarial.</field>
+            <field name="code">7010</field>
+        </record>
+<record model="account.activity.economic" id="AE_7020">
+            <field name="name">Actividades de consultaría de gestión.</field>
+            <field name="code">7020</field>
+        </record>
+<record model="account.activity.economic" id="AE_7110">
+            <field name="name">Actividades de arquitectura e ingeniería y otras actividades conexas de consultoría técnica.</field>
+            <field name="code">7110</field>
+        </record>
+<record model="account.activity.economic" id="AE_7120">
+            <field name="name">Ensayos y análisis técnicos.</field>
+            <field name="code">7120</field>
+        </record>
+<record model="account.activity.economic" id="AE_7210">
+            <field name="name">Investigaciones y desarrollo experimental en el campo de las ciencias naturales y la ingeniería.</field>
+            <field name="code">7210</field>
+        </record>
+<record model="account.activity.economic" id="AE_7220">
+            <field name="name">Investigaciones y desarrollo experimental en el campo de las ciencias sociales y las humanidades.</field>
+            <field name="code">7220</field>
+        </record>
+<record model="account.activity.economic" id="AE_7310">
+            <field name="name">Publicidad.</field>
+            <field name="code">7310</field>
+        </record>
+<record model="account.activity.economic" id="AE_7320">
+            <field name="name">Estudios de mercado y realización de encuestas de opinión pública.</field>
+            <field name="code">7320</field>
+        </record>
+<record model="account.activity.economic" id="AE_7410">
+            <field name="name">Actividades especializadas de diseño.</field>
+            <field name="code">7410</field>
+        </record>
+<record model="account.activity.economic" id="AE_7420">
+            <field name="name">Actividades de fotografía.</field>
+            <field name="code">7420</field>
+        </record>
+<record model="account.activity.economic" id="AE_7490">
+            <field name="name">Otras actividades profesionales, científicas y técnicas n.c.p.</field>
+            <field name="code">7490</field>
+        </record>
+<record model="account.activity.economic" id="AE_7500">
+            <field name="name">Actividades veterinarias.</field>
+            <field name="code">7500</field>
+        </record>
+<record model="account.activity.economic" id="AE_7710">
+            <field name="name">Alquiler y arrendamiento de vehículos automotores.</field>
+            <field name="code">7710</field>
+        </record>
+<record model="account.activity.economic" id="AE_7721">
+            <field name="name">Alquiler y arrendamiento de equipo recreativo y deportivo.</field>
+            <field name="code">7721</field>
+        </record>
+<record model="account.activity.economic" id="AE_7722">
+            <field name="name">Alquiler de videos y discos.</field>
+            <field name="code">7722</field>
+        </record>
+<record model="account.activity.economic" id="AE_7729">
+            <field name="name">Alquiler y arrendamiento de otros efectos personales y enseres domésticos n.c.p.</field>
+            <field name="code">7729</field>
+        </record>
+<record model="account.activity.economic" id="AE_7730">
+            <field name="name">Alquiler y arrendamiento de otros tipos de maquinaria, equipo y bienes tangibles n.c.p.</field>
+            <field name="code">7730</field>
+        </record>
+<record model="account.activity.economic" id="AE_7740">
+            <field name="name">Arrendamiento de propiedad intelectual y productos similares, excepto obras protegidas por derechos de autor.</field>
+            <field name="code">7740</field>
+        </record>
+<record model="account.activity.economic" id="AE_7810">
+            <field name="name">Actividades de agencias de empleo.</field>
+            <field name="code">7810</field>
+        </record>
+<record model="account.activity.economic" id="AE_7820">
+            <field name="name">Actividades de agencias de empleo temporal.</field>
+            <field name="code">7820</field>
+        </record>
+<record model="account.activity.economic" id="AE_7830">
+            <field name="name">Otras actividades de suministro de recurso humano.</field>
+            <field name="code">7830</field>
+        </record>
+<record model="account.activity.economic" id="AE_7911">
+            <field name="name">Actividades de las agencias de viaje.</field>
+            <field name="code">7911</field>
+        </record>
+<record model="account.activity.economic" id="AE_7912">
+            <field name="name">Actividades de operadores turísticos.</field>
+            <field name="code">7912</field>
+        </record>
+<record model="account.activity.economic" id="AE_7990">
+            <field name="name">Otros servicios de reserva y actividades relacionadas.</field>
+            <field name="code">7990</field>
+        </record>
+<record model="account.activity.economic" id="AE_8010">
+            <field name="name">Actividades de seguridad privada.</field>
+            <field name="code">8010</field>
+        </record>
+<record model="account.activity.economic" id="AE_8020">
+            <field name="name">Actividades de servicios de sistemas de seguridad.</field>
+            <field name="code">8020</field>
+        </record>
+<record model="account.activity.economic" id="AE_8030">
+            <field name="name">Actividades de detectives e investigadores privados.</field>
+            <field name="code">8030</field>
+        </record>
+<record model="account.activity.economic" id="AE_8110">
+            <field name="name">Actividades combinadas de apoyo a instalaciones.</field>
+            <field name="code">8110</field>
+        </record>
+<record model="account.activity.economic" id="AE_8121">
+            <field name="name">Limpieza general interior de edificios.</field>
+            <field name="code">8121</field>
+        </record>
+<record model="account.activity.economic" id="AE_8129">
+            <field name="name">Otras actividades de limpieza de edificios e instalaciones industriales.</field>
+            <field name="code">8129</field>
+        </record>
+<record model="account.activity.economic" id="AE_8130">
+            <field name="name">Actividades de paisajismo y servicios de mantenimiento conexos.</field>
+            <field name="code">8130</field>
+        </record>
+<record model="account.activity.economic" id="AE_8211">
+            <field name="name">Actividades combinadas de servicios administrativos de oficina.</field>
+            <field name="code">8211</field>
+        </record>
+<record model="account.activity.economic" id="AE_8219">
+            <field name="name">Fotocopiado, preparación de documentos y otras actividades especializadas de apoyo a oficina.</field>
+            <field name="code">8219</field>
+        </record>
+<record model="account.activity.economic" id="AE_8220">
+            <field name="name">Actividades de centros de llamadas (Call center).</field>
+            <field name="code">8220</field>
+        </record>
+<record model="account.activity.economic" id="AE_8230">
+            <field name="name">Organización de convenciones y eventos comerciales.</field>
+            <field name="code">8230</field>
+        </record>
+<record model="account.activity.economic" id="AE_8291">
+            <field name="name">Actividades de agencias de cobranza y oficinas de calificación crediticia.</field>
+            <field name="code">8291</field>
+        </record>
+<record model="account.activity.economic" id="AE_8292">
+            <field name="name">Actividades de envase y empaque.</field>
+            <field name="code">8292</field>
+        </record>
+<record model="account.activity.economic" id="AE_8299">
+            <field name="name">Otras actividades de servicio de apoyo a las empresas n.c.p.</field>
+            <field name="code">8299</field>
+        </record>
+<record model="account.activity.economic" id="AE_8411">
+            <field name="name">Actividades legislativas de la administración pública.</field>
+            <field name="code">8411</field>
+        </record>
+<record model="account.activity.economic" id="AE_8412">
+            <field name="name">Actividades ejecutivas de la administración pública.</field>
+            <field name="code">8412</field>
+        </record>
+<record model="account.activity.economic" id="AE_8413">
+            <field name="name">Regulación de las actividades de organismos que prestan servicios de salud, educativos, culturales y otros servicios sociales, excepto servicios de seguridad social.</field>
+            <field name="code">8413</field>
+        </record>
+<record model="account.activity.economic" id="AE_8414">
+            <field name="name">Actividades reguladoras y facilitadoras de la actividad económica.</field>
+            <field name="code">8414</field>
+        </record>
+<record model="account.activity.economic" id="AE_8415">
+            <field name="name">Actividades de los otros órganos de control.</field>
+            <field name="code">8415</field>
+        </record>
+<record model="account.activity.economic" id="AE_8421">
+            <field name="name">Relaciones exteriores.</field>
+            <field name="code">8421</field>
+        </record>
+<record model="account.activity.economic" id="AE_8422">
+            <field name="name">Actividades de defensa.</field>
+            <field name="code">8422</field>
+        </record>
+<record model="account.activity.economic" id="AE_8423">
+            <field name="name">Orden público y actividades de seguridad.</field>
+            <field name="code">8423</field>
+        </record>
+<record model="account.activity.economic" id="AE_8424">
+            <field name="name">Administración de justicia.</field>
+            <field name="code">8424</field>
+        </record>
+<record model="account.activity.economic" id="AE_8430">
+            <field name="name">Actividades de planes de seguridad social de afiliación obligatoria.</field>
+            <field name="code">8430</field>
+        </record>
+<record model="account.activity.economic" id="AE_8511">
+            <field name="name">Educación de la primera infancia.</field>
+            <field name="code">8511</field>
+        </record>
+<record model="account.activity.economic" id="AE_8512">
+            <field name="name">Educación preescolar.</field>
+            <field name="code">8512</field>
+        </record>
+<record model="account.activity.economic" id="AE_8513">
+            <field name="name">Educación básica primaria.</field>
+            <field name="code">8513</field>
+        </record>
+<record model="account.activity.economic" id="AE_8521">
+            <field name="name">Educación básica secundaria.</field>
+            <field name="code">8521</field>
+        </record>
+<record model="account.activity.economic" id="AE_8522">
+            <field name="name">Educación media académica.</field>
+            <field name="code">8522</field>
+        </record>
+<record model="account.activity.economic" id="AE_8523">
+            <field name="name">Educación media técnica y de formación laboral.</field>
+            <field name="code">8523</field>
+        </record>
+<record model="account.activity.economic" id="AE_8530">
+            <field name="name">Establecimientos que combinan diferentes niveles de educación.</field>
+            <field name="code">8530</field>
+        </record>
+<record model="account.activity.economic" id="AE_8541">
+            <field name="name">Educación técnica profesional.</field>
+            <field name="code">8541</field>
+        </record>
+<record model="account.activity.economic" id="AE_8542">
+            <field name="name">Educación tecnológica.</field>
+            <field name="code">8542</field>
+        </record>
+<record model="account.activity.economic" id="AE_8543">
+            <field name="name">Educación de instituciones universitarias o de escuelas tecnológicas.</field>
+            <field name="code">8543</field>
+        </record>
+<record model="account.activity.economic" id="AE_8544">
+            <field name="name">Educación de universidades.</field>
+            <field name="code">8544</field>
+        </record>
+<record model="account.activity.economic" id="AE_8551">
+            <field name="name">Formación académica no formal.</field>
+            <field name="code">8551</field>
+        </record>
+<record model="account.activity.economic" id="AE_8552">
+            <field name="name">Enseñanza deportiva y recreativa.</field>
+            <field name="code">8552</field>
+        </record>
+<record model="account.activity.economic" id="AE_8553">
+            <field name="name">Enseñanza cultural.</field>
+            <field name="code">8553</field>
+        </record>
+<record model="account.activity.economic" id="AE_8559">
+            <field name="name">Otros tipos de educación n.c.p.</field>
+            <field name="code">8559</field>
+        </record>
+<record model="account.activity.economic" id="AE_8560">
+            <field name="name">Actividades de apoyo a la educación.</field>
+            <field name="code">8560</field>
+        </record>
+<record model="account.activity.economic" id="AE_8610">
+            <field name="name">Actividades de hospitales y clínicas, con internación.</field>
+            <field name="code">8610</field>
+        </record>
+<record model="account.activity.economic" id="AE_8621">
+            <field name="name">Actividades de la práctica médica, sin internación.</field>
+            <field name="code">8621</field>
+        </record>
+<record model="account.activity.economic" id="AE_8622">
+            <field name="name">Actividades de la práctica odontológica.</field>
+            <field name="code">8622</field>
+        </record>
+<record model="account.activity.economic" id="AE_8691">
+            <field name="name">Actividades de apoyo diagnóstico.</field>
+            <field name="code">8691</field>
+        </record>
+<record model="account.activity.economic" id="AE_8692">
+            <field name="name">Actividades de apoyo terapéutico.</field>
+            <field name="code">8692</field>
+        </record>
+<record model="account.activity.economic" id="AE_8699">
+            <field name="name">Otras actividades de atención de la salud humana.</field>
+            <field name="code">8699</field>
+        </record>
+<record model="account.activity.economic" id="AE_8710">
+            <field name="name">Actividades de atención residencial medicalizada de tipo general.</field>
+            <field name="code">8710</field>
+        </record>
+<record model="account.activity.economic" id="AE_8720">
+            <field name="name">Actividades de atención residencial, para el cuidado de pacientes con retardo mental, enfermedad mental y consumo de sustancias psicoactivas.</field>
+            <field name="code">8720</field>
+        </record>
+<record model="account.activity.economic" id="AE_8730">
+            <field name="name">Actividades de atención en instituciones para el cuidado de personas mayores y/o discapacitadas.</field>
+            <field name="code">8730</field>
+        </record>
+<record model="account.activity.economic" id="AE_8790">
+            <field name="name">Otras actividades de atención en instituciones con alojamiento</field>
+            <field name="code">8790</field>
+        </record>
+<record model="account.activity.economic" id="AE_8810">
+            <field name="name">Actividades de asistencia social sin alojamiento para personas mayores y discapacitadas.</field>
+            <field name="code">8810</field>
+        </record>
+<record model="account.activity.economic" id="AE_8890">
+            <field name="name">Otras actividades de asistencia social sin alojamiento.</field>
+            <field name="code">8890</field>
+        </record>
+<record model="account.activity.economic" id="AE_9001">
+            <field name="name">Creación literaria.</field>
+            <field name="code">9001</field>
+        </record>
+<record model="account.activity.economic" id="AE_9002">
+            <field name="name">Creación musical.</field>
+            <field name="code">9002</field>
+        </record>
+<record model="account.activity.economic" id="AE_9003">
+            <field name="name">Creación teatral.</field>
+            <field name="code">9003</field>
+        </record>
+<record model="account.activity.economic" id="AE_9004">
+            <field name="name">Creación audiovisual.</field>
+            <field name="code">9004</field>
+        </record>
+<record model="account.activity.economic" id="AE_9005">
+            <field name="name">Artes plásticas y visuales.</field>
+            <field name="code">9005</field>
+        </record>
+<record model="account.activity.economic" id="AE_9006">
+            <field name="name">Actividades teatrales.</field>
+            <field name="code">9006</field>
+        </record>
+<record model="account.activity.economic" id="AE_9007">
+            <field name="name">Actividades de espectáculos musicales en vivo.</field>
+            <field name="code">9007</field>
+        </record>
+<record model="account.activity.economic" id="AE_9008">
+            <field name="name">Otras actividades de espectáculos en vivo.</field>
+            <field name="code">9008</field>
+        </record>
+<record model="account.activity.economic" id="AE_9101">
+            <field name="name">Actividades de bibliotecas y archivos.</field>
+            <field name="code">9101</field>
+        </record>
+<record model="account.activity.economic" id="AE_9102">
+            <field name="name">Actividades y funcionamiento de museos, conservación de edificios y sitios históricos.</field>
+            <field name="code">9102</field>
+        </record>
+<record model="account.activity.economic" id="AE_9103">
+            <field name="name">Actividades de jardines botánicos, zoológicos y reservas naturales.</field>
+            <field name="code">9103</field>
+        </record>
+<record model="account.activity.economic" id="AE_9200">
+            <field name="name">Actividades de juegos de azar y apuestas.</field>
+            <field name="code">9200</field>
+        </record>
+<record model="account.activity.economic" id="AE_9311">
+            <field name="name">Gestión de instalaciones deportivas.</field>
+            <field name="code">9311</field>
+        </record>
+<record model="account.activity.economic" id="AE_9312">
+            <field name="name">Actividades de clubes deportivos.</field>
+            <field name="code">9312</field>
+        </record>
+<record model="account.activity.economic" id="AE_9319">
+            <field name="name">Otras actividades deportivas.</field>
+            <field name="code">9319</field>
+        </record>
+<record model="account.activity.economic" id="AE_9321">
+            <field name="name">Actividades de parques de atracciones y parques temáticos.</field>
+            <field name="code">9321</field>
+        </record>
+<record model="account.activity.economic" id="AE_9329">
+            <field name="name">Otras actividades recreativas y de esparcimiento n.c.p.</field>
+            <field name="code">9329</field>
+        </record>
+<record model="account.activity.economic" id="AE_9411">
+            <field name="name">Actividades de asociaciones empresariales y de empleadores</field>
+            <field name="code">9411</field>
+        </record>
+<record model="account.activity.economic" id="AE_9412">
+            <field name="name">Actividades de asociaciones profesionales</field>
+            <field name="code">9412</field>
+        </record>
+<record model="account.activity.economic" id="AE_9420">
+            <field name="name">Actividades de sindicatos de empleados.</field>
+            <field name="code">9420</field>
+        </record>
+<record model="account.activity.economic" id="AE_9491">
+            <field name="name">Actividades de asociaciones religiosas.</field>
+            <field name="code">9491</field>
+        </record>
+<record model="account.activity.economic" id="AE_9492">
+            <field name="name">Actividades de asociaciones políticas.</field>
+            <field name="code">9492</field>
+        </record>
+<record model="account.activity.economic" id="AE_9499">
+            <field name="name">Actividades de otras asociaciones n.c.p.</field>
+            <field name="code">9499</field>
+        </record>
+<record model="account.activity.economic" id="AE_9511">
+            <field name="name">Mantenimiento y reparación de computadores y de equipo periférico.</field>
+            <field name="code">9511</field>
+        </record>
+<record model="account.activity.economic" id="AE_9512">
+            <field name="name">Mantenimiento y reparación de equipos de comunicación.</field>
+            <field name="code">9512</field>
+        </record>
+<record model="account.activity.economic" id="AE_9521">
+            <field name="name">Mantenimiento y reparación de aparatos electrónicos de consumo.</field>
+            <field name="code">9521</field>
+        </record>
+<record model="account.activity.economic" id="AE_9522">
+            <field name="name">Mantenimiento y reparación de aparatos y equipos domésticos y de jardinería.</field>
+            <field name="code">9522</field>
+        </record>
+<record model="account.activity.economic" id="AE_9523">
+            <field name="name">Reparación de calzado y artículos de cuero.</field>
+            <field name="code">9523</field>
+        </record>
+<record model="account.activity.economic" id="AE_9524">
+            <field name="name">Reparación de muebles y accesorios para el hogar.</field>
+            <field name="code">9524</field>
+        </record>
+<record model="account.activity.economic" id="AE_9529">
+            <field name="name">Mantenimiento y reparación de otros efectos personales y enseres domésticos.</field>
+            <field name="code">9529</field>
+        </record>
+<record model="account.activity.economic" id="AE_9601">
+            <field name="name">Lavado y limpieza, incluso la limpieza en seco, de productos textiles y de piel.</field>
+            <field name="code">9601</field>
+        </record>
+<record model="account.activity.economic" id="AE_9602">
+            <field name="name">Peluquería y otros tratamientos de belleza.</field>
+            <field name="code">9602</field>
+        </record>
+<record model="account.activity.economic" id="AE_9603">
+            <field name="name">Pompas fúnebres y actividades relacionadas.</field>
+            <field name="code">9603</field>
+        </record>
+<record model="account.activity.economic" id="AE_9609">
+            <field name="name">Otras actividades de servicios personales n.c.p.</field>
+            <field name="code">9609</field>
+        </record>
+<record model="account.activity.economic" id="AE_9700">
+            <field name="name">Actividades de los hogares individuales como empleadores de personal doméstico.</field>
+            <field name="code">9700</field>
+        </record>
+<record model="account.activity.economic" id="AE_9810">
+            <field name="name">Actividades no diferenciadas de los hogares individuales como productores de bienes para uso propio.</field>
+            <field name="code">9810</field>
+        </record>
+<record model="account.activity.economic" id="AE_9820">
+            <field name="name">Actividades no diferenciadas de los hogares individuales como productores de servicios para uso propio.</field>
+            <field name="code">9820</field>
+        </record>
+<record model="account.activity.economic" id="AE_9900">
+            <field name="name">Actividades de organizaciones y entidades extraterritoriales.</field>
+            <field name="code">9900</field>
+        </record>
+        
+    </data>
+</odoo>
+        

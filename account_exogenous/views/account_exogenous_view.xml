@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+  <odoo>
+    
+    <record id="activity_economic_tree_view"  model="ir.ui.view"> 
+      <field  name="name">account.activity.economic.tree</field> 
+      <field  name="model">account.activity.economic</field> 
+      <field  name="arch" type="xml"> 
+        <tree string="Actividades económicas">
+          <field name="code"/>
+          <field name="name"/>          
+        </tree>      
+      </field>  
+    </record>
+
+    <record id="activity_economic_form_view"  model="ir.ui.view"> 
+      <field  name="name">account.activity.economic.form</field> 
+      <field  name="model">account.activity.economic</field> 
+      <field  name="arch" type="xml"> 
+        <form string="Actividades económicas">
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+          </group>
+        </form>      
+      </field>  
+    </record>
+
+    <record id="account_condiciones_especiales_tree_view" model="ir.ui.view"> 
+      <field name="name">account.condiciones.especiales.tree</field>
+      <field name="model">account.condiciones.especiales</field>
+      <field name="arch" type="xml">
+        <tree string="Condiciones especiales">
+          <field name="code"/>
+          <field name="name"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="account_condiciones_especiales_form_view" model="ir.ui.view" >
+      <field name="name">account.condiciones.especiales.form</field>
+      <field name="model">account.condiciones.especiales</field>
+      <field name="arch" type="xml">
+        <form string="Condiciones especiales">
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_tipos_de_vinculacion_tree_view">
+      <field name="name">account.tipos_de_vinculacion.tree</field>
+      <field name="model">account.tipos_de_vinculacion</field>
+      <field name="arch" type="xml">
+        <tree string="Tipos de vinculacion">
+          <field name="code"/>
+          <field name="name"/>
+        </tree>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_tipos_de_vinculacion_form_view">
+      <field name="name">account.tipos_de_vinculacion.form</field>
+      <field name="model">account.tipos_de_vinculacion</field>
+      <field name="arch" type="xml">
+        <form string="Tipos de vinculacion">
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_campos_formato_tree_view">
+    <field name="name">account.campos.formato.tree</field>
+    <field name="model">account.campos.formato</field>
+    <field name="arch" type="xml">
+        <tree string="Campos del formato">
+          <field name="sequence"/>
+          <field name="name"/>
+          <field name="referencia"/>
+          <field name="tipo_id"/>
+          <field name="tipo_valor_id"/>
+        </tree>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_campos_formato_form_view">
+      <field name="name">account.campos.formato.form</field>
+      <field name="model">account.campos.formato</field>
+      <field name="arch" type="xml">
+        <form string="Campos del formato">
+          <group>
+            <field name="sequence"/>
+            <field name="name"/>
+            <field name="referencia"/>
+            <field name="tipo_id"/>
+            <field name="tipo_valor_id"/>                
+            <field name="conceptos_ids">
+              <tree string = "Conceptos relacionados" editable = "bottom">
+                <field name="concepto_id"/>                        
+                <field name="concepto_rel_id"/>                        
+              </tree>
+            </field>                                
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_forms_dian_form_tree_view">
+      <field name="name">account.formato.dian.form.tree</field>
+      <field name="model">account.formato.dian</field>
+      <field name="arch" type="xml">      
+        <tree string="Formatos">
+          <field name="code"/>
+          <field name="name"/>
+          <field name="ejemplo"/>
+          <field name="explicacion"/>
+        </tree>     
+      </field>
+    </record>  
+
+    <record model="ir.ui.view" id="account_forms_dian_form_view">
+      <field name="name">account.formato.dian.form</field>
+      <field name="model">account.formato.dian</field>
+      <field name="arch" type="xml">      
+        <form string="Formatos">
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+            <field name="version"/>
+          </group>
+          <group>
+            <field name="campos_ids"/>
+          </group>
+          <group>
+            <field name="ejemplo"/>
+            <field name="explicacion"/>
+          </group>                    
+        </form>   
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_conceptos_tree_view">
+      <field name="name">account.conceptos.form.tree</field>
+      <field name="model">account.conceptos</field>
+      <field name="arch" type="xml">
+        <tree string="Formatos DIAN">
+          <field name="code"/>
+          <field name="name"/>
+          <field name="porcentaje_no_deducible"/>
+          <field name="tope"/>
+          <field name="form_dian_id"/>            
+        </tree>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_conceptos_form_view">
+      <field name="name">account.conceptos.form</field>
+      <field name="model">account.conceptos</field>
+      <field name="arch" type="xml">
+        <form string="Formatos">
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+            <field name="porcentaje_no_deducible"/>
+            <field name="tope"/>
+            <field name="form_dian_id"/>
+            <field name="cuentas_ids">
+              <tree string = "Cuentas" editable = "bottom">
+                <!-- <field name="cuenta_id" domain="[('type','!=','view')]"/> -->
+                <field name="cuenta_id"/>                        
+              </tree>
+            </field>                
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_partner_form_inherit">
+      <field name="name">account.exogenous.partner.form.inherit</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.view_partner_form"/>
+      <field name="arch" type="xml">
+        <field name="street" position="after">              
+        <field name="activity_economic_id"/>        
+        </field>    
+      </field>    
+    </record>  
+
+
+    <record model="ir.ui.view" id="view_country_form_inherit">
+      <field name="name">account.exogenous.country.form.inherit</field>
+      <field name="model">res.country</field>
+      <field name="inherit_id" ref="base.view_country_form"/>
+      <field name="arch" type="xml">
+        <field name="code" position="after">              
+          <field name="code_dian"/>       
+          </field>      
+      </field>                          
+    </record>
+
+    <!-- A C T I O N -->
+
+    <act_window  id="activity_economic_list_action"  
+                 name="Actividad económica"  
+                 res_model="account.activity.economic"
+                 view_id="activity_economic_tree_view"
+                 view_mode="tree,form"/>
+
+    <act_window id="account_condiciones_especiales_list_action"  
+                name="Condiciones especiales"  
+                res_model="account.condiciones.especiales"
+                view_id="account_condiciones_especiales_tree_view"
+                view_mode="tree,form"/>           
+
+    <act_window id="account_tipos_de_vinculacion_list_action"  
+                name="Tipos de vinculacion"  
+                res_model="account.tipos_de_vinculacion"
+                view_id="account_tipos_de_vinculacion_tree_view"
+                view_mode="tree,form"/>
+
+    <act_window id="account_forms_dian_list_action"  
+                name="Formatos"  
+                res_model="account.formato.dian"
+                view_id="account_forms_dian_form_tree_view"
+                view_mode="tree,form"/>
+
+    <act_window id="account_conceptos_list_action"  
+                name="Conceptos"  
+                res_model="account.conceptos"
+                view_id="account_conceptos_tree_view"
+                view_mode="tree,form"/>
+
+    <!-- M E N U S -->            
+
+    <menuitem id="account_exogenous_menu"
+              name="Medios"
+              parent="account_accountant.menu_accounting"
+              groups="account.group_account_manager"
+              sequence="3"/>
+
+    <menuitem id="account_activity_economic" 
+              name="Actividad económica"
+              parent="account_exogenous_menu" 
+              action="activity_economic_list_action"
+              sequence="1"/>
+
+    <menuitem id="account_condiciones_especiales" 
+              name="Condiciones especiales"
+              parent="account_exogenous_menu"
+              action="account_condiciones_especiales_list_action"
+              sequence="2"/>
+
+    <menuitem id="account_tipos_de_vinculacion" 
+              name="Tipos de vinculacion"
+              parent="account_exogenous_menu" 
+              action="account_tipos_de_vinculacion_list_action"
+              sequence="3"/>
+
+    <menuitem id="account_forms_dian" 
+              name="Formatos"
+              parent="account_exogenous_menu"  
+              action="account_forms_dian_list_action"
+              sequence="4"/>
+
+    <menuitem id="account_conceptos" 
+              name="Conceptos"
+              parent="account_exogenous_menu"
+              action="account_conceptos_list_action"
+              sequence="5"/> 
+
+
+        		 
+	
+</odoo>

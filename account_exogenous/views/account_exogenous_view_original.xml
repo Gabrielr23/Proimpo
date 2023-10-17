@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<!-- 
+        menu principal
+    -->
+
+    <menuitem id="account_exogenous_menu"
+              name="Información exógena"
+              parent="account_accountant.menu_accounting"
+              groups="account.group_account_manager"
+              sequence="3"/>
+        
+    <!-- 
+        vista actividad economica
+    --> 
+    <record model="ir.ui.view" id="activity_economic_tree_view">
+        <field name="name">account.activity.economic.tree</field>
+        <field name="model">account.activity.economic</field>
+        <field name="arch" type="xml">
+	        <tree string="Actividades económicas">
+				<field name="code"/>
+				<field name="name"/>					
+			</tree>			
+		</field>
+	</record>  
+
+    <act_window  id="activity_economic_list_action"  
+                 name="Actividad económica"  
+                 res_model="account.activity.economic"
+                 view_id="activity_economic_tree_view"
+                 view_mode="tree,form"/> 
+
+    <!-- <record id="activity_economic_list_action" model="ir.actions.act_window">
+	    <field name="name">Actividad económica</field>
+		<field name="res_model">account.activity.economic</field>
+		<field name="view_type">form</field>
+		<field name="view_mode">tree,form</field>
+	</record> -->
+
+	<!-- <menuitem id="account_activity_economic" 
+              name="Actividad económica"
+		      parent="account_exagenous_menu" 
+              action="activity_economic_list_action"
+              sequence="1"/> -->
+
+
+<!--  vista condiciones especiales    -->
+
+<record model="ir.ui.view" id="account_condiciones_especiales_tree_view">
+    <field name="name">aaccount.condiciones.especiales.tree</field>
+    <field name="model">account.condiciones.especiales</field>
+    <field name="arch" type="xml">
+        <tree string="Condiciones especiales">
+            <field name="code"/>
+            <field name="name"/>
+        </tree>
+    </field>
+</record>
+
+<record model="ir.ui.view" id="account_condiciones_especiales_form_view">
+    <field name="name">account.condiciones.especiales.form</field>
+    <field name="model">account.condiciones.especiales</field>
+    <field name="arch" type="xml">
+        <form string="Condiciones especiales">
+            <group>
+                <field name="code"/>
+                <field name="name"/>
+            </group>
+        </form>
+    </field>
+</record>
+
+<act_window id="account_condiciones_especiales_list_action"  
+                 name="Condiciones especiales"  
+                 res_model="account.condiciones.especiales"
+                 view_id="account_condiciones_especiales_tree_view"
+                 view_mode="tree,form"
+                 sequence="2"/> 
+
+
+<!--<record id="account_condiciones_especiales_list_action" model="ir.actions.act_window">
+			 <field name="name">Condiciones especiales</field>
+             <field name="res_model">account.condiciones.especiales</field>
+             <field name="view_type">form</field>
+             <field name="view_mode">tree,form</field>
+</record> -->
+
+<menuitem id="account_condiciones_especiales" 
+          name="Condiciones especiales"
+          parent="account_exagenous_menu" 
+          action="account_condiciones_especiales_list_action"/>
+
+
+<!--  vista Tipos de vinculacion    -->
+
+<record model="ir.ui.view" id="account_tipos_de_vinculacion_tree_view">
+    <field name="name">account.tipos_de_vinculacion.tree</field>
+    <field name="model">account.tipos_de_vinculacion</field>
+    <field name="arch" type="xml">
+        <tree string="Tipos de vinculacion">
+            <field name="code"/>
+            <field name="name"/>
+        </tree>
+    </field>
+</record>
+
+<record model="ir.ui.view" id="account_tipos_de_vinculacion_form_view">
+    <field name="name">account.tipos_de_vinculacion.form</field>
+    <field name="model">account.tipos_de_vinculacion</field>
+    <field name="arch" type="xml">
+        <form string="Tipos de vinculacion">
+            <group>
+                <field name="code"/>
+                <field name="name"/>
+            </group>
+        </form>
+    </field>
+</record>
+
+
+<record id="account_tipos_de_vinculacion_list_action" model="ir.actions.act_window">
+			 <field name="name">Tipos de vinculacion</field>
+             <field name="res_model">account.tipos_de_vinculacion</field>
+             <field name="view_type">form</field>
+             <field name="view_mode">tree,form</field>
+</record>
+
+<menuitem id="account_tipos_de_vinculacion" 
+          name="Tipos de vinculacion"
+          parent="account_exagenous_menu" 
+          action="account_tipos_de_vinculacion_list_action"/>
+
+
+<!--  vista Tipos de valor    -->
+
+<record model="ir.ui.view" id="account_tipos_de_valor_tree_view">
+    <field name="name">account.tipos.valor.tree</field>
+    <field name="model">account.tipos.valor</field>
+    <field name="arch" type="xml">
+        <tree string="Tipos de valor">
+            <field name="code"/>
+            <field name="name"/>
+        </tree>
+    </field>
+</record>
+
+<record model="ir.ui.view" id="account_tipos_de_valor_form_view">
+    <field name="name">account.tipos.valor.form</field>
+    <field name="model">account.tipos.valor</field>
+    <field name="arch" type="xml">
+        <form string="Tipos de valor">
+            <group>
+                <field name="code"/>
+                <field name="name"/>
+            </group>
+        </form>
+    </field>
+</record>
+
+<!-- record id="account_tipos_de_valor_list_action" model="ir.actions.act_window">
+			 <field name="name">Tipos de valor</field>
+             <field name="res_model">account.tipos.valor</field>
+             <field name="view_type">form</field>
+             <field name="view_mode">tree,form</field>
+</record>
+
+<menuitem id="account_tipos_de_valor" name="Tipos de valor"
+parent="account_exagenous_menu" action="account_tipos_de_valor_list_action"/>
+
+-->
+
+<!--
+ Campos del formato XML
+ -->
+
+<!--  vista Campos del formato    -->
+
+<record model="ir.ui.view" id="account_campos_formato_tree_view">
+    <field name="name">account.campos.formato.tree</field>
+    <field name="model">account.campos.formato</field>
+    <field name="arch" type="xml">
+        <tree string="Campos del formato">
+           <field name="sequence"/>
+           <field name="name"/>
+           <field name="referencia"/>
+           <field name="tipo_id"/>
+           <field name="tipo_valor_id"/>
+        </tree>
+    </field>
+</record>
+
+<record model="ir.ui.view" id="account_campos_formato_form_view">
+    <field name="name">account.campos.formato.form</field>
+    <field name="model">account.campos.formato</field>
+    <field name="arch" type="xml">
+        <form string="Campos del formato">
+            <group>
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="referencia"/>
+                <field name="tipo_id"/>
+                <field name="tipo_valor_id"/>                
+                <field name="conceptos_ids">
+                    <tree string = "Conceptos relacionados" editable = "bottom">
+                        <field name="concepto_id"/>                        
+                        <field name="concepto_rel_id"/>                        
+                    </tree>
+                </field>                                
+            </group>
+        </form>
+    </field>
+</record>
+
+        <!--  vista Formatos DIAN    -->
+        
+    <record model="ir.ui.view" id="account_forms_dian_form_tree_view">
+			<field name="name">account.formato.dian.form.tree</field>
+			<field name="model">account.formato.dian</field>
+			<field name="arch" type="xml">			
+				<tree string="Formatos">
+					<field name="code"/>
+					<field name="name"/>
+                    <field name="ejemplo"/>
+                    <field name="explicacion"/>
+
+				</tree>			
+			</field>
+	</record>  
+
+    <record model="ir.ui.view" id="account_forms_dian_form_view">
+			<field name="name">account.formato.dian.form</field>
+			<field name="model">account.formato.dian</field>
+			<field name="arch" type="xml">			
+				<form string="Formatos">
+                    <group>
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="version"/>
+                    </group>
+                    <group>
+                        <field name="campos_ids"/>
+                    </group>
+                    <group>
+                        <field name="ejemplo"/>
+                        <field name="explicacion"/>
+                    </group>                    
+				</form>		
+			</field>
+	</record>   
+
+    <record id="account_forms_dian_list_action" model="ir.actions.act_window">
+			 <field name="name">Formatos</field>
+			 <field name="res_model">account.formato.dian</field>
+			 <field name="view_type">form</field>
+			 <field name="view_mode">tree,form</field>
+	</record>
+
+	<menuitem id="account_forms_dian" 
+              name="Formatos"
+              parent="account_exagenous_menu" 
+              action="account_forms_dian_list_action"/>
+
+<!--  vista conceptos DIAN    -->
+
+<record model="ir.ui.view" id="account_conceptos_tree_view">
+    <field name="name">account.conceptos.form.tree</field>
+    <field name="model">account.conceptos</field>
+    <field name="arch" type="xml">
+        <tree string="Formatos DIAN">
+            <field name="code"/>
+            <field name="name"/>
+            <field name="porcentaje_no_deducible"/>
+            <field name="tope"/>
+            <field name="form_dian_id"/>            
+        </tree>
+    </field>
+</record>
+
+<record model="ir.ui.view" id="account_conceptos_form_view">
+    <field name="name">account.conceptos.form</field>
+    <field name="model">account.conceptos</field>
+    <field name="arch" type="xml">
+        <form string="Formatos">
+            <group>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="porcentaje_no_deducible"/>
+                <field name="tope"/>
+                <field name="form_dian_id"/>
+                <field name="cuentas_ids">
+                    <tree string = "Cuentas" editable = "bottom">
+                        <field name="cuenta_id" domain="[('type','!=','view')]"/>                        
+                    </tree>
+                </field>                
+            </group>
+        </form>
+    </field>
+</record>
+
+
+    <record id="account_conceptos_list_action" model="ir.actions.act_window">
+			 <field name="name">Conceptos</field>
+             <field name="res_model">account.conceptos</field>
+             <field name="view_type">form</field>
+             <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="account_conceptos" 
+              name="Conceptos"
+              parent="account_exagenous_menu" 
+              action="account_conceptos_list_action"/>
+
+		<!--
+            Herencia partner para incluir campo tipo de identificación y actividad economica
+        -->        
+               
+        <record model="ir.ui.view" id="view_partner_form_inherit">
+			<field name="name">account.exogenous.partner.form.inherit</field>
+			<field name="model">res.partner</field>
+			<field name="inherit_id" ref="base.view_partner_form"/>
+			<field name="arch" type="xml">
+				<field name="street" position="after">							
+					<field name="activity_economic_id"/>				
+			    </field>		
+			</field>		
+		</record>  
+
+
+        <record model="ir.ui.view" id="view_country_form_inherit">
+			<field name="name">account.exogenous.country.form.inherit</field>
+			<field name="model">res.country</field>
+			<field name="inherit_id" ref="base.view_country_form"/>
+			<field name="arch" type="xml">
+				<field name="code" position="after">							
+					<field name="code_dian"/>				
+			    </field>			
+			</field>													
+		</record>
+        		 
+	
+</odoo>

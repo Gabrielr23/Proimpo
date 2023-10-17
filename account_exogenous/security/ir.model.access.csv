@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_activity_economic_all,access_account_activity_economic,model_account_activity_economic,,1,1,1,1
+access_account_formato_dian_all,access_account_formato_dian,model_account_formato_dian,,1,1,1,1
+access_account_campos_formato_all,access_account_campos_formato,model_account_campos_formato,,1,1,1,1
+access_account_conceptos_all,access_account_conceptos,model_account_conceptos,,1,1,1,1
+access_account_tipos_campo_all,access_account_tipos_campo,model_account_tipos_campo,,1,1,1,1
+access_account_tipos_valor_all,access_account_tipos_valor,model_account_tipos_valor,,1,1,1,1
+access_account_condiciones_especiales_all,access_account_condiciones_especiales,model_account_condiciones_especiales,,1,1,1,1
+access_account_tipos_de_vinculacion_all,access_account_tipos_de_vinculacion,model_account_tipos_de_vinculacion,,1,1,1,1
