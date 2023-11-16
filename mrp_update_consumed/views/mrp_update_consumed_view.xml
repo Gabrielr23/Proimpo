@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>	
+
+  <!-- <record model='ir.ui.view' id='mrp_workorder_view_inherit_progress'>
+    <field name='name'>mrp.workorder.form.view.inherit</field>
+	  <field name='model'>mrp.workorder</field>
+	  <field name="priority">16</field>
+	  <field name='inherit_id' ref='mrp.mrp_production_workorder_tree_editable_view'/>
+	  <field name='arch' type='xml'>
+      <field name="duration" position="after">
+        <field name="progress" widget="progressbar"/>
+      </field>  
+    </field>
+  </record> -->
+
+</odoo>
