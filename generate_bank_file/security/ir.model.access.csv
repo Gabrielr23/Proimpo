@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_payment_export_wizard,payment.export.wizard,model_payment_export_wizard,account.group_account_user,1,0,0,0
+access_payment_export_wizard,payment.export.wizard,model_payment_export_wizard,account.group_account_manager,1,1,1,1
+access_res_bank_parameter_value,res.bank.parameter.value,model_res_bank_parameter_value,account.group_account_user,1,0,0,0
+access_res_bank_parameter_value,res.bank.parameter.value,model_res_bank_parameter_value,account.group_account_manager,1,1,1,1
