@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-    <odoo>
-      <data>
-        <record id="group_enable_pay" model="res.groups">
-          <field name="name">Habilitar Pagos</field>
-        </record>
-      </data>
-    </odoo>
-
