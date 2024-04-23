@@ -11,7 +11,7 @@
     "depends": ["account"],
     "license": "OPL-1",
     "data": ["views/account_view.xml", "report/account_average_payment_view.xml", "security/ir.model.access.csv"],
-    "images": ["static/description/main_screenshot.png"],
+    "images": [],
     "installable": True,
     "development_status": "Mature",
     #"maintainers": ["dhongu"],
