@@ -7,9 +7,9 @@ from odoo import api, fields, models
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
-    payment_date = fields.Date(string="Fecha de Pago", compute="_compute_payment_days", store=True)
-    payment_days = fields.Integer(string="Dias de Pago", compute="_compute_payment_days", store=True)
-    days_past_due = fields.Integer(string="Dias de Mora", compute="_compute_payment_days", store=True)
+    payment_date = fields.Date(string="Fecha de Pago", compute="_compute_payment_days")
+    payment_days = fields.Integer(string="Dias de Pago", compute="_compute_payment_days")
+    days_past_due = fields.Integer(string="Dias de Mora", compute="_compute_payment_days")
 
     @api.depends("date", "full_reconcile_id")
     def _compute_payment_days(self):
