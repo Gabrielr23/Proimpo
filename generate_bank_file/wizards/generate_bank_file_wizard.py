@@ -20,10 +20,10 @@ class PaymentExportWizard(models.TransientModel):
     date_payment = fields.Date(string="Fecha Pago", required=True, default=fields.Date.context_today)
     date_application = fields.Date(string="Fecha Aplicación", required=True, default=fields.Date.context_today)
     journal_id = fields.Many2one('account.journal', string='Diario', required=True, domain="[('company_id', '=', company_id), ('type', 'in', ('bank'))]")
-    transaccion = fields.Selection(string='Tipo de Transaccion', requires=True, selection=[('220','220 - Pago a Proveedores'),
+    transaccion = fields.Selection(string='Tipo de Transaccion', required=True, selection=[('220','220 - Pago a Proveedores'),
                                                                                            ('225','225 - Pago de Nomina')], default='220')
-    descripcion = fields.Char(string='Descripcion', size=12, requires=True)
-    sequence = fields.Char(string='Secuencia', size=1, requires=True, help='No puede enviarse la misma secuencia un mismo dia Ej. A,B,C...')
+    descripcion = fields.Char(string='Descripcion', size=12, required=True)
+    sequence = fields.Char(string='Secuencia', size=1, required=True, help='No puede enviarse la misma secuencia un mismo dia Ej. A,B,C...')
                                                                                    
 
     
