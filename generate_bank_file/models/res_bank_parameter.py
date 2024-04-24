@@ -7,9 +7,9 @@ class ResBankParameter(models.Model):
     _order = 'name'
     
     
-    bank_id = fields.Many2one('res.bank', 'Banco', requires=True, store=True, ondelete='cascade')
+    bank_id = fields.Many2one('res.bank', 'Banco', required=True, store=True, ondelete='cascade')
     name = fields.Char('Atributo', required=True)
-    data_type = fields.Selection(string='Tipo de Campo', requires=True, selection=[('N','Numerico'),('A','Alfanumerico')], default='Numerico')
+    data_type = fields.Selection(string='Tipo de Campo', required=True, selection=[('N','Numerico'),('A','Alfanumerico')], default='Numerico')
     size = fields.Integer(string='Tamaño',size=3, default=1)
     value = fields.Char(string='Valor', size=10)
     
@@ -28,7 +28,7 @@ class ResBank(models.Model):
 class ResPartnerBank(models.Model):
     _inherit = 'res.partner.bank'
 
-    tipo_cta = fields.Selection(string='Tipo de Cuenta', requires=True, selection=[('C','Corriente'),('A','Ahorro'),('R','Rotativo')], default='C')
+    tipo_cta = fields.Selection(string='Tipo de Cuenta', required=True, selection=[('C','Corriente'),('A','Ahorro'),('R','Rotativo')], default='C')
 
 
     
