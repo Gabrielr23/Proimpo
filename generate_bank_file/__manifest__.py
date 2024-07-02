@@ -6,7 +6,7 @@
     'author': 'DOXOO S.A.S.',
     'website': "http://www.doxoo.co",
     'category': 'Accounting',
-    'version': "15.0.1.0.0",
+    'version': "17.0.1.0.0",
     'depends': ['account_payment'],
     'license': 'LGPL-3',
     'images': [
