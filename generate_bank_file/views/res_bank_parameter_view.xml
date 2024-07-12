@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+  <odoo>
+    <data>
+      
+      <record model="ir.ui.view" id="res_bank_parameter_view">
+        <field name="name">res.bank.parameter</field>
+        <field name="model">res.bank</field>
+        <field name="inherit_id" ref="base.view_res_bank_form"/>
+        <field name="arch" type="xml">
+          <xpath expr="//field[@name='email']" position="after">
+            <field name="bank_parameter_ids" widget="one2many_list" context="{'bank_id': active_id}">
+              <tree string="Parametros" editable="bottom">
+                <field name="name"/>
+                <field name="data_type"/>
+                <field name="size"/>
+                <field name="value"/>
+              </tree>
+            </field>
+          </xpath>
+        </field>
+      </record>
+
+      <record model="ir.ui.view" id="res_partner_bank_type">
+        <field name="name">res.partner.bank.type</field>
+        <field name="model">res.partner.bank</field>
+        <field name="inherit_id" ref="base.view_partner_bank_form"/>
+        <field name="arch" type="xml">
+				  <xpath expr="//field[@name='bank_id']" position="after">
+					  <field name="tipo_cta"/>
+					</xpath>
+          <xpath expr="//field[@name='acc_holder_name']" position="attributes">
+            <attribute name="invisible">1</attribute>
+          </xpath>
+        </field>
+      </record>
+
+  </data>
+</odoo>
+
+    
