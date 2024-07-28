@@ -1,3 +1,3 @@
 # Proimpo Test 11:00 pm
-Ajuste en Generales pruebas de usuarios
+Ajuste en Generales
 
