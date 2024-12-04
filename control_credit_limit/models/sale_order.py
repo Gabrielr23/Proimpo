@@ -100,7 +100,7 @@ class SaleOrder(models.Model):
 			print('res ',res)
 
 			if not res or res[0] == None:
-			   #_logger.debug('\n\n Showing HERE \n\n')
+			   _logger.debug('\n\n Showing HERE \n\n')
 
 			   return [1]
 			else:
@@ -152,33 +152,33 @@ class SaleOrder(models.Model):
 						return [params]
 					
 					else:
-						#_logger.debug('\n\n Showing HERE \n\n')
+						_logger.debug('\n\n Showing HERE \n\n')
 						return [1]  
 
 	@api.model
 	def action_confirm(self):
 		#print('** action_confirm cupos')
-		#_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
+		_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
 		for order in self:
 			b=order._context.get('can_exceed_limit')
-			#_logger.debug(' \n\n \n My Context \n\n\n')
-			#_logger.debug(b)
+			_logger.debug(' \n\n \n My Context \n\n\n')
+			_logger.debug(b)
 			if b==1:
-				#_logger.debug(' \n\n \n Exceeding is confirmed\n\n\n')
+				_logger.debug(' \n\n \n Exceeding is confirmed\n\n\n')
 				return super(SaleOrder, self).action_confirm()
 			else:
 				params=order.check_credit_limit()
-				#_logger.debug(params)
+				_logger.debug(params)
 
 				if params[0]==1:
 					print('params2', params[0])
-					#_logger.debug(' \n\n \t No Limit issue : Order can be Confirmed\n\n\n')
+					_logger.debug(' \n\n \t No Limit issue : Order can be Confirmed\n\n\n')
 					return super(SaleOrder, self).action_confirm()
 				else:		
 					view_id=self.env['sale.control.limit.wizard']
 					new = view_id.create(params[0])
 					if self.env.user.has_group('control_credit_limit.group_cartera') :
-						#_logger.debug('Here is a manager !')
+						_logger.debug('Here is a manager !')
 						return {
 							'type': 'ir.actions.act_window',
 							'name': 'Control limites de crédito',

@@ -8,7 +8,7 @@
     'author': "ERPish.com",
     'website': "http://www.erpish.com",
     'category': 'Sales', 
-    'version': '11.0.1.1',
+    "version": "17.0.1.0.0",
     'license': 'LGPL-3',
     'depends': ['sale','account'],
     'data': [
@@ -20,6 +20,6 @@
         'security/ir.model.access.csv',
     ],
     'installable': True,
-    'application': False,   
+    'application': True,   
     'auto_install': False,
 }

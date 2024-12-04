@@ -42,10 +42,8 @@ class MrpProduction(models.Model):
                         qty_all -= move_all.product_qty
                     
                 if qty_all != move_line.quantity_done:
-                    move_line.quantity_done = round(((qty_all / self.product_qty) * self.qty_producing),4)
+                    move_line.quantity_done = round(((qty_all / self.product_qty) * self.qty_producing),2)
 
-            
-                
 class MrpProductionWorkcenterLine(models.
 
 Model):

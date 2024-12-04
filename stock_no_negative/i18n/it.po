@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-21 14:44+0000\n"
-"PO-Revision-Date: 2023-11-21 14:44+0000\n"
+"POT-Creation-Date: 2023-11-21 14:50+0000\n"
+"PO-Revision-Date: 2023-11-21 14:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: \n"
@@ -21,7 +21,7 @@ msgstr ""
 #: code:addons/stock_no_negative/models/stock_quant.py:0
 #, python-format
 msgid " lot {}"
-msgstr " lote {}"
+msgstr " lotto {}"
 
 #. module: stock_no_negative
 #: model:ir.model.fields,field_description:stock_no_negative.field_product_category__allow_negative_stock
@@ -29,7 +29,7 @@ msgstr " lote {}"
 #: model:ir.model.fields,field_description:stock_no_negative.field_product_template__allow_negative_stock
 #: model:ir.model.fields,field_description:stock_no_negative.field_stock_location__allow_negative_stock
 msgid "Allow Negative Stock"
-msgstr "Permitir Stock Negativo"
+msgstr "Consenti giacenze negative"
 
 #. module: stock_no_negative
 #: model:ir.model.fields,help:stock_no_negative.field_product_category__allow_negative_stock
@@ -38,9 +38,9 @@ msgid ""
 "category. The options doesn't apply to products attached to sub-categories "
 "of this category."
 msgstr ""
-"Permitir niveles de stock negativos para los productos en stock adjuntos a "
-"esta categoría. Las opciones no se aplican a los productos adjuntos a "
-"subcategorías de esta categoría."
+"Consente giacenze negative per prodotti stoccabili associati a questa "
+"categoria. Questa opzione non si applica ai prodotti associati alle sotto "
+"categorie della categoria."
 
 #. module: stock_no_negative
 #: model:ir.model.fields,help:stock_no_negative.field_stock_location__allow_negative_stock
@@ -48,8 +48,8 @@ msgid ""
 "Allow negative stock levels for the stockable products attached to this "
 "location."
 msgstr ""
-"Permitir niveles de stock negativos para los productos en stock ubicados en "
-"esta ubicación."
+"Consente giacenze negative per prodottistoccabili associati a questa "
+"ubicazione."
 
 #. module: stock_no_negative
 #: model:ir.model.fields,help:stock_no_negative.field_product_product__allow_negative_stock
@@ -60,30 +60,29 @@ msgid ""
 "stock moves will be blocked if the stock level becomes negative with the "
 "stock move."
 msgstr ""
-"Si esta opción no está activa en este producto ni en su categoría de "
-"producto y este producto es un producto almacenable, entonces la validación "
-"de los movimientos de stock relacionados se bloqueará si el nivel de stock "
-"se vuelve negativo con el movimiento de stock."
+"Se questa opzione non è attiva nè in questo prodotto nè nella sua categoria "
+"e il prodotto è stoccabile, se la giacenza diventa negativa con il movimento "
+"di magazzino allora la validazione del relativo movimento verrà bloccata ."
 
 #. module: stock_no_negative
 #: model:ir.model,name:stock_no_negative.model_stock_location
 msgid "Inventory Locations"
-msgstr "Ubicaciones de inventario"
+msgstr "Ubicazioni di inventario"
 
 #. module: stock_no_negative
 #: model:ir.model,name:stock_no_negative.model_product_template
 msgid "Product"
-msgstr ""
+msgstr "Prodotto"
 
 #. module: stock_no_negative
 #: model:ir.model,name:stock_no_negative.model_product_category
 msgid "Product Category"
-msgstr "Categoría de producto"
+msgstr "Categoria prodotto"
 
 #. module: stock_no_negative
 #: model:ir.model,name:stock_no_negative.model_stock_quant
 msgid "Quants"
-msgstr "Quants"
+msgstr "Quanti"
 
 #. module: stock_no_negative
 #. odoo-python
@@ -95,6 +94,7 @@ msgid ""
 "location '{complete_name}' and negative stock is not allowed for this "
 "product and/or location."
 msgstr ""
-"No se puede validar esta operación de stock porque el nivel de stock del "
-"producto '%s'%s se volvería negativo (%s) en la ubicación de stock '%s' y no "
-"se permite stock negativo para este producto y/o ubicación."
+"Questa operazione di magazzino non può essere validata perché la giacenza "
+"del prodotto '{name}'{name_lot} diventerebbe negativa ({q_quantity}) "
+"nell'ubicazione '{complete_name}' e per questo prodotto e/o ubicazione non è "
+"consentata la giacenza negativa."

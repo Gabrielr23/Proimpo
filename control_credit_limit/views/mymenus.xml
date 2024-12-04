@@ -96,71 +96,63 @@
 	</record>
 
 	<record id="action_list_sale_to_approve" model="ir.actions.act_window">
-        <field name="name">Órdenes para aprobar: cuestiones de límite de crédito</field>
+        <field name="name">Órdenes para aprobar: límite de crédito</field>
         <field name="res_model">sale.order</field>
-		<field name="view_id" ref="sale_order_to_approve"/>
-        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="sale_order_to_approve"/>
 		<field name="domain">[('need_approval', '=', True),'|',('state', '=','draft' ),('state', '=','sent' )]</field>
-    </record> 
+	</record>
 
 	<record id="action_list_customer_over_credit_limit" model="ir.actions.act_window">
         <field name="name">Clientes por encima del límite de crédito</field>
         <field name="res_model">res.partner</field>
-		<field name="view_id" ref="view_customer_over_limit"/>
-        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_customer_over_limit"/>
 		<field name="domain">[('over_limit','>',0),('check_credit_limit','=',True)]</field>
-    </record>
+	</record>
 
-	<record id="action_list_customer_without_limit" model="ir.actions.act_window">
+    <record id="action_list_customer_without_limit" model="ir.actions.act_window">
         <field name="name">Clientes sin límite de crédito</field>
         <field name="res_model">res.partner</field>
-		<field name="view_id" ref="view_customer_without_limit"/>
-        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_customer_without_limit"/>
 		<field name="domain">[('check_credit_limit', '=', False)]</field>
-    </record>
+	</record>
 
 	<record id="action_list_credit_limit_settings" model="ir.actions.act_window">
         <field name="name">Configuración del límite de crédito</field>
         <field name="res_model">credit.limit.config</field>
-		<field name="view_id" ref="credit_limit_settings"/>
-        <field name="view_mode">form</field>
-		<field name="target">inline</field>
-    </record>  
+        <field name="view_id" ref="credit_limit_settings"/>
+		<field name="view_mode">form</field>
+	</record>
     
     <menuitem  id="my_credit_limit_menu"  
         name="Límite de crédito"  
         parent="sale.sale_menu_root"
 	    groups="control_credit_limit.group_cartera"
-        sequence="3" />
+        sequence="30">
 
-    <menuitem  id="menu_list_sale_to_approve"  
-        name="Órdenes de venta para aprobar"  
-        action="action_list_sale_to_approve" 
-        parent="my_credit_limit_menu"
-        groups="control_credit_limit.group_cartera"
-        sequence="1" />
+		<menuitem  id="menu_list_sale_to_approve" 
+		   	name="Órdenes de venta para aprobar" 
+			action="action_list_sale_to_approve" 
+    	   	groups="control_credit_limit.group_cartera"
+        	sequence="10"/>
 
+		<menuitem  id="menu_credit_limit_customers_over" 
+		   	name="Clientes por encima del límite" 
+			action="action_list_customer_over_credit_limit" 
+    	   	groups="control_credit_limit.group_cartera"
+        	sequence="20"/>
 
-    <menuitem  id="menu_credit_limit_customers_over"  
-        name="Clientes por encima del límite"
-        action="action_list_customer_over_credit_limit" 
-        parent="my_credit_limit_menu"
-        groups="control_credit_limit.group_cartera"
-        sequence="2" />
+		<menuitem  id="menu_credit_limit_customers_with" 
+		   	name="Clientes sin límite" 
+			action="action_list_customer_without_limit" 
+    	   	groups="control_credit_limit.group_cartera"
+        	sequence="30"/>	
 
-    <menuitem  id="menu_credit_limit_customers_without"  
-        name="Clientes sin límite"
-        action="action_list_customer_without_limit" 
-        parent="my_credit_limit_menu"
-        groups="control_credit_limit.group_cartera"
-        sequence="3" />
+		<menuitem  id="menu_credit_limit_config" 
+		   	name="Configuración del límite de crédito" 
+			action="action_list_credit_limit_settings" 
+    	   	groups="control_credit_limit.group_cartera"
+        	sequence="40"/>			
 
-
-    <menuitem  id="menu_credit_limit_config"  
-        name="Configuración del límite de crédito"  
-        action="action_list_credit_limit_settings" 
-        parent="my_credit_limit_menu"
-        groups="control_credit_limit.group_cartera"
-        sequence="4" />
+	</menuitem>			
 
 </odoo> 
