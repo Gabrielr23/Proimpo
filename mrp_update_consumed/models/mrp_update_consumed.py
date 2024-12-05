@@ -37,12 +37,14 @@ class MrpProduction(models.Model):
 
                 for move_all in move_stock_all:
                     if move_all.picking_type_id.code == 'internal' and move_all.to_refund != True:
-                        qty_all += move_all.product_qty
+                        qty_all += move_all.quantity
                     elif move_all.picking_type_id.code == 'mrp_operation' or move_all.to_refund == True: 
-                        qty_all -= move_all.product_qty
+                        qty_all -= move_all.quantity
                     
-                if qty_all != move_line.quantity_done:
-                    move_line.quantity_done = round(((qty_all / self.product_qty) * self.qty_producing),2)
+                if qty_all != move_line.quantity:
+                    move_line.quantity = round(((qty_all / self.product_qty) * self.qty_producing),2)
+                    
+
 
 class MrpProductionWorkcenterLine(models.
 
