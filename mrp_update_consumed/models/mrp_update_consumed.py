@@ -46,24 +46,22 @@ class MrpProduction(models.Model):
                     
 
 
-class MrpProductionWorkcenterLine(models.
+#class MrpProductionWorkcenterLine(models.Model):
+#    _inherit = "mrp.workorder"
 
-Model):
-    _inherit = "mrp.workorder"
-
-    progress = fields.Float(string="Progreso (%)", compute='_progress_time', digits=(3,2))
+#    progress = fields.Float(string="Progreso (%)", compute='_progress_time', digits=(3,2))
     
-    @api.depends('duration')
-    def _progress_time(self):
+#    @api.depends('duration')
+#    def _progress_time(self):
 
-        for line in self:
-            if line.duration > 0:
-                line.progress = (line.duration / line.duration_expected) * 100 or 0
-            else:
-                line.progress = 0
+#        for line in self:
+#            if line.duration > 0:
+#                line.progress = (line.duration / line.duration_expected) * 100
+#            else:
+#                line.progress = 0
 
 
-        return       
+#        return       
        
 
 
