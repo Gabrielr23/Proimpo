@@ -35,6 +35,8 @@ class PaymentExportWizard(models.TransientModel):
         today = datetime.today()
         fecha = today.strftime("%Y-%m-%d-%f")
         path = self.env['ir.config_parameter'].sudo().get_param("home.odoo.repo")
+        if not path:
+            raise UserError('Falta el parametro home.odoo.repo en Parametros del Sistema')
         #filename = 'plano_bancolombia_'+fecha+'.csv'
         filename = 'plano_bancolombia_'+fecha+'.txt'
         file = open(path+filename, "w+")
@@ -59,6 +61,10 @@ class PaymentExportWizard(models.TransientModel):
             if record and record.file_status == 'no_generado':
                 total += record.amount
                 count += 2
+
+            if record and record.state in ('draft','cancel'):
+                raise UserError(_('Algunos comprobantes estan sin publicar o cancelados'))
+
                 
 
         t_c = ''
@@ -152,7 +158,10 @@ class PaymentExportWizard(models.TransientModel):
                 rec.file_status = 'generado'
                 
 
-        base_url = self.env['ir.config_parameter'].get_param('web.base.url')
+        base_url = self.env['ir.config_parameter'].get_param('web.base.pay')
+        if not base_url:
+            raise UserError('Falta el parametro web.base.pay en Parametros del Sistema')
+
         attachment_obj = self.env['ir.attachment']
         attachment_id = attachment_obj.create({
                                                'name': filename,
