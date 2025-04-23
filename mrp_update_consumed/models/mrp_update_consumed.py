@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields, api
+from odoo import models, fields,  api, _
+from odoo.exceptions import UserError, ValidationError
 
 
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
     _description = 'Actualiza los valores consumidos desde los picking de transferencia'
-   
+
+    
     @api.onchange('qty_producing')
     def _onchange_qty_producing(self):
-
+        print('_onchange_qty_producing')
     
 
         for move_line in self.move_raw_ids:
@@ -22,16 +24,18 @@ class MrpProduction(models.Model):
                                                             ('group_id' , '=', group_id),
                                                             ('state' , '=' , 'done'),
                                                             ('picking_type_id.code' , '=' , 'internal'),
+                                                            #('picking_type_id.consumed' , '=' , True),
                                                             ('to_refund' , '=' , False)
                                                            ],order="date desc",limit=1)
 
-                
                 move_stock_all = self.env['stock.move'].search([
                                                                 ('product_id' , '=' , product_id),
+                                                                #('picking_type_id.consumed' , '=' , True),
                                                                 ('group_id' , '=', group_id),
                                                                 ('state' , '=' , 'done')
-                                                               ])                                           
-    
+                                                               ])     
+
+                
             if move_stock.picking_id.totally_transferred:
                 qty_all = 0
 
@@ -43,7 +47,15 @@ class MrpProduction(models.Model):
                     
                 if qty_all != move_line.quantity:
                     move_line.quantity = round(((qty_all / self.product_qty) * self.qty_producing),2)
-                    
+
+    def button_mark_done(self):
+
+        if self.qty_producing == 0:
+            raise ValidationError(_("Debe poner un valor mayor a 0 en cantidad."))
+            #raise UserError(_("Debe poner un valor mayor a 0 en cantidad."))
+            
+        self._onchange_qty_producing()
+        return super(MrpProduction, self).button_mark_done()
 
 
 class MrpProductionWorkcenterLine(models.Model):
@@ -63,7 +75,7 @@ class MrpProductionWorkcenterLine(models.Model):
 
 
         return       
-       
+
 
 
 
