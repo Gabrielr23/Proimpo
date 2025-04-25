@@ -24,16 +24,16 @@ class MrpProduction(models.Model):
                                                             ('group_id' , '=', group_id),
                                                             ('state' , '=' , 'done'),
                                                             ('picking_type_id.code' , '=' , 'internal'),
-                                                            #('picking_type_id.consumed' , '=' , True),
+                                                            ('picking_type_id.consumed' , '=' , True),
                                                             ('to_refund' , '=' , False)
                                                            ],order="date desc",limit=1)
 
                 move_stock_all = self.env['stock.move'].search([
                                                                 ('product_id' , '=' , product_id),
-                                                                #('picking_type_id.consumed' , '=' , True),
+                                                                ('picking_type_id.consumed' , '=' , True),
                                                                 ('group_id' , '=', group_id),
                                                                 ('state' , '=' , 'done')
-                                                               ])     
+                                                               ])    
 
                 
             if move_stock.picking_id.totally_transferred:
