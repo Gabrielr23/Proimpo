@@ -42,6 +42,8 @@ class MrpProduction(models.Model):
                 for move_all in move_stock_all:
                     if move_all.picking_type_id.code == 'internal' and move_all.to_refund != True:
                         qty_all += move_all.quantity
+                    elif move_all.picking_type_id.code == 'internal' and move_all.to_refund == True:
+                        qty_all -= move_all.quantity    
                     elif move_all.picking_type_id.code == 'mrp_operation' or move_all.to_refund == True: 
                         qty_all -= move_all.quantity
                     
@@ -52,10 +54,9 @@ class MrpProduction(models.Model):
 
         if self.qty_producing == 0:
             raise ValidationError(_("Debe poner un valor mayor a 0 en cantidad."))
-            #raise UserError(_("Debe poner un valor mayor a 0 en cantidad."))
             
-        self._onchange_qty_producing()
-        return super(MrpProduction, self).button_mark_done()
+        #self._onchange_qty_producing()
+        #return super(MrpProduction, self).button_mark_done()
 
 
 class MrpProductionWorkcenterLine(models.Model):
