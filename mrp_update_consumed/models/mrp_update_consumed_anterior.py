@@ -32,24 +32,26 @@ class MrpProduction(models.Model):
                                                                 ('product_id' , '=' , product_id),
                                                                 ('picking_type_id.consumed' , '=' , True),
                                                                 ('group_id' , '=', group_id),
-                                                                ('state' , '=' , 'done'),
-                                                               ])
+                                                                ('state' , '=' , 'done')
+                                                               ])    
 
-            qty_consumed = self.move_stock_no_done(product_id,group_id) or 0
-                     
+                
             if move_stock.picking_id.totally_transferred:
                 qty_all = 0
+
                 for move_all in move_stock_all:
                     if move_all.picking_type_id.code == 'internal' and move_all.to_refund != True:
                         qty_all += move_all.quantity
                     elif move_all.picking_type_id.code == 'internal' and move_all.to_refund == True:
-                        qty_all -= move_all.quantity
+                        qty_all -= move_all.quantity    
                     elif move_all.picking_type_id.code == 'mrp_operation' or move_all.to_refund == True: 
                         qty_all -= move_all.quantity
-                
+                    
                 if qty_all != move_line.quantity:
-                    move_line.quantity = round((((qty_all - qty_consumed) / self.product_qty) * self.qty_producing),2)
-                
+                    move_line.quantity = round(((qty_all / self.product_qty) * self.qty_producing),2)
+
+                    
+
     def button_mark_done(self):
 
         if self.qty_producing == 0:
@@ -58,19 +60,6 @@ class MrpProduction(models.Model):
         #self._onchange_qty_producing()
         return super(MrpProduction, self).button_mark_done()
 
-    def move_stock_no_done(self,product_id,group_id):
-
-        move_stock = self.env['stock.move'].search([('product_id' , '=' , product_id),
-                                                    ('group_id' , '=', group_id),
-                                                    ('state' , '=' , 'done'),
-                                                    ('picking_type_id.code' , '=' , 'mrp_operation'),
-                                                    ('to_refund' , '=' , False)
-                                                   ])  
-
-        qty= 0
-        for move in move_stock:
-            qty += move.quantity
-        return qty    
 
 class MrpProductionWorkcenterLine(models.Model):
     _inherit = "mrp.workorder"
