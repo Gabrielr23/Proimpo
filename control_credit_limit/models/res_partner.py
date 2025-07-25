@@ -12,7 +12,7 @@ class CreditPartner(models.Model):
 	my_credit_agent_change = fields.Boolean('Permitir al administrador modificar el límite', default=True)
 	my_credit_is_over = fields.Boolean('Esta sobre el límite?', compute='compute_my_credit_is_over')
 	over_limit = fields.Float('Debt over Limit', compute='compute_over_limit', search='search_over_limit')
-	credit_limit_days = fields.Integer(string="Limite de días", copy=False, default=8)
+	credit_limit_days = fields.Integer(string="Limite de días", copy=False, default=0)
 
 	def search_over_limit(self, operation, operand):
 		_logger.debug(' \n\n \t Having a shitty time here  \n\n\n'+str(self.display_name)+'\n\n\n')

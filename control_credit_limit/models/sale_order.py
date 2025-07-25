@@ -22,7 +22,7 @@ class SaleOrder(models.Model):
 		if not partner.check_credit_limit:
 			return [1]
 
-		## Find not invoiced sale orders
+		## Busca pedidos no facturados
 		all_so_notinv=self.env['sale.order'].search([
 				('partner_id', '=', partner.id),
 				('company_id', '=', self.company_id.id),
@@ -37,6 +37,7 @@ class SaleOrder(models.Model):
 			if so.state in ('sale','done') and not so.invoice_status == 'invoiced':
 				due=so.amount_total
 				due_notinv+=due
+				print('DUE_NOTINV -----------------------------------',due_notinv)
 
 		#verifica las facturas 
 		all_invoices=self.env['account.move'].search([
@@ -55,7 +56,7 @@ class SaleOrder(models.Model):
 			all_open+=1
 			aa='\n\nInvoice %s Due %s \n\n' % (inv.display_name, due)
 
-		#print('facturas pendientes: ',all_due)
+		print('ALL_DUE ---------------------------------------- ',all_due)
 
     # Busca solo las facturas vencidas
 		all_invoices = self.env['account.move'].search([
@@ -68,11 +69,13 @@ class SaleOrder(models.Model):
 	  							])
 
 		all_date_due = 0.0	
-		for inv in all_invoices:			
-				all_date_due += inv.amount_residual
+		for inv in all_invoices:
+			all_date_due += inv.amount_residual
 		
 		new_balance=self.amount_total + all_due + due_notinv
 		
+		print('NEW_BALANCE ---------------------------------------',new_balance)
+
 		if new_balance > partner.my_credit_limit:
 			params = {'sale_order':self.id,
 			          'invoice_amount':self.amount_total,
@@ -106,8 +109,9 @@ class SaleOrder(models.Model):
 			else:
 				if res[0] != None:
 					#data = datetime.strptime(res[0], "%Y-%m-%d")
-					data = datetime.combine(res[0], datetime.min.time()) 
-                        
+					data = datetime.combine(res[0], datetime.min.time())
+					print('DATA --------------------------',data)            
+					
 					#Busca el número de la factura
 
 					self.env.cr.execute("select i.name as fecha from account_move i\
@@ -155,9 +159,7 @@ class SaleOrder(models.Model):
 						_logger.debug('\n\n Showing HERE \n\n')
 						return [1]  
 
-	@api.model
 	def action_confirm(self):
-		#print('** action_confirm cupos')
 		_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
 		for order in self:
 			b=order._context.get('can_exceed_limit')

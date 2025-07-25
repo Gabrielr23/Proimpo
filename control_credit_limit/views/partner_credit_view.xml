@@ -15,7 +15,7 @@
 							<field name="check_credit_limit" readonly="True" />						
 							<field name="my_credit_agent_change" readonly="True" />
 							<field name="credit"  string="Cupo utilizado" readonly="True" />
-							<!-- field name="credit_limit_days"  string="Días de gracia:" readonly="True" / -->
+							<field name="credit_limit_days"  string="Días de gracia:" readonly="True"/>
 						</group>				
 				</group>
 			</page>
