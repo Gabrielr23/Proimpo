@@ -27,7 +27,7 @@
         # 'security/ir.model.access.csv',
         'views/mrp_update_consumed_view.xml',
         'views/stock_picking.xml',
-        #'views/templates.xml',
+        'views/stock_picking_type.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

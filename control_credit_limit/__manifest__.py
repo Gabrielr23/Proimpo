@@ -5,10 +5,10 @@
     'description': """
 	Approve Sale Orders Based on customers pre-set credit limit
     """, 
-    'author': "ERPish.com",
-    'website': "http://www.erpish.com",
+    'author': "doxoo.co",
+    'website': "https://www.doxoo.co",
     'category': 'Sales', 
-    "version": "17.0.1.0.0",
+    "version": "18.0.1.0.0",
     'license': 'LGPL-3',
     'depends': ['sale','account'],
     'data': [

@@ -1,8 +1,4 @@
 from odoo import models, fields, api, exceptions, tools, _
-from odoo.tools.safe_eval import safe_eval, time
-
-import logging
-_logger = logging.getLogger(__name__)
 
 class ProjectTaskRecurrence(models.Model):
     _inherit = 'project.task.recurrence'
@@ -26,12 +22,6 @@ class ProjectTaskRecurrence(models.Model):
             create_values['date_deadline'] = occurrence_from._calculate_date_deadline()
         if occurrence_from.repeat_stage_id:
             create_values['stage_id'] = occurrence_from.repeat_stage_id.id
-        if occurrence_from.repeat_name:
-            try:
-                create_values['name'] = safe_eval(occurrence_from.repeat_name, {'object': occurrence_from, 'time': time, 'today': fields.Date.today()})
-            except Exception as e:
-                _logger.error(e)
-
         return create_values
 
     

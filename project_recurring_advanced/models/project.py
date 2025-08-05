@@ -1,5 +1,9 @@
 from odoo import models, fields, api, exceptions, tools, _
+from odoo.tools.safe_eval import safe_eval, time
 from dateutil.relativedelta import relativedelta
+
+import logging
+_logger = logging.getLogger(__name__)
 
 class ProjectTask(models.Model):
 
@@ -20,4 +24,15 @@ class ProjectTask(models.Model):
     repeat_name = fields.Char(string="Repeat Name")
 
     def _calculate_date_deadline(self):
-        return fields.Date.context_today(self) + relativedelta(**{self.repeat_deadline_unit: self.repeat_deadline_count})
+        return fields.Datetime.now() + relativedelta(**{self.repeat_deadline_unit: self.repeat_deadline_count})
+
+    def copy_data(self, default=None):
+        default = dict(default or {})
+        vals_list = super().copy_data(default=default)
+        for task, vals in zip(self, vals_list):
+            if default.get('repeat_name'):
+                try:
+                    vals['name'] = safe_eval(task.repeat_name, {'object': task, 'time': time, 'today': fields.Date.today()})
+                except Exception as e:
+                    _logger.error(e)
+        return vals_list

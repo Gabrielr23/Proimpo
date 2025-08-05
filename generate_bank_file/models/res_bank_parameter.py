@@ -16,7 +16,8 @@ class ResBankParameter(models.Model):
 
 
     _sql_constraints = [
-        ('_unique', 'unique (rule_parameter_id, name)', "No puede tener dos parametros con el mismo nombre"),
+        ('_unique', 'unique (bank_id, name)', "No puede tener dos parámetros con el mismo nombre para el mismo banco")
+        #('_unique', 'unique (rule_parameter_id, name)', "No puede tener dos parametros con el mismo nombre"),
     ]
 
 class ResBank(models.Model):

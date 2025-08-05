@@ -159,7 +159,9 @@ class SaleOrder(models.Model):
 						_logger.debug('\n\n Showing HERE \n\n')
 						return [1]  
 
+	#@api.model
 	def action_confirm(self):
+		#print('** action_confirm cupos')
 		_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
 		for order in self:
 			b=order._context.get('can_exceed_limit')

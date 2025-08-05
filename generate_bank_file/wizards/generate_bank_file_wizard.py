@@ -35,6 +35,8 @@ class PaymentExportWizard(models.TransientModel):
         today = datetime.today()
         fecha = today.strftime("%Y-%m-%d-%f")
         path = self.env['ir.config_parameter'].sudo().get_param("home.odoo.repo")
+        if not path:
+            raise UserError('Falta el parametro home.odoo.repo en Parametros del Sistema')
         #filename = 'plano_bancolombia_'+fecha+'.csv'
         filename = 'plano_bancolombia_'+fecha+'.txt'
         file = open(path+filename, "w+")
@@ -50,6 +52,7 @@ class PaymentExportWizard(models.TransientModel):
         parameter_bank = self.journal_id.bank_id.bank_parameter_ids
         cuenta_debitar = self.journal_id.bank_account_id.acc_number
 
+
         for record in self.env['account.payment'].browse(active_ids):
             
             if record and record.file_status == 'generado':
@@ -58,6 +61,10 @@ class PaymentExportWizard(models.TransientModel):
             if record and record.file_status == 'no_generado':
                 total += record.amount
                 count += 2
+
+            if record and record.state in ('draft','cancel'):
+                raise UserError(_('Algunos comprobantes estan sin publicar o cancelados'))
+
                 
 
         t_c = ''
@@ -73,18 +80,17 @@ class PaymentExportWizard(models.TransientModel):
                  
         fecha_pago = str(self.date_payment.strftime('%g%m%d'))
         fecha_apli = str(self.date_application.strftime('%g%m%d'))
+        tipo_doc_company = company_id.l10n_latam_identification_type_id.name
         nit = str(company_id.vat)
-        nit = nit.replace('-','')
+        if tipo_doc_company == 'NIT':
+            nit = nit.replace('-','')
+            nit = nit[:-1]
         name_company = company_id.name
         num_reg = str(num_reg)
         total = int(total)
         total = str(total)
-        
-        text_reg_1 = '1' + nit.rjust(10,'0') + name_company.ljust (16," ") + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.sequence + fecha_apli + str(count).zfill(6) + (12 * '0') + total.zfill(12) + str(cuenta_debitar).zfill(11) + str(tipo_cta)
-        #text_reg_1 = '1' + nit.zfill(10) + name_company.ljust (16," ") + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.sequence + fecha_apli + str(count).zfill(6) + (12 * '0') + total.zfill(12) + str(cuenta_debitar).zfill(11) + str(tipo_cta)
-        #text_reg_1 = '1' + nit.zfill(15) + 'I' + (15 * ' ') + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.lote + self.transaccion + fecha_apli + num_reg.zfill(6) + (17 * ' ') + total.zfill(17) + '0' + str(cuenta_debitar) + t_c
-        #text_reg_1 = '1' + company_id.ref.zfill(15) + 'I' + (15 * ' ') + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.lote + self.transaccion + fecha_apli + num_reg.zfill(6) + (17 * ' ') + total.zfill(17) + '0' + cuenta_debitar + t_c
-        
+
+        text_reg_1 = '1' + nit[0:10].rjust(10,'0') + name_company[0:16].ljust (16,' ') + self.transaccion + self.descripcion[0:10].ljust(10, ' ') + fecha_pago + self.sequence + fecha_apli + str(count).zfill(6) + (12 * '0') + total.zfill(12) + str(cuenta_debitar).zfill(11) + str(tipo_cta)
         file.write(text_reg_1 + '\n')     
 
 
@@ -98,6 +104,7 @@ class PaymentExportWizard(models.TransientModel):
                 fecha_apli_2 = str(self.date_application)
                 fecha_apli_2 = fecha_apli_2.replace('-', '')  
                 name_partner = str(record.partner_id.name)
+                tipo_doc_partner = record.partner_id.l10n_latam_identification_type_id.name
                 id_partner = str(record.partner_id.vat)
                 cod_bank = record.partner_bank_id.bank_id.bic
                 cta_partner = str(record.partner_bank_id.acc_number)
@@ -114,8 +121,10 @@ class PaymentExportWizard(models.TransientModel):
                     if param.name == transaccion:
                         t_t =  param.value
 
-                id_partner = id_partner.replace('-','')        
-                
+                if tipo_doc_partner == 'NIT':
+                    id_partner = id_partner.replace('-','')
+                    id_partner = id_partner[:-1]        
+
                 valor = int(valor)
                 valor = str(valor)
                 cod_bank = str(cod_bank)
@@ -125,15 +134,10 @@ class PaymentExportWizard(models.TransientModel):
                 else:
                     comment = '            '    
 
-
-                text_reg_2 = '6' + id_partner.rjust(15,'0') + name_partner[0:18].ljust(18,' ') + cod_bank.rjust(9,'0') + cta_partner.ljust(17, "0") + 'S' + transaccion + valor.zfill(10) + record.name[0:9] + comment[0:12] + ' '  
-                #text_reg_2 = '6' + id_partner.ljust(15, " ") + name_partner.ljust(30, " ") + (5 * '0') + '1' + cod_bank + cta_partner.ljust(17, " ") + ' ' + t_t + valor.zfill(16)+ '0' + fecha_pago_2 + (21 * ' ')
-                #file.write(text_reg_2 + '\n')
+                text_reg_2 = '6' + id_partner.rjust(15,'0') + name_partner[0:18].ljust(18,' ') + cod_bank.rjust(9,'0') + cta_partner.rjust(17,'0') + 'S' + transaccion + valor.zfill(10) + record.name[0:21].ljust(21,' ') + ' '  
                 file.write(f'{text_reg_2}\n')
 
-        for rec in self.env['account.payment'].browse(active_ids):
-            if rec and rec.file_status == 'no_generado':
-                mail = str(rec.partner_id.email)
+                mail = str(record.partner_id.email)
                 text_reg_3 = '3@' +  (52 * '*') + mail.ljust(41,' ')
                 file.write(f'{text_reg_3}\n')      
         
@@ -154,7 +158,10 @@ class PaymentExportWizard(models.TransientModel):
                 rec.file_status = 'generado'
                 
 
-        base_url = self.env['ir.config_parameter'].get_param('web.base.url')
+        base_url = self.env['ir.config_parameter'].get_param('web.base.pay')
+        if not base_url:
+            raise UserError('Falta el parametro web.base.pay en Parametros del Sistema')
+
         attachment_obj = self.env['ir.attachment']
         attachment_id = attachment_obj.create({
                                                'name': filename,
