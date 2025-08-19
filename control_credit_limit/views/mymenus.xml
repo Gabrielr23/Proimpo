@@ -4,7 +4,7 @@
 		<field	name="name">Órdenes para aprobar: cuestiones de límite de crédito</field>	
 		<field	name="model">sale.order</field>	
 		<field	name="arch"	type="xml">	
-				<tree>
+				<list>
 				    <field name="message_needaction" invisible="1"/>
 				    <field name="name" string="Order Number"/>
 				    <field name="date_order"/>
@@ -16,7 +16,7 @@
 				    <field name="currency_id" invisible="1"/>
 				    <field name="invoice_status"  invisible="1"/>
 				    <field name="state" invisible="1"/>
-				</tree>	
+				</list>	
 		</field>	
 	</record>
 
@@ -24,7 +24,7 @@
 		<field	name="name">Clientes por encima del límite de crédito</field>	
 		<field	name="model">res.partner</field>	
 		<field	name="arch"	type="xml">	
-				<tree>
+				<list>
 		  		    <field name="display_name" string="Name"/>
 				    <field name="function" invisible="1"/>
 				    <field name="phone"/>
@@ -37,7 +37,7 @@
 				    <field name="country_id" invisible="1"/>
 				    <field name="parent_id" invisible="1"/>
 				    <field name="active" invisible="1"/>
-				</tree>	
+				</list>	
 		</field>	
 	</record>
 
@@ -45,7 +45,7 @@
 		<field	name="name">Clientes sin límite de crédito</field>	
 		<field	name="model">res.partner</field>	
 		<field	name="arch"	type="xml">	
-				<tree>
+				<list>
 		  		    <field name="display_name" string="Name"/>
 				    <field name="function" invisible="1"/>
 				    <field name="phone"/>
@@ -56,44 +56,25 @@
 				    <field name="country_id" invisible="1"/>
 				    <field name="parent_id" invisible="1"/>
 				    <field name="active" invisible="1"/>
-				</tree>	
+				</list>	
 		</field>	
 	</record>
 
-	<record id="credit_limit_settings" model="ir.ui.view">
+	<!-- <record id="credit_limit_settings" model="ir.ui.view">
 	    <field name="name">Configuración del límite de crédito</field>
 	    <field name="model">credit.limit.config</field>
 	    <field name="arch" type="xml">
-		<form string="Credit Limit Settings" class="oe_form_configuration">
-		    <group string="Credit Limit Settings">
-		        <!-- label for="id" string="Sale Orders"/ -->
-		        <div>
-		            <div>
-		                <label for="default_my_credit_limit"/>
-		                <field name="default_my_credit_limit"/>
-		            </div>
-
-		            <div>
-		                <field name="include_not_invoiced"/>
-		                <label for="include_not_invoiced"/>
-		            </div>
-
-		            <div>
-		                <field name="force_limit_fresh_orders"/>
-		                <label for="force_limit_fresh_orders"/>
-		            </div>
-		        </div>
-		    </group>
-            <footer>
-                <button string="Apply" type="object"
-                    name="execute" class="oe_highlight"/>
-                or
-                <button string="Cancel" type="object"
-                    name="cancel" class="oe_link"/>
-            </footer>
-		</form>
+		<form string="Configuracion limite de crédito" class="oe_form_configuration">
+		    <group string="Configuración límite de crédito">
+			  <group>
+		        <field name="default_my_credit_limit" string="Limite de crédito por defecto"/>
+		        <field name="include_not_invoiced" string="Incluir lo no facturado"/>
+		        <field name="force_limit_fresh_orders" string="Forzar límite en pedidos nuevos"/>
+		      </group>
+			</group>  
+    	</form>
 	    </field>
-	</record>
+	</record> -->
 
 	<record id="action_list_sale_to_approve" model="ir.actions.act_window">
         <field name="name">Órdenes para aprobar: límite de crédito</field>
@@ -116,12 +97,12 @@
 		<field name="domain">[('check_credit_limit', '=', False)]</field>
 	</record>
 
-	<record id="action_list_credit_limit_settings" model="ir.actions.act_window">
+	<!-- <record id="action_list_credit_limit_settings" model="ir.actions.act_window">
         <field name="name">Configuración del límite de crédito</field>
         <field name="res_model">credit.limit.config</field>
         <field name="view_id" ref="credit_limit_settings"/>
 		<field name="view_mode">form</field>
-	</record>
+	</record> -->
     
     <menuitem  id="my_credit_limit_menu"  
         name="Límite de crédito"  
@@ -147,11 +128,11 @@
     	   	groups="control_credit_limit.group_cartera"
         	sequence="30"/>	
 
-		<menuitem  id="menu_credit_limit_config" 
+		<!-- <menuitem  id="menu_credit_limit_config" 
 		   	name="Configuración del límite de crédito" 
 			action="action_list_credit_limit_settings" 
-    	   	groups="control_credit_limit.group_cartera"
-        	sequence="40"/>			
+    	   	groups="base.group_system"
+        	sequence="40"/> -->
 
 	</menuitem>			
 

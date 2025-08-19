@@ -10,8 +10,8 @@ class CreditLimitConfig(models.TransientModel):
 	_description = "Credit Control Config"
 
 	default_my_credit_limit = fields.Float(default_model='res.partner')
-	include_not_invoiced    = fields.Boolean(string='Considere Incluir Órdenes de Venta aún no Facturadas')
-	force_limit_fresh_orders    = fields.Boolean(string='Aplicar el Límite de Crédito Incluso para Clientes sin Facturas Impagas')
+	include_not_invoiced = fields.Boolean(string='Considere Incluir Órdenes de Venta aún no Facturadas')
+	force_limit_fresh_orders = fields.Boolean(string='Aplicar el Límite de Crédito Incluso para Clientes sin Facturas Impagas')
 	
 	@api.model
 	def get_values(self):
@@ -22,7 +22,8 @@ class CreditLimitConfig(models.TransientModel):
 			force_limit_fresh_orders=params.get_param('credit.limit.force_limit_fresh_orders'),
 		)
 		return res
-	@api.model
+	
+	@api.onchange('include_not_invoiced','force_limit_fresh_orders')
 	def set_values(self):
 		super(CreditLimitConfig, self).set_values()
 		self.env['ir.config_parameter'].sudo().set_param("credit.limit.include.not.invoiced", self.include_not_invoiced)      

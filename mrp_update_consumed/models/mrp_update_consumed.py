@@ -15,6 +15,7 @@ class MrpProduction(models.Model):
     
 
         for move_line in self.move_raw_ids:
+            print('MOVE RAW ----------------------------------',move_line)
             product_id = move_line.product_id.id
             group_id = move_line.group_id.id  
             if move_line.product_id.id :
@@ -27,6 +28,7 @@ class MrpProduction(models.Model):
                                                             ('picking_type_id.consumed' , '=' , True),
                                                             ('to_refund' , '=' , False)
                                                            ],order="date desc",limit=1)
+                print('MOVE_STOCK --------------------------',move_stock)                                           
 
                 move_stock_all = self.env['stock.move'].search([
                                                                 ('product_id' , '=' , product_id),
@@ -36,8 +38,10 @@ class MrpProduction(models.Model):
                                                                ])
 
             qty_consumed = self.move_stock_no_done(product_id,group_id) or 0
-                     
+            
+
             if move_stock.picking_id.totally_transferred:
+                print('TOTAL TRANSFERENCIA',move_stock.picking_id.totally_transferred )
                 qty_all = 0
                 for move_all in move_stock_all:
                     if move_all.picking_type_id.code == 'internal' and move_all.to_refund != True:
@@ -47,8 +51,11 @@ class MrpProduction(models.Model):
                     elif move_all.picking_type_id.code == 'mrp_operation' or move_all.to_refund == True: 
                         qty_all -= move_all.quantity
                 
+                print('VALORES -------------------------------',qty_all,'move',move_line.quantity)
                 if qty_all != move_line.quantity:
                     move_line.quantity = round((((qty_all - qty_consumed) / self.product_qty) * self.qty_producing),2)
+
+
                 
     def button_mark_done(self):
 
