@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, http
 from odoo.exceptions import UserError, ValidationError, RedirectWarning
 from odoo.tools.misc import formatLang, format_date
 from datetime import date, datetime, time, timedelta
 import os
+import tempfile
 #from stat import S_IREAD, S_IRGRP, S_IROTH
 import base64
 #import mimetypes
@@ -20,13 +21,15 @@ class PaymentExportWizard(models.TransientModel):
     date_payment = fields.Date(string="Fecha Pago", required=True, default=fields.Date.context_today)
     date_application = fields.Date(string="Fecha Aplicación", required=True, default=fields.Date.context_today)
     journal_id = fields.Many2one('account.journal', string='Diario', required=True, domain="[('company_id', '=', company_id), ('type', 'in', ('bank'))]")
-    transaccion = fields.Selection(string='Tipo de Transaccion', required=True, selection=[('220','220 - Pago a Proveedores'),
+    transaccion = fields.Selection(string='Tipo de Transaccion', requires=True, selection=[('220','220 - Pago a Proveedores'),
                                                                                            ('225','225 - Pago de Nomina')], default='220')
-    descripcion = fields.Char(string='Descripcion', size=12, required=True)
-    sequence = fields.Char(string='Secuencia', size=1, required=True, help='No puede enviarse la misma secuencia un mismo dia Ej. A,B,C...')
+    descripcion = fields.Char(string='Descripcion', size=12, requires=True)
+    sequence = fields.Char(string='Secuencia', size=1, requires=True, help='No puede enviarse la misma secuencia un mismo dia Ej. A,B,C...')
+
+    file_bank = fields.Binary('Archivo Plano')
+    file_name = fields.Char('File Name')
                                                                                    
 
-    
     def export_txt(self):
 
     
@@ -34,12 +37,11 @@ class PaymentExportWizard(models.TransientModel):
     #def _reg_encabezado(self): 
         today = datetime.today()
         fecha = today.strftime("%Y-%m-%d-%f")
-        path = self.env['ir.config_parameter'].sudo().get_param("home.odoo.repo")
-        if not path:
-            raise UserError('Falta el parametro home.odoo.repo en Parametros del Sistema')
+        path = self.env['ir.config_parameter'].get_param("home.odoo.repo")
         #filename = 'plano_bancolombia_'+fecha+'.csv'
         filename = 'plano_bancolombia_'+fecha+'.txt'
-        file = open(path+filename, "w+")
+        file = tempfile.TemporaryFile()
+        #file = open(path+filename, "w+")
         #file = open("/opt/odoo15/odoo-server/addons-extra/report_sql/static/"+filename, "w")   
         text_reg_1 = ''
         active_ids = self.env.context.get('active_ids')
@@ -52,7 +54,6 @@ class PaymentExportWizard(models.TransientModel):
         parameter_bank = self.journal_id.bank_id.bank_parameter_ids
         cuenta_debitar = self.journal_id.bank_account_id.acc_number
 
-
         for record in self.env['account.payment'].browse(active_ids):
             
             if record and record.file_status == 'generado':
@@ -61,10 +62,6 @@ class PaymentExportWizard(models.TransientModel):
             if record and record.file_status == 'no_generado':
                 total += record.amount
                 count += 2
-
-            if record and record.state in ('draft','cancel'):
-                raise UserError(_('Algunos comprobantes estan sin publicar o cancelados'))
-
                 
 
         t_c = ''
@@ -80,19 +77,23 @@ class PaymentExportWizard(models.TransientModel):
                  
         fecha_pago = str(self.date_payment.strftime('%g%m%d'))
         fecha_apli = str(self.date_application.strftime('%g%m%d'))
-        tipo_doc_company = company_id.l10n_latam_identification_type_id.name
         nit = str(company_id.vat)
-        if tipo_doc_company == 'NIT':
-            nit = nit.replace('-','')
-            nit = nit[:-1]
+        nit = nit.replace('-','')
         name_company = company_id.name
         num_reg = str(num_reg)
         total = int(total)
         total = str(total)
-
-        text_reg_1 = '1' + nit[0:10].rjust(10,'0') + name_company[0:16].ljust (16,' ') + self.transaccion + self.descripcion[0:10].ljust(10, ' ') + fecha_pago + self.sequence + fecha_apli + str(count).zfill(6) + (12 * '0') + total.zfill(12) + str(cuenta_debitar).zfill(11) + str(tipo_cta)
-        file.write(text_reg_1 + '\n')     
-
+        
+        
+        text_reg_1 = '1' + nit.zfill(10) + name_company.ljust (16," ") + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.sequence + fecha_apli + str(count).zfill(6) + (12 * '0') + total.zfill(12) + str(cuenta_debitar).zfill(11) + str(tipo_cta)
+        #text_reg_1 = '1' + nit.zfill(15) + 'I' + (15 * ' ') + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.lote + self.transaccion + fecha_apli + num_reg.zfill(6) + (17 * ' ') + total.zfill(17) + '0' + str(cuenta_debitar) + t_c
+        #text_reg_1 = '1' + company_id.ref.zfill(15) + 'I' + (15 * ' ') + self.transaccion + self.descripcion.ljust(10, " ") + fecha_pago + self.lote + self.transaccion + fecha_apli + num_reg.zfill(6) + (17 * ' ') + total.zfill(17) + '0' + cuenta_debitar + t_c
+        
+        #file.write(f'{text_reg_1}\n')
+        #file.write(text_reg_1 + '\n')
+        file.write(text_reg_1.encode())   
+        
+        
 
         # GENERA REGISTROS TIPO 6
         text_reg_2 = ''
@@ -104,7 +105,6 @@ class PaymentExportWizard(models.TransientModel):
                 fecha_apli_2 = str(self.date_application)
                 fecha_apli_2 = fecha_apli_2.replace('-', '')  
                 name_partner = str(record.partner_id.name)
-                tipo_doc_partner = record.partner_id.l10n_latam_identification_type_id.name
                 id_partner = str(record.partner_id.vat)
                 cod_bank = record.partner_bank_id.bank_id.bic
                 cta_partner = str(record.partner_bank_id.acc_number)
@@ -120,62 +120,59 @@ class PaymentExportWizard(models.TransientModel):
                 for param in parameter_bank_partner:
                     if param.name == transaccion:
                         t_t =  param.value
-
-                if tipo_doc_partner == 'NIT':
-                    id_partner = id_partner.replace('-','')
-                    id_partner = id_partner[:-1]        
-
+                
                 valor = int(valor)
                 valor = str(valor)
                 cod_bank = str(cod_bank)
                 
-                if record.memo:
-                    comment = record.memo
+                if record.ref:
+                    comment = record.ref
                 else:
                     comment = '            '    
 
-                text_reg_2 = '6' + id_partner.rjust(15,'0') + name_partner[0:18].ljust(18,' ') + cod_bank.rjust(9,'0') + cta_partner.rjust(17,'0') + 'S' + transaccion + valor.zfill(10) + record.name[0:21].ljust(21,' ') + ' '  
-                file.write(f'{text_reg_2}\n')
+                print('tipos..........',type(id_partner),type(name_partner),type(cod_bank),type(cta_partner),type(transaccion),type(valor),type(record.name),type(record.ref))
 
-                mail = str(record.partner_id.email)
-                text_reg_3 = '3@' +  (52 * '*') + mail.ljust(41,' ')
-                file.write(f'{text_reg_3}\n')      
-        
-        
-        file.close()
+                print('resultado......',id_partner,name_partner,cod_bank,cta_partner,transaccion,valor,record.name,comment)
 
-        with open(path+filename, "r") as file_r:
-            if file_r:
-                file_txt = ''
-                for line in file_r:
-                    if line:
-                        file_txt += line 
-                file_txt = base64.b64encode(bytes(file_txt, 'utf-8'))    
 
+                text_reg_2 = '6' + id_partner.rjust(15,'0') + name_partner[0:18] + cod_bank.rjust(9,'0') + cta_partner.ljust(17, "0") + 'S' + transaccion + valor.zfill(10) + record.name[0:9] + comment[0:12] + ' '  
+                #text_reg_2 = '6' + id_partner.ljust(15, " ") + name_partner.ljust(30, " ") + (5 * '0') + '1' + cod_bank + cta_partner.ljust(17, " ") + ' ' + t_t + valor.zfill(16)+ '0' + fecha_pago_2 + (21 * ' ')
+                #file.write(text_reg_2 + '\n')
+                #file.write(f'{text_reg_2}\n')
+                file.write(text_reg_2.encode())
 
         for rec in self.env['account.payment'].browse(active_ids):
-            if rec:
-                rec.file_status = 'generado'
-                
+            if rec and rec.file_status == 'no_generado':
+                mail = str(rec.partner_id.email)
+                text_reg_3 = '3@' +  (52 * '*') + mail.ljust(41,' ')
+                #file.write(f'{text_reg_3}\n')      
+                file.write(text_reg_3.encode())
+        
+        #file.close()
+          
+        #print('file .-.-.-.-.-.-.-.-.',file)
+        #sudo().os.chmod((path+filename), S_IREAD|S_IRGRP|S_IROTH)
+        
+        domain = self.env['ir.config_parameter'].get_param("repo.base.url")
+        if not domain:
+           raise ValidationError('Falta configurar el parámetro del sistema con clave repo.base.url')
 
-        base_url = self.env['ir.config_parameter'].get_param('web.base.pay')
-        if not base_url:
-            raise UserError('Falta el parametro web.base.pay en Parametros del Sistema')
+        #if not os.path.isdir(domain):
+        #   raise ValidationError('El directorio no existe: %s' % (home_report))
 
-        attachment_obj = self.env['ir.attachment']
-        attachment_id = attachment_obj.create({
-                                               'name': filename,
-                                               'mimetype':'text/plain',
-                                               'datas': file_txt
-                                               })
+        #url = domain + filename
 
-        download_url = '/web/content/' + str(attachment_id.id) + '?download=true'
-        # download
-        return {"type": "ir.actions.act_url",
-                "url": str(base_url) + str(download_url),
-                "target": "new",
-                }                                       
-
+        #for rec in self.env['account.payment'].browse(active_ids):
+        #    if rec:
+        #        record.file_status = 'generado'
+        file = io.BytesIO() 
+        file.write(file)
+        file_txt = base64.encodestring(file.getvalue())
+        self.file_bank = file_txt
+        self.file_name = filename
+        file.close
+        #file.close()
+        
         
         
     def open_wizard(self):
@@ -187,6 +184,3 @@ class PaymentExportWizard(models.TransientModel):
             'views': [(self.env.ref('generate_bank_file.generate_bank_file_wizard_view').id, 'form')],
             'context': {'active_ids': self.env.context.get('active_ids')},
             }
-
-
-            
