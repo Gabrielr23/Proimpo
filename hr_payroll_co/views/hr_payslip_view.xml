@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2018 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+		
+    <!-- payslip run -->
+
+    <!-- record id="view_hr_payslip_run_form_inherit" model="ir.ui.view">
+        <field name="name">hr.payslip.run.form.inherit</field>
+        <field name="model">hr.payslip.run</field>
+        <field name="inherit_id" ref="hr_payroll.hr_payslip_run_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_validate']" position="after">
+                 <button name="action_validate_without_calculate" type="object" string="Contabilizar" states="verify,draft" class="oe_highlight" context="{'payslip_generate_pdf': True}" confirm="Esta seguro(a) de procesar?"/>
+			</xpath>
+            <xpath expr="//button[@name='action_paid']" position="after">
+                 <button name="compute_all_sheet" type="object" string="Calcular hojas" states="draft,verify" confirm="Esta seguro(a) de procesar?"/>
+				 <button name="action_cancel" type="object" string="Cancelar" states="close,draft" confirm="Esta seguro(a) de procesar?"/>
+                 <button name="action_cancel_paid" type="object" string="Cancelar pago" states="paid" confirm="Esta seguro(a) de procesar?"/>			
+			</xpath>
+			
+			
+            <xpath expr="//button[@name='action_validate']" position="attributes">
+			    <attribute name="invisible">1</attribute>
+			</xpath>
+			
+            <xpath expr="//button[@name='action_paid']" position="attributes">
+			    <attribute name="confirm">Esta seguro(a) de procesar?</attribute>
+			</xpath>			
+            <xpath expr="//button[@name='action_draft']" position="attributes">
+			    <attribute name="confirm">Esta seguro(a) de procesar?</attribute>
+			</xpath>
+			
+        </field>    
+    </record -->
+
+
+    <record id="view_hr_account_payslip_form_inherit" model="ir.ui.view">
+        <field name="name">hr.account.payslip.form.inherit</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_payslip_done']" position="replace">
+                    <button string="Contabilizar nómina" name="action_payslip_done" type="object" invisible="[('state', 'not in',('verify','draft'))]" class="oe_highlight" context="{'payslip_generate_pdf': True}" confirm="Are you sure you want to proceed ?"/>
+            </xpath>
+            <xpath expr="//button[@name='refund_sheet']" position="before">
+                <button string="Romper conciliación" name="action_payslip_break_conciliation" type="object" invisible="state != 'paid'" class="oe_highlight" confirm="Esta seguro(a) de romper la conciliación?"/>
+            </xpath>
+
+            <xpath expr="//field[@name='paid_date']" position="after">
+				<field name="payment_id" invisible="payment_id == False" readonly="1"/>
+            </xpath>
+			
+        </field>    
+    </record>
+ 
+           
+                
+</odoo>
+
+
+
+

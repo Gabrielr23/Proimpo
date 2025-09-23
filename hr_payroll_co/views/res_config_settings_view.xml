@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2018 Over Garcia <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+    <data>
+		
+ 
+    <!-- 
+       Fiscal Year
+    -->        
+    
+    <record model='ir.ui.view' id='view_account_fiscalyear_form_inherit'>
+			<field name='name'>account.fiscalyear.form.inherit</field>
+			<field name='model'>account.fiscalyear</field>
+			<field name='inherit_id' ref='account_fiscal_year.view_account_fiscalyear_form'/>
+			<field name='type'>form</field>
+			<field name='arch' type='xml'>
+				<field name="date_stop" position="after">
+					<field name="salario_minimo"/>
+					<field name="sub_transporte"/>
+				    <field name="tarifa_pension"/>
+				    <field name="tarifa_salud"/>
+				    <field name="tarifa_salud_integral"/>
+				    <field name="tarifa_ccf"/>
+				    <field name="tarifa_sena"/>
+				    <field name="tarifa_icbf"/>
+				</field>
+			</field>
+		</record>
+            
+ <!-- department -->	
+        <record model="ir.ui.view" id="hr_department_account_view">
+           <field name="name">hr_department_account_view</field>
+           <field name="model">hr.department</field>
+           <field name="inherit_id" ref="hr.view_department_form"/>
+           <field name="type">form</field>
+           <field name="arch" type="xml">
+			   <field name="parent_id" position = "after">
+                   <field name="account_analytic_id" domain="[('type','in',['normal'])]" required="1"/>
+               </field>
+               			  
+               <field name="company_id" position = "after">
+                 <group name="properties" col="4">	
+                   <field name="salary_rule_ids" nolabel="1" widget="one2many_list">					   						   
+                         <tree string="Cuentas reglas salariales" editable="bottom">
+						   <field name="salary_rule_id"/> 
+                           <field name="account_debit_id" domain="[('internal_type','!=','view')]"/>
+                           <field name="account_credit_id" domain="[('internal_type','!=','view')]"/>
+                         </tree>                       
+                   </field>			   
+                 </group>               
+               </field>             
+               
+           </field>
+        </record>
+
+                
+    </data>
+</odoo>
+
+
+
+
