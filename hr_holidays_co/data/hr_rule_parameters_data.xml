@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- Parámetros Generales -->
+
+    <record id="rule_parameter_salario_variable" model="hr.rule.parameter">
+        <field name="name">Tiene salario variable</field>
+        <field name="code">SALARIO_VARIABLE</field>
+        <field name="country_id" ref="base.co"/>
+		<field name="type">contrat</field>
+		<field name="data_type">B</field>
+    </record>
+	
+    <record id="rule_parameter_salario_variable_2023" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_salario_variable"/>
+        <field name="date_from" eval="datetime(2023, 1, 1).date()"/>
+        <field name="parameter_value">False</field>
+    </record>
+
+    <record id="rule_parameter_lugar_trabajo" model="hr.rule.parameter">
+        <field name="name">Vive en lugar de trabajo</field>
+        <field name="code">LUGAR_TRABAJO</field>
+        <field name="country_id" ref="base.co"/>
+		<field name="type">contrat</field>
+		<field name="data_type">B</field>
+    </record>
+	
+    <record id="rule_parameter_lugar_trabajo_2023" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_lugar_trabajo"/>
+        <field name="date_from" eval="datetime(2023, 1, 1).date()"/>
+        <field name="parameter_value">False</field>
+    </record>	
+	
+  </data>	
+</odoo>

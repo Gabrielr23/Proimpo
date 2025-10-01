@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+##############################################################################
+# 
+#    Copyright (C) 2024 INNOVATECSA SAS <gerencia@innovatecsa.com>.
+#    All Rights Reserved.
+#
+##############################################################################
+-->
+
+<odoo>
+    <data>
+		
+    <!-- Liquidación de contratos -->
+   
+	<record model="ir.ui.view" id="hr_contract_liquidation_list_view">
+		<field name="name">hr.contract.liquidation.list.view</field>
+		<field name="model">hr.contract.liquidation</field>
+		<field name="type">list</field>
+		<field name="arch" type="xml">
+			<list string='Liquidaciones'>
+				  <field name="employee_id"></field>
+				  <field name="identification_id"></field>
+                  <field name="date_liquidacion"></field>
+                  <field name="state"></field>
+			</list>
+		</field>
+	</record>	
+	
+	<record model="ir.ui.view" id="hr_contract_liquidation_form_view">
+		<field name="name">hr.contract.liquidation.form.view</field>
+		<field name="model">hr.contract.liquidation</field>
+		<field name="type">form</field>
+		<field name="arch" type="xml">
+			<form string="Liquidación">
+				<header>
+					<button string="Calcular" type="object" class="oe_highlight" name="action_calculate" invisible="state != 'draft'" confirm="Esta seguro(a) de confirmar la liquidación?"/>
+					<button string="Confirmar" type="object" name="action_confirm" invisible="state != 'draft'" confirm="Esta seguro(a) de confirmar la liquidación?"/>
+					<button string="Crear novedades" type="object" class="oe_highlight" name="action_create_novedades" invisible="state != 'done' or novedades_count != 0"/>
+				    <button string="Cancelar" type="object" name="action_cancel" invisible="state != 'done'" confirm="Esta seguro(a) de anular la liquidación? Se eliminarán las novedades asociadas. Si tiene nómina generada debe revisarla y recalcular"/>
+					<button string="Cambiar a borrador" type="object" name="action_draft" invisible="state != 'cancel'" confirm="Esta seguro(a) de cambiar a borrador?"/>
+					<field name='state' widget="statusbar"/>
+				</header>
+				<sheet>	
+				    <div class="oe_button_box" name="button_box">
+						<button name="show_novedades" type="object" class="oe_stat_button" icon="fa-list-alt"
+							invisible="novedades_count == 0">
+							<field name="novedades_count" widget="statinfo" string="Novedades"/>
+						</button>								
+					</div>				
+				    <group>
+					<group>
+				      <field name="employee_id" options="{'no_create': True}" readonly="state != 'draft'"></field>
+					  <field name="date_liquidacion" readonly="state != 'draft'"></field>
+                      <field name="identification_id"></field>
+                      <field name="contract_id" readonly="state != 'draft'"></field>
+                      <field name="wage"></field>
+                      <field name="date_start"></field>
+					</group>
+					<group>
+                      <field name="motivo_retiro" readonly="state != 'draft'"></field>
+					  <field name="date_vacation"></field>
+                      <field name="average" readonly="state != 'draft'"></field>
+					  <field name="slip_id" options="{'no_create': True}" ></field>
+					  <field name="indemnizacion" readonly="state != 'draft'"></field>
+					  <field name="type_contract" readonly="state != 'draft'" invisible="indemnizacion == False"></field>
+					  <field name="contract_end_date" readonly="state != 'draft'" invisible="type_contract =='I' or indemnizacion == False"></field>
+                      <field name="total_liquidation"></field>					              
+					</group>
+					</group>					
+					<notebook>
+						<page string="Conceptos">
+							<field name="details_ids" widget="one2many_list">
+								<list>
+									<field name="liquidation_type" readonly="1"/>
+									<field name="date_from" readonly="1"/>
+									<field name="date_to" readonly="1"/>
+									<field name="days_total" readonly="1"/>
+									<field name="days_leave" readonly="1"/>
+									<field name="days_neto" readonly="1"/>
+									<field name="wage_actual" readonly="1"/>
+									<field name="wage_total" readonly="1"/>
+									<field name="days_average" readonly="1" optional="hide"/>
+									<field name="wage_average" readonly="1"/>
+									<field name="subsidio_transporte" readonly="1"/>
+									<field name="total_average" readonly="1"/>
+									<field name="amount" readonly="1"/>
+									<field name="provision" readonly="1"/>
+									<field name="ajuste" readonly="1"/>
+								</list>
+							</field>
+						</page>
+					</notebook>
+				</sheet>	
+			</form>
+		</field>
+	</record>
+
+    <record id="hr_contract_liquidation_search" model="ir.ui.view">
+        <field name="name">hr.contract.liquidation.search</field>
+        <field name="model">hr.contract.liquidation</field>
+        <field name="arch" type="xml">
+            <search string="Búsqueda liquidación">
+                <field name="employee_id"/>                    
+            </search>
+            </field>
+    </record>
+	
+	<record id="hr_contract_liquidation_action" model="ir.actions.act_window">
+			 <field name="name">Liquidación de contrato</field>
+			 <field name="res_model">hr.contract.liquidation</field>
+			 <field name="view_mode">list,form</field>
+	</record>
+	<menuitem id="hr_contract_liquidation" name="Liquidación de contrato"
+	 parent="hr_payroll.menu_hr_payroll_payslips" action="hr_contract_liquidation_action" sequence="90"/>		    
+
+    <!-- Detalle -->
+	<record model="ir.ui.view" id="hr_contract_liquidation_details_form_view">
+		<field name="name">hr.contract.liquidation.details.form.view</field>
+		<field name="model">hr.contract.liquidation.details</field>
+		<field name="type">form</field>
+		<field name="arch" type="xml">
+			<form string="Detalle">
+				
+					<group>
+						<group>
+									<field name="employee_id" options="{'no_create': True}" readonly="1"></field>
+									<field name="liquidation_type" readonly="1"/>
+									<field name="date_from" readonly="1"/>
+									<field name="date_to" readonly="1"/>
+									<field name="days_total" readonly="1"/>
+									<field name="days_leave" readonly="1"/>
+									<field name="days_neto" readonly="1"/>
+									<field name="average" readonly="1"/>
+						</group>
+						<group>						
+									<field name="wage_actual" readonly="1"/>
+									<field name="wage_total" readonly="1"/>
+									<field name="days_average" readonly="1"/>
+									<field name="wage_average" readonly="1"/>
+									<field name="subsidio_transporte" readonly="1"/>
+									<field name="total_average" readonly="1"/>
+									<field name="amount" readonly="1"/>
+									<field name="provision" readonly="1"/>
+									<field name="ajuste" readonly="1"/>
+						</group>			
+                    </group>	
+					<notebook>
+						<page string="Nominas promedio salarial">
+							<field name="payslip_line_ids" widget="one2many_list" readonly="1">
+								<list readonly="1">
+								    <field name="slip_id"/>
+									<field name="salary_rule_id"/>
+									<field name="amount" sum="Total"/>
+								</list>
+							</field>
+						</page>
+						<page string="Nominas anteriores">
+							<field name="previous_payslip_ids" widget="one2many_list" readonly="1">
+								<list readonly="1">
+								    <field name="date"/>
+									<field name="salary_rule_id"/>
+									<field name="value" sum="Total"/>
+								</list>
+							</field>
+						</page>		
+						<page string="Provisiones">
+							<field name="provisiones_ids" widget="one2many_list" readonly="1">
+								<list readonly="1">
+								    <field name="slip_id"/>
+									<field name="salary_rule_id"/>
+									<field name="amount" sum="Total"/>
+								</list>
+							</field>
+						</page>	
+						<page string="Provisiones anteriores">
+							<field name="previous_provisiones_ids" widget="one2many_list" readonly="1">
+								<list readonly="1">
+								    <field name="date"/>
+									<field name="salary_rule_id"/>
+									<field name="value" sum="Total"/>
+								</list>
+							</field>
+						</page>							
+					</notebook>	
+			</form>
+		</field>
+	</record>
+
+                
+				
+    </data>
+</odoo>
+
+
+
+
