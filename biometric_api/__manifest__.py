@@ -1,7 +1,7 @@
 {
     "name": "Biometric API Integration Full",
     "version": "1.1",
-    "summary": "API completa para integraci\u00f3n de dispositivos biom\u00e9tricos",
+    "summary": "API completa para integracion de dispositivos biometricos",
     "depends": [
         "base",
         "hr",
