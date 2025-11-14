@@ -11,7 +11,7 @@ class BiometricController(http.Controller):
         if f'Bearer {param_token}' != token:
             return {'error': 'Unauthorized'}
 
-        data = request.jsonrequest
+        data = request.get_json_data()
 
         log_model = request.env['biometric.log'].sudo()
 
