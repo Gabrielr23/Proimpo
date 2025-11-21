@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-biometric_log_access,biometric.log access,model_biometric_log,,1,0,0,0
