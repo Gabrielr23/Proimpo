@@ -32,6 +32,7 @@ if records:
             <field name="check_in" position="after">
                 <field name="expected_check_in" readonly="1"/>
                 <field name="is_late" readonly="1"/>
+                <field name="planning_slot_id" readonly="1"/>
             </field>
             <field name="check_out" position="after">
                 <field name="expected_check_out" readonly="1"/>
