@@ -29,18 +29,17 @@ class HrAttendance(models.Model):
         compute="_compute_expected_times",
         store=True
     )
-    planning_slot_id = fields.Many2one(
-        'planning.slot',
-        string="Turno planificado",
-        compute="_compute_expected_times",
-        store=True,
-        ondelete='set null'
-    )
     used_planning = fields.Boolean(
         string="Usa turno planificado",
         compute="_compute_expected_times",
         store=True,
         help="Indica si se usó un turno planificado o el horario del empleado"
+    )
+    planning_slot_name = fields.Char(
+        string="Turno",
+        compute="_compute_expected_times",
+        store=True,
+        help="Nombre del turno planificado usado"
     )
 
     @api.depends('employee_id', 'check_in', 'check_out')
@@ -50,7 +49,8 @@ class HrAttendance(models.Model):
             rec.expected_check_out = False
             rec.is_late = False
             rec.left_early = False
-            rec.planning_slot_id = False
+            rec.used_planning = False
+            rec.planning_slot_name = False
             
             if not rec.employee_id or not rec.check_in:
                 continue
@@ -67,19 +67,20 @@ class HrAttendance(models.Model):
             att_date = check_in_local.date()
 
             # PASO 1: Buscar primero en planning.slot (Turnos planificados)
-            planning_slot = self._get_planning_slot(rec.employee_id, att_date, tz)
+            planning_data = self._get_planning_slot(rec.employee_id, att_date, tz)
             
-            if planning_slot:
+            if planning_data:
                 # Usar horarios del turno planificado
-                rec.planning_slot_id = planning_slot
-                expected_in_utc, expected_out_utc = self._get_times_from_planning(
-                    planning_slot, tz
-                )
+                rec.used_planning = True
+                rec.planning_slot_name = planning_data.get('name', 'Turno planificado')
+                expected_in_utc = planning_data.get('start')
+                expected_out_utc = planning_data.get('end')
             else:
                 # PASO 2: Si no hay turno planificado, usar el horario del calendario
                 if not calendar:
                     continue
-                    
+                
+                rec.used_planning = False
                 expected_in_utc, expected_out_utc = self._get_times_from_calendar(
                     calendar, att_date, tz
                 )
@@ -99,42 +100,39 @@ class HrAttendance(models.Model):
     def _get_planning_slot(self, employee, date, tz):
         """
         Busca el turno planificado para el empleado en la fecha dada.
-        Retorna el planning.slot o False si no existe.
+        Retorna un diccionario con los datos o False si no existe.
         """
         # Verificar si el módulo planning está instalado
         if 'planning.slot' not in self.env:
             return False
         
-        # Convertir la fecha a datetime en UTC para la búsqueda
-        date_start = tz.localize(datetime.combine(date, datetime.min.time()))
-        date_end = tz.localize(datetime.combine(date, datetime.max.time()))
-        
-        date_start_utc = date_start.astimezone(pytz.UTC).replace(tzinfo=None)
-        date_end_utc = date_end.astimezone(pytz.UTC).replace(tzinfo=None)
-        
-        # Buscar el turno planificado
-        planning_slot = self.env['planning.slot'].search([
-            ('employee_id', '=', employee.id),
-            ('start_datetime', '>=', date_start_utc),
-            ('start_datetime', '<=', date_end_utc),
-            ('state', '!=', 'cancel')  # Excluir turnos cancelados
-        ], limit=1, order='start_datetime')
-        
-        return planning_slot if planning_slot else False
-
-    def _get_times_from_planning(self, planning_slot, tz):
-        """
-        Obtiene las horas esperadas desde un turno planificado.
-        Retorna (expected_check_in_utc, expected_check_out_utc)
-        """
-        if not planning_slot.start_datetime or not planning_slot.end_datetime:
-            return False, False
-        
-        # Los campos de planning ya están en UTC
-        expected_in_utc = planning_slot.start_datetime
-        expected_out_utc = planning_slot.end_datetime
-        
-        return expected_in_utc, expected_out_utc
+        try:
+            # Convertir la fecha a datetime en UTC para la búsqueda
+            date_start = tz.localize(datetime.combine(date, datetime.min.time()))
+            date_end = tz.localize(datetime.combine(date, datetime.max.time()))
+            
+            date_start_utc = date_start.astimezone(pytz.UTC).replace(tzinfo=None)
+            date_end_utc = date_end.astimezone(pytz.UTC).replace(tzinfo=None)
+            
+            # Buscar el turno planificado
+            planning_slot = self.env['planning.slot'].search([
+                ('employee_id', '=', employee.id),
+                ('start_datetime', '>=', date_start_utc),
+                ('start_datetime', '<=', date_end_utc),
+                ('state', '!=', 'cancel')
+            ], limit=1, order='start_datetime')
+            
+            if planning_slot:
+                return {
+                    'name': planning_slot.name or 'Turno planificado',
+                    'start': planning_slot.start_datetime,
+                    'end': planning_slot.end_datetime,
+                }
+            
+            return False
+        except Exception as e:
+            _logger.warning(f"Error al buscar planning slot: {e}")
+            return False
 
     def _get_times_from_calendar(self, calendar, att_date, tz):
         """
@@ -206,7 +204,14 @@ class HrAttendance(models.Model):
         _logger.info(f"Recalculando tiempos esperados para {len(self)} registros de asistencia")
         
         # Forzar el recálculo invalidando el cache y llamando al método compute
-        self.invalidate_recordset(['expected_check_in', 'expected_check_out', 'is_late', 'left_early', 'planning_slot_id'])
+        self.invalidate_recordset([
+            'expected_check_in', 
+            'expected_check_out', 
+            'is_late', 
+            'left_early', 
+            'used_planning',
+            'planning_slot_name'
+        ])
         self._compute_expected_times()
         
         # Mensaje de confirmación para el usuario
