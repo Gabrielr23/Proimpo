@@ -71,6 +71,11 @@ class HrAttendance(models.Model):
             # Calcular hora de entrada esperada (SIEMPRE del PRIMER intervalo)
             in_hour = int(first_interval.hour_from)
             in_minute = int((first_interval.hour_from % 1) * 60)
+            
+            # Validar que las horas estén en rango válido
+            if in_hour >= 24:
+                in_hour = in_hour % 24
+            
             expected_in_local = tz.localize(
                 datetime.combine(att_date, datetime.min.time().replace(
                     hour=in_hour,
@@ -83,9 +88,13 @@ class HrAttendance(models.Model):
             out_minute = int((last_interval.hour_to % 1) * 60)
             out_date = att_date
             
+            # Si la hora es >= 24, es del día siguiente
+            if out_hour >= 24:
+                out_hour = out_hour % 24
+                out_date = att_date + timedelta(days=1)
             # Si hour_to del último intervalo < hour_from del primer intervalo
             # es un turno nocturno (día siguiente)
-            if last_interval.hour_to < first_interval.hour_from:
+            elif last_interval.hour_to < first_interval.hour_from:
                 out_date = att_date + timedelta(days=1)
             
             expected_out_local = tz.localize(
