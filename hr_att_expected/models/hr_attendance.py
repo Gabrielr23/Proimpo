@@ -33,7 +33,14 @@ class HrAttendance(models.Model):
         'planning.slot',
         string="Turno planificado",
         compute="_compute_expected_times",
-        store=True
+        store=True,
+        ondelete='set null'
+    )
+    used_planning = fields.Boolean(
+        string="Usa turno planificado",
+        compute="_compute_expected_times",
+        store=True,
+        help="Indica si se usó un turno planificado o el horario del empleado"
     )
 
     @api.depends('employee_id', 'check_in', 'check_out')
