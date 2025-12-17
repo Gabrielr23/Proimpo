@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Acción de servidor para recalcular desde la lista -->
+    <record id="action_recalculate_attendance_times" model="ir.actions.server">
+        <field name="name">Recalcular tiempos esperados</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = records.action_recalculate_expected_times()
+        </field>
+    </record>
+    
+    <!-- Vista de formulario con campos esperados -->
+    <record id="hr_attendance_view_form_expected" model="ir.ui.view">
+        <field name="name">hr.attendance.form.expected</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Añadir botón en el header -->
+            <xpath expr="//form/header" position="inside">
+                <button name="action_recalculate_expected_times" 
+                        type="object" 
+                        string="Recalcular tiempos" 
+                        class="oe_highlight"
+                        groups="hr_attendance.group_hr_attendance_user"/>
+            </xpath>
+            
+            <field name="check_in" position="after">
+                <field name="expected_check_in" readonly="1"/>
+                <field name="is_late" readonly="1"/>
+                <field name="used_planning" readonly="1" invisible="1"/>
+                <field name="planning_slot_name" readonly="1" invisible="not used_planning"/>
+            </field>
+            <field name="check_out" position="after">
+                <field name="expected_check_out" readonly="1"/>
+                <field name="left_early" readonly="1"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Vista de lista (tree) con campos esperados -->
+    <record id="hr_attendance_view_tree_expected" model="ir.ui.view">
+        <field name="name">hr.attendance.tree.expected</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <!-- Añadir después de la columna check_in -->
+            <field name="check_in" position="after">
+                <field name="expected_check_in" optional="show"/>
+                <field name="is_late" optional="show" widget="boolean_toggle"/>
+            </field>
+            <!-- Añadir después de la columna check_out -->
+            <field name="check_out" position="after">
+                <field name="expected_check_out" optional="show"/>
+                <field name="left_early" optional="show" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda (sin filtros por compatibilidad) -->
+    <record id="hr_attendance_view_filter_expected" model="ir.ui.view">
+        <field name="name">hr.attendance.search.expected</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <!-- Campos de búsqueda -->
+                <field name="expected_check_in"/>
+                <field name="expected_check_out"/>
+                
+                <!-- Filtros con campos booleanos -->
+                <filter string="Llegó tarde" name="filter_late"
+                        domain="[('is_late', '=', True)]"/>
+                <filter string="Salió temprano" name="filter_left_early"
+                        domain="[('left_early', '=', True)]"/>
+                <filter string="A tiempo" name="filter_on_time"
+                        domain="[('is_late', '=', False), ('left_early', '=', False)]"/>
+                
+                <separator/>
+                
+                <!-- Agrupar por -->
+                <group expand="0" string="Agrupar por">
+                    <filter string="Puntualidad entrada" name="group_by_late"
+                            context="{'group_by': 'is_late'}"/>
+                    <filter string="Puntualidad salida" name="group_by_early"
+                            context="{'group_by': 'left_early'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>
