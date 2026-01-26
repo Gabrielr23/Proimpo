@@ -1,34 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <!-- Vista formulario de workcenter con productos incompatibles (Odoo 18) -->
-        <record id="mrp_workcenter_form_view_incompatible_products" model="ir.ui.view">
-            <field name="name">mrp.workcenter.form.incompatible.products</field>
-            <field name="model">mrp.workcenter</field>
-            <field name="inherit_id" ref="mrp.mrp_workcenter_view"/>
-            <field name="arch" type="xml">
-                <xpath expr="//page" position="after">
-                    <page string="Productos Incompatibles" name="incompatible_products">
+    <!-- Vista formulario de centro de trabajo con incompatibilidades -->
+    <record id="mrp_workcenter_form_view_incompatible" model="ir.ui.view">
+        <field name="name">mrp.workcenter.form.incompatible.products</field>
+        <field name="model">mrp.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_workcenter_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Productos Incompatibles" name="incompatible_products">
+                    <group>
                         <group>
-                            <group string="Productos que NO pueden procesarse aquí">
-                                <field name="incompatible_product_ids" 
-                                       widget="many2many_tags"
-                                       options="{'no_create': True, 'no_create_edit': True}"/>
-                                <field name="incompatible_product_count" 
-                                       readonly="1"
-                                       string="Total Incompatibles"/>
-                            </group>
+                            <field name="incompatible_product_ids" 
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="incompatible_product_count" invisible="1"/>
                         </group>
-                        <group string="Información">
-                            <div class="alert alert-info" role="alert">
-                                <p><strong>Restricciones de Productos:</strong></p>
-                                <p>Los productos seleccionados NO pueden ser procesados en
-                                este centro de trabajo. El sistema impedirá su asignación.</p>
-                            </div>
-                        </group>
-                    </page>
-                </xpath>
-            </field>
-        </record>
-    </data>
+                    </group>
+                    <group>
+                        <div class="alert alert-warning" role="alert">
+                            <p><strong>Productos Incompatibles:</strong></p>
+                            <p>Este centro de trabajo NO puede procesar los productos 
+                            seleccionados. El sistema bloqueará su asignación en 
+                            órdenes de manufactura.</p>
+                        </div>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
 </odoo>

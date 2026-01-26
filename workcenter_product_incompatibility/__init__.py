@@ -1,1 +1,4 @@
-from . import models
+from . import product_template
+from . import mrp_workcenter
+from . import mrp_production
+from . import mrp_workorder

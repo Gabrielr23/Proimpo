@@ -1,3 +1,1 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_product_template_user,product.template.user,product.model_product_template,base.group_user,1,1,0,0
-access_mrp_workcenter_user,mrp.workcenter.user,mrp.model_mrp_workcenter,base.group_user,1,1,0,0
