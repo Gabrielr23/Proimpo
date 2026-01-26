@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario de producto con incompatibilidades -->
+    <record id="product_template_form_view_incompatible_wc" model="ir.ui.view">
+        <field name="name">product.template.form.incompatible.workcenters</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='inventory']" position="after">
+                <page string="Manufactura" name="manufacturing" 
+                      attrs="{'invisible': [('type', '!=', 'product')]}">
+                    <group>
+                        <group string="Restricciones de Centros de Trabajo">
+                            <field name="incompatible_workcenter_ids" 
+                                   widget="many2many_tags"
+                                   options="{'color_field': 'color', 'no_create': True}"/>
+                            <field name="incompatible_workcenter_count" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Información">
+                        <div class="alert alert-info" role="alert" style="margin-bottom: 0px;">
+                            <p><strong>Centros de Trabajo Incompatibles:</strong></p>
+                            <p>Los centros de trabajo seleccionados NO podrán ser utilizados 
+                            para procesar este producto. El sistema evitará su asignación 
+                            automática y mostrará advertencias si se intenta asignar manualmente.</p>
+                        </div>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

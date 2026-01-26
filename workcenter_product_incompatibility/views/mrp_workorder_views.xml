@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista formulario de orden de trabajo con validación -->
+    <record id="mrp_workorder_form_view_compatibility" model="ir.ui.view">
+        <field name="name">mrp.workorder.form.compatibility</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workcenter_form_view_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='workcenter_id']" position="after">
+                <field name="is_workcenter_compatible" invisible="1"/>
+                <field name="workcenter_compatibility_warning" 
+                       attrs="{'invisible': [('is_workcenter_compatible', '=', True)]}"
+                       readonly="1"
+                       class="text-danger"/>
+            </xpath>
+            
+            <xpath expr="//field[@name='workcenter_id']" position="attributes">
+                <attribute name="decoration-danger">not is_workcenter_compatible</attribute>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Vista tree con indicador visual -->
+    <record id="mrp_workorder_tree_view_compatibility" model="ir.ui.view">
+        <field name="name">mrp.workorder.tree.compatibility</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp_workorder.mrp_workorder_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='workcenter_id']" position="attributes">
+                <attribute name="decoration-danger">not is_workcenter_compatible</attribute>
+            </xpath>
+            <xpath expr="//field[@name='workcenter_id']" position="after">
+                <field name="is_workcenter_compatible" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
