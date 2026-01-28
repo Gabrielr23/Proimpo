@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_attendance_tree_extra_co" model="ir.ui.view">
+        <field name="name">hr.attendance.tree.extra.co</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_hr_attendance_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <field name="extra_hours_diurnal"/>
+                <field name="extra_hours_nocturnal"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
