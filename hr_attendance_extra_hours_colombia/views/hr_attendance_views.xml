@@ -1,14 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_attendance_tree_extra_co" model="ir.ui.view">
-        <field name="name">hr.attendance.tree.extra.co</field>
+    <!-- Vista de Formulario -->
+    <record id="view_attendance_form_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.form.extra.hours</field>
         <field name="model">hr.attendance</field>
-        <field name="inherit_id" ref="hr_attendance.view_hr_attendance_tree"/>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
-                <field name="extra_hours_diurnal"/>
-                <field name="extra_hours_nocturnal"/>
+            <xpath expr="//field[@name='worked_hours']" position="after">
+                <field name="planned_hours" widget="float_time"/>
+                <field name="extra_hours_diurnal" widget="float_time" 
+                       decoration-info="extra_hours_diurnal > 0"/>
+                <field name="extra_hours_nocturnal" widget="float_time" 
+                       decoration-warning="extra_hours_nocturnal > 0"/>
+                <field name="total_extra_hours" widget="float_time" 
+                       decoration-success="total_extra_hours > 0"
+                       class="font-weight-bold"/>
             </xpath>
         </field>
     </record>
-</odoo>
 
+    <!-- Vista de Árbol -->
+    <record id="view_attendance_tree_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.tree.extra.hours</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='worked_hours']" position="after">
+                <field name="planned_hours" widget="float_time" optional="show"/>
+                <field name="extra_hours_diurnal" widget="float_time" 
+                       optional="show"
+                       decoration-info="extra_hours_diurnal > 0"
+                       sum="Total Diurnas"/>
+                <field name="extra_hours_nocturnal" widget="float_time" 
+                       optional="show"
+                       decoration-warning="extra_hours_nocturnal > 0"
+                       sum="Total Nocturnas"/>
+                <field name="total_extra_hours" widget="float_time" 
+                       optional="show"
+                       decoration-success="total_extra_hours > 0"
+                       sum="Total Extras"
+                       class="font-weight-bold"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda con filtros -->
+    <record id="view_attendance_search_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.search.extra.hours</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="has_extra_hours" string="Con Horas Extras" 
+                        domain="[('total_extra_hours', '>', 0)]"/>
+                <filter name="has_diurnal_extra" string="Con Extras Diurnas" 
+                        domain="[('extra_hours_diurnal', '>', 0)]"/>
+                <filter name="has_nocturnal_extra" string="Con Extras Nocturnas" 
+                        domain="[('extra_hours_nocturnal', '>', 0)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar Por">
+                    <filter name="group_by_employee" string="Empleado" 
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_by_department" string="Departamento" 
+                            context="{'group_by': 'department_id'}"/>
+                    <filter name="group_by_check_in_date" string="Fecha Check-in" 
+                            context="{'group_by': 'check_in'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de Pivote para análisis -->
+    <record id="view_attendance_pivot_extra_hours" model="ir.ui.view">
+        <field name="name">hr.attendance.pivot.extra.hours</field>
+        <field name="model">hr.attendance</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Horas Extras">
+                <field name="employee_id" type="row"/>
+                <field name="check_in" interval="month" type="col"/>
+                <field name="worked_hours" type="measure"/>
+                <field name="planned_hours" type="measure"/>
+                <field name="extra_hours_diurnal" type="measure"/>
+                <field name="extra_hours_nocturnal" type="measure"/>
+                <field name="total_extra_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista de Gráfico -->
+    <record id="view_attendance_graph_extra_hours" model="ir.ui.view">
+        <field name="name">hr.attendance.graph.extra.hours</field>
+        <field name="model">hr.attendance</field>
+        <field name="arch" type="xml">
+            <graph string="Horas Extras" type="bar" stacked="True">
+                <field name="employee_id"/>
+                <field name="extra_hours_diurnal" type="measure"/>
+                <field name="extra_hours_nocturnal" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción de Ventana para Reporte de Horas Extras -->
+    <record id="action_attendance_extra_hours_report" model="ir.actions.act_window">
+        <field name="name">Reporte de Horas Extras</field>
+        <field name="res_model">hr.attendance</field>
+        <field name="view_mode">pivot,graph,tree,form</field>
+        <field name="domain">[('total_extra_hours', '>', 0)]</field>
+        <field name="context">{
+            'search_default_group_by_employee': 1,
+            'search_default_has_extra_hours': 1,
+        }</field>
+        <field name="view_ids" 
+               eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_attendance_pivot_extra_hours')}),
+                      (0, 0, {'view_mode': 'graph', 'view_id': ref('view_attendance_graph_extra_hours')}),
+                      (0, 0, {'view_mode': 'tree', 'view_id': ref('view_attendance_tree_inherit')}),
+                      (0, 0, {'view_mode': 'form', 'view_id': ref('view_attendance_form_inherit')})]"/>
+    </record>
+</odoo>

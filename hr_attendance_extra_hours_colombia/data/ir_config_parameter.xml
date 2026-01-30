@@ -1,15 +1,20 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="attendance_nocturnal_start" model="ir.config_parameter">
-        <field name="key">attendance.nocturnal_start</field>
-        <field name="value">21.0</field>
-    </record>
-    <record id="attendance_nocturnal_end" model="ir.config_parameter">
-        <field name="key">attendance.nocturnal_end</field>
-        <field name="value">6.0</field>
-    </record>
-    <record id="attendance_extra_rounding" model="ir.config_parameter">
-        <field name="key">attendance.extra_rounding</field>
-        <field name="value">15</field>
-    </record>
+    <data noupdate="1">
+        <!-- Configuración por defecto para legislación colombiana -->
+        <record id="attendance_nocturnal_start" model="ir.config_parameter">
+            <field name="key">attendance.nocturnal_start</field>
+            <field name="value">21.0</field>
+        </record>
+
+        <record id="attendance_nocturnal_end" model="ir.config_parameter">
+            <field name="key">attendance.nocturnal_end</field>
+            <field name="value">6.0</field>
+        </record>
+
+        <record id="attendance_extra_rounding" model="ir.config_parameter">
+            <field name="key">attendance.extra_rounding</field>
+            <field name="value">15</field>
+        </record>
+    </data>
 </odoo>
