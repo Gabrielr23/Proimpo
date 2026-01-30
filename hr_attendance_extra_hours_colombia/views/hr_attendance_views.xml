@@ -104,7 +104,7 @@
     <record id="action_attendance_extra_hours_report" model="ir.actions.act_window">
         <field name="name">Reporte de Horas Extras</field>
         <field name="res_model">hr.attendance</field>
-        <field name="view_mode">pivot,graph,tree,form</field>
+        <field name="view_mode">pivot,graph,list,form</field>
         <field name="domain">[('total_extra_hours', '>', 0)]</field>
         <field name="context">{
             'search_default_group_by_employee': 1,
@@ -114,7 +114,7 @@
                eval="[(5, 0, 0),
                       (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_attendance_pivot_extra_hours')}),
                       (0, 0, {'view_mode': 'graph', 'view_id': ref('view_attendance_graph_extra_hours')}),
-                      (0, 0, {'view_mode': 'tree', 'view_id': ref('view_attendance_tree_inherit')}),
+                      (0, 0, {'view_mode': 'list', 'view_id': ref('view_attendance_tree_inherit')}),
                       (0, 0, {'view_mode': 'form', 'view_id': ref('view_attendance_form_inherit')})]"/>
     </record>
 </odoo>
