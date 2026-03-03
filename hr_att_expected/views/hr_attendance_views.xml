@@ -39,6 +39,25 @@ if records:
                 <field name="expected_check_out" readonly="1"/>
                 <field name="left_early" readonly="1"/>
             </field>
+
+            <!-- NUEVO GRUPO correctamente insertado -->
+            <xpath expr="//form/sheet" position="inside">
+                <group string="Detalle Horas" col="6">
+                    <group col="1">
+                        <field name="hdo"/>
+                        <field name="rn"/>
+                    </group>
+                    <group col="1">
+                        <field name="hed"/>
+                        <field name="hen"/>
+                    </group>
+                    <group col="1">
+                        <field name="hfd"/>
+                        <field name="rnd"/>
+                        <field name="hd"/>
+                    </group>
+                </group>
+            </xpath>
         </field>
     </record>
 
@@ -57,6 +76,20 @@ if records:
             <field name="check_out" position="after">
                 <field name="expected_check_out" optional="show"/>
                 <field name="left_early" optional="show" widget="boolean_toggle"/>
+            </field>
+            <!-- Añadir después de la columna worked_hours -->
+            <field name="worked_hours" position="after">
+                <field name="approved_overtime" optional="show"  sum="Total extras"/>
+            </field>
+            <!-- Agregar después de approved_overtime o al final -->
+            <field name="worked_hours" position="after">
+                <field name="hdo" optional="hide"  sum="Total HDO"/>
+                <field name="rn" optional="hide"  sum="Total RN"/>
+                <field name="hed" optional="hide"  sum="Total HED"/>
+                <field name="hen" optional="hide"  sum="Total HEN"/>
+                <field name="hfd" optional="hide"  sum="Total HFD"/>
+                <field name="rnd" optional="hide"  sum="Total RND"/>
+                <field name="hd" optional="hide"  sum="Total HD"/>
             </field>
         </field>
     </record>
