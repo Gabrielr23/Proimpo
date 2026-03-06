@@ -257,18 +257,22 @@ class HrAttendance(models.Model):
             }
         }
 
-    def _round_to_half_hour(self, hours):
+    def _round_to_quarter_hour(self, hours):
         """
-        Redondea horas al intervalo de 30 minutos según regla personalizada.
+        Redondea horas al intervalo de 15 minutos según regla personalizada.
         
-        Basado en análisis de ejemplos:
-        - 1:17 (77 min, 1.283h) → 1.0
+        Patrón de redondeo:
+        - Si los minutos están entre 0-14: redondea a .0
+        - Si los minutos están entre 15-29: redondea a .25
+        - Si los minutos están entre 30-44: redondea a .5
+        - Si los minutos están entre 45-59: redondea a .75
+        
+        Ejemplos:
+        - 1:10 (70 min, 1.167h) → 1.0
+        - 1:17 (77 min, 1.283h) → 1.25
         - 1:35 (95 min, 1.583h) → 1.5
-        - 1:45 (105 min, 1.75h) → 1.5
-        
-        Patrón detectado:
-        - Si los minutos están entre 0-29: redondea a .0
-        - Si los minutos están entre 30-59: redondea a .5
+        - 1:45 (105 min, 1.75h) → 1.75
+        - 1:50 (110 min, 1.833h) → 1.75
         """
         if hours <= 0:
             return 0.0
@@ -280,11 +284,15 @@ class HrAttendance(models.Model):
         full_hours = int(total_minutes // 60)
         remaining_minutes = int(total_minutes % 60)
         
-        # Aplicar regla de redondeo
-        if remaining_minutes < 30:
+        # Aplicar regla de redondeo por cuartos de hora
+        if remaining_minutes < 15:
             return float(full_hours)
-        else:
+        elif remaining_minutes < 30:
+            return full_hours + 0.25
+        elif remaining_minutes < 45:
             return full_hours + 0.5
+        else:
+            return full_hours + 0.75
 
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
     def _compute_discounted_hours(self):
@@ -320,7 +328,7 @@ class HrAttendance(models.Model):
 
             # Redondear a 30 minutos hacia arriba
             if discounted_hours > 0:
-                rec.hd = self._round_to_half_hour(discounted_hours)
+                rec.hd = self._round_discount_to_quarter_hour(discounted_hours)
             # rec.hd = discounted_hours
 
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
@@ -363,7 +371,7 @@ class HrAttendance(models.Model):
 
             if extra_hours > 0:
                 # Redondear a 30 minutos
-                extra_hours_rounded = self._round_to_half_hour(extra_hours)
+                extra_hours_rounded = self._round_to_quarter_hour(extra_hours)
                 
                 # Limitar al cupo aprobado
                 rec.approved_overtime = round(min(extra_hours_rounded, limite), 2)
@@ -462,7 +470,7 @@ class HrAttendance(models.Model):
                 # 1. Procesar entrada anticipada primero
                 if early_extra_start and early_extra_end:
                     early_hours = (early_extra_end - early_extra_start).total_seconds() / 3600
-                    early_hours_rounded = self._round_to_half_hour(early_hours)
+                    early_hours_rounded = self._round_to_quarter_hour(early_hours)
                     early_approved = min(early_hours_rounded, total_extra_available - extra_consumed)
                     
                     if early_approved > 0:
@@ -486,7 +494,7 @@ class HrAttendance(models.Model):
                 # 2. Procesar salida tardía
                 if late_extra_start and late_extra_end and extra_consumed < total_extra_available:
                     late_hours = (late_extra_end - late_extra_start).total_seconds() / 3600
-                    late_hours_rounded = self._round_to_half_hour(late_hours)
+                    late_hours_rounded = self._round_to_quarter_hour(late_hours)
                     late_hours_remaining = total_extra_available - extra_consumed
                     late_approved = min(late_hours_rounded, late_hours_remaining)
                     
@@ -556,8 +564,8 @@ class HrAttendance(models.Model):
 
         # Aplicar redondeo si está habilitado
         if apply_rounding:
-            diurna_hours = self._round_to_half_hour(diurna_hours)
-            nocturna_hours = self._round_to_half_hour(nocturna_hours)
+            diurna_hours = self._round_to_quarter_hour(diurna_hours)
+            nocturna_hours = self._round_to_quarter_hour(nocturna_hours)
         else:
             diurna_hours = round(diurna_hours, 2)
             nocturna_hours = round(nocturna_hours, 2)
@@ -583,3 +591,44 @@ class HrAttendance(models.Model):
         ], limit=1)
 
         return bool(leave)
+    
+    def _round_to_half_hour(self, hours):
+        """
+        Redondea horas al intervalo de 30 minutos según regla personalizada.
+        
+        Basado en análisis de ejemplos:
+        - 1:17 (77 min, 1.283h) → 1.0
+        - 1:35 (95 min, 1.583h) → 1.5
+        - 1:45 (105 min, 1.75h) → 1.5
+        
+        Patrón detectado:
+        - Si los minutos están entre 0-29: redondea a .0
+        - Si los minutos están entre 30-59: redondea a .5
+        """
+        if hours <= 0:
+            return 0.0
+        
+        # Convertir a minutos totales
+        total_minutes = hours * 60
+        
+        # Extraer horas completas y minutos restantes
+        full_hours = int(total_minutes // 60)
+        remaining_minutes = int(total_minutes % 60)
+        
+        # Aplicar regla de redondeo
+        if remaining_minutes < 30:
+            return float(full_hours)
+        else:
+            return full_hours + 0.5
+    
+    def _round_discount_to_quarter_hour(self, hours):
+        """
+        Redondea descuentos siempre hacia arriba (favorece al empleador).
+        Cualquier fracción de cuarto de hora cuenta como cuarto completo.
+        """
+        if hours <= 0:
+            return 0.0
+        
+        # Redondear hacia arriba al próximo cuarto de hora
+        import math
+        return math.ceil(hours * 4) / 4

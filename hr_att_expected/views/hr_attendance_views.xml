@@ -42,7 +42,7 @@ if records:
 
             <!-- NUEVO GRUPO correctamente insertado -->
             <xpath expr="//form/sheet" position="inside">
-                <group string="Detalle Horas" col="6">
+                <group string="Detalle Horas!" col="6">
                     <group col="1">
                         <field name="hdo"/>
                         <field name="rn"/>
