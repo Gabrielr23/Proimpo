@@ -232,6 +232,72 @@ class HrAttendance(models.Model):
 
         return expected_check_in_utc, expected_check_out_utc
 
+    def _get_work_intervals_from_calendar(self, calendar, att_date, tz):
+        """
+        NUEVO MÉTODO: Obtiene los intervalos de trabajo del calendario (excluyendo descansos).
+        
+        Retorna una lista de tuplas (start_datetime, end_datetime) en UTC sin timezone info.
+        
+        Ejemplo:
+        Si el calendario tiene:
+        - 08:00-12:00 (trabajo)
+        - 12:00-13:00 (descanso/almuerzo)
+        - 13:00-17:00 (trabajo)
+        
+        Retornará:
+        [(datetime(08:00), datetime(12:00)), (datetime(13:00), datetime(17:00))]
+        """
+        weekday = att_date.weekday()
+        attendance_intervals = calendar.attendance_ids.filtered(
+            lambda a: int(a.dayofweek) == weekday
+        ).sorted(lambda a: a.hour_from)
+
+        if not attendance_intervals:
+            return []
+
+        work_intervals = []
+        
+        for interval in attendance_intervals:
+            # Hora de inicio del intervalo
+            start_hour = int(interval.hour_from)
+            start_minute = int((interval.hour_from % 1) * 60)
+            start_date = att_date
+            
+            if start_hour >= 24:
+                start_hour = start_hour % 24
+                start_date = att_date + timedelta(days=1)
+            
+            start_local = tz.localize(
+                datetime.combine(start_date, datetime.min.time().replace(
+                    hour=start_hour, minute=start_minute
+                ))
+            )
+            
+            # Hora de fin del intervalo
+            end_hour = int(interval.hour_to)
+            end_minute = int((interval.hour_to % 1) * 60)
+            end_date = att_date
+            
+            if end_hour >= 24:
+                end_hour = end_hour % 24
+                end_date = att_date + timedelta(days=1)
+            elif interval.hour_to < interval.hour_from:
+                end_date = att_date + timedelta(days=1)
+            
+            end_local = tz.localize(
+                datetime.combine(end_date, datetime.min.time().replace(
+                    hour=end_hour, minute=end_minute
+                ))
+            )
+            
+            # Convertir a UTC y remover timezone info
+            start_utc = start_local.astimezone(pytz.UTC).replace(tzinfo=None)
+            end_utc = end_local.astimezone(pytz.UTC).replace(tzinfo=None)
+            
+            work_intervals.append((start_utc, end_utc))
+        
+        return work_intervals
+
     def action_recalculate_expected_times(self):
         """
         Acción para recalcular manualmente los tiempos esperados.
@@ -266,25 +332,14 @@ class HrAttendance(models.Model):
         - Si los minutos están entre 15-29: redondea a .25
         - Si los minutos están entre 30-44: redondea a .5
         - Si los minutos están entre 45-59: redondea a .75
-        
-        Ejemplos:
-        - 1:10 (70 min, 1.167h) → 1.0
-        - 1:17 (77 min, 1.283h) → 1.25
-        - 1:35 (95 min, 1.583h) → 1.5
-        - 1:45 (105 min, 1.75h) → 1.75
-        - 1:50 (110 min, 1.833h) → 1.75
         """
         if hours <= 0:
             return 0.0
         
-        # Convertir a minutos totales
         total_minutes = hours * 60
-        
-        # Extraer horas completas y minutos restantes
         full_hours = int(total_minutes // 60)
         remaining_minutes = int(total_minutes % 60)
         
-        # Aplicar regla de redondeo por cuartos de hora
         if remaining_minutes < 15:
             return float(full_hours)
         elif remaining_minutes < 30:
@@ -297,13 +352,12 @@ class HrAttendance(models.Model):
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
     def _compute_discounted_hours(self):
         """
-        Calcula las horas descontadas por llegada tarde o salida temprana.
-        Se redondea a intervalos de 30 minutos hacia arriba.
+        MEJORADO: Calcula las horas descontadas considerando los descansos del calendario.
         
-        Ejemplos:
-        - Llegó 1 hora tarde en turno de 8h → trabaja 7h → descuento 1.0h
-        - Salió 1:45 antes → descuento 2.0h (redondeado)
-        - Llegó 0:20 tarde → descuento 0.5h (redondeado)
+        Si el empleado:
+        - Llega tarde durante un periodo de trabajo → se descuenta
+        - Llega tarde durante un periodo de descanso → NO se descuenta hasta que empiece el siguiente periodo de trabajo
+        - Sale temprano de un periodo de trabajo → se descuenta
         """
         for rec in self:
             rec.hd = 0.0
@@ -311,36 +365,57 @@ class HrAttendance(models.Model):
             if not rec.check_in or not rec.check_out:
                 continue
 
-            if not rec.expected_check_in or not rec.expected_check_out:
+            if not rec.employee_id:
+                continue
+
+            # Obtener intervalos de trabajo del calendario
+            tz = self._get_employee_tz(rec.employee_id)
+            check_in_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
+            att_date = check_in_local.date()
+            
+            calendar = rec.employee_id.resource_calendar_id
+            if not calendar:
+                continue
+            
+            work_intervals = self._get_work_intervals_from_calendar(calendar, att_date, tz)
+            
+            if not work_intervals:
                 continue
 
             discounted_hours = 0.0
 
-            # 1. Llegada tarde (después de la hora esperada)
-            if rec.check_in > rec.expected_check_in:
-                late_hours = (rec.check_in - rec.expected_check_in).total_seconds() / 3600
-                discounted_hours += late_hours
+            # Calcular descuentos por cada intervalo de trabajo
+            for interval_start, interval_end in work_intervals:
+                # 1. Llegada tarde a este intervalo
+                if rec.check_in > interval_start and rec.check_in < interval_end:
+                    # El empleado llegó durante este intervalo (tarde)
+                    late_hours = (rec.check_in - interval_start).total_seconds() / 3600
+                    discounted_hours += late_hours
+                elif rec.check_in > interval_end:
+                    # El empleado llegó después de que terminó este intervalo completo
+                    # Se descuenta todo el intervalo
+                    interval_hours = (interval_end - interval_start).total_seconds() / 3600
+                    discounted_hours += interval_hours
 
-            # 2. Salida temprana (antes de la hora esperada)
-            if rec.check_out < rec.expected_check_out:
-                early_hours = (rec.expected_check_out - rec.check_out).total_seconds() / 3600
-                discounted_hours += early_hours
+                # 2. Salida temprana de este intervalo
+                if rec.check_out < interval_end and rec.check_out > interval_start:
+                    # El empleado salió durante este intervalo (temprano)
+                    early_hours = (interval_end - rec.check_out).total_seconds() / 3600
+                    discounted_hours += early_hours
+                elif rec.check_out < interval_start:
+                    # El empleado salió antes de que comenzara este intervalo
+                    # Se descuenta todo el intervalo
+                    interval_hours = (interval_end - interval_start).total_seconds() / 3600
+                    discounted_hours += interval_hours
 
-            # Redondear a 30 minutos hacia arriba
+            # Redondear hacia arriba al próximo cuarto de hora
             if discounted_hours > 0:
                 rec.hd = self._round_discount_to_quarter_hour(discounted_hours)
-            # rec.hd = discounted_hours
 
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
     def _get_limit_extras_hours(self):
         """
         Calcula las horas extras aprobadas para cada registro.
-        
-        MEJORAS:
-        - Solo asigna horas extras si realmente las hay
-        - Considera entrada anticipada como hora extra
-        - Redondea a intervalos de 30 minutos
-        - Obtiene límite desde hr.overtime.line
         """
         for rec in self:
             rec.approved_overtime = 0.0
@@ -348,7 +423,6 @@ class HrAttendance(models.Model):
             if not rec.check_out or not rec.employee_id:
                 continue
 
-            # Obtener la fecha del turno en la timezone del empleado
             tz = self._get_employee_tz(rec.employee_id)
             check_in_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
             turno_date = check_in_local.date()
@@ -356,30 +430,26 @@ class HrAttendance(models.Model):
             # Consultar el cupo aprobado para este empleado y fecha
             limite = self._get_limit_extras_hours_max(rec.employee_id, turno_date)
 
-            # Calcular horas extras totales (entrada anticipada + salida tardía)
+            # Calcular horas extras totales
             extra_hours = 0.0
 
-            # Entrada anticipada (solo si llegó ANTES de la hora esperada)
+            # Entrada anticipada
             if rec.expected_check_in and rec.check_in < rec.expected_check_in:
                 early_entry = (rec.expected_check_in - rec.check_in).total_seconds() / 3600
                 extra_hours += early_entry
 
-            # Salida tardía (solo si salió DESPUÉS de la hora esperada)
+            # Salida tardía
             if rec.expected_check_out and rec.check_out > rec.expected_check_out:
                 late_exit = (rec.check_out - rec.expected_check_out).total_seconds() / 3600
                 extra_hours += late_exit
 
             if extra_hours > 0:
-                # Redondear a 30 minutos
                 extra_hours_rounded = self._round_to_quarter_hour(extra_hours)
-                
-                # Limitar al cupo aprobado
                 rec.approved_overtime = round(min(extra_hours_rounded, limite), 2)
 
     def _get_limit_extras_hours_max(self, employee, date):
         """
-        Retorna el límite máximo de horas extras permitidas para un empleado en una fecha.
-        Consulta el modelo hr.overtime.line para obtener el cupo diario aprobado.
+        Retorna el límite máximo de horas extras permitidas.
         """
         if not employee or not date:
             return 0.0
@@ -398,9 +468,10 @@ class HrAttendance(models.Model):
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out', 'approved_overtime')
     def _compute_work_hours_breakdown(self):
         """
-        Calcula el desglose de horas trabajadas según legislación colombiana.
-        Incluye la entrada anticipada en el cálculo de horas extras.
-        TODAS las horas se redondean a intervalos de 30 minutos.
+        MEJORADO: Calcula el desglose de horas trabajadas excluyendo los periodos de descanso.
+        
+        Solo cuenta como tiempo trabajado los intervalos definidos en el calendario,
+        excluyendo automáticamente los descansos.
         """
         if _logger.isEnabledFor(logging.DEBUG):
             _logger.debug("Calculando desglose de horas para %d registros", len(self))
@@ -413,73 +484,99 @@ class HrAttendance(models.Model):
             rec.hfd = 0.0
             rec.rnd = 0.0
 
-            if not rec.check_in or not rec.check_out:
+            if not rec.check_in or not rec.check_out or not rec.employee_id:
                 continue
 
             tz = self._get_employee_tz(rec.employee_id)
             check_in_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
             check_out_local = pytz.UTC.localize(rec.check_out).astimezone(tz)
+            att_date = check_in_local.date()
 
-            is_holiday = self._is_holiday_or_sunday(check_in_local.date())
+            is_holiday = self._is_holiday_or_sunday(att_date)
 
-            # Determinar los límites de horario ordinario y extra
-            ordinary_start = check_in_local
-            ordinary_end = check_out_local
-            early_extra_start = None
-            early_extra_end = None
-            late_extra_start = None
-            late_extra_end = None
-
-            if rec.expected_check_in and rec.expected_check_out:
-                expected_in_local = pytz.UTC.localize(rec.expected_check_in).astimezone(tz)
-                expected_out_local = pytz.UTC.localize(rec.expected_check_out).astimezone(tz)
-
-                # Entrada anticipada (hora extra)
-                if check_in_local < expected_in_local:
-                    early_extra_start = check_in_local
-                    early_extra_end = expected_in_local
-                    ordinary_start = expected_in_local
-                # Llegada tarde (se ajusta el inicio del horario ordinario)
-                elif check_in_local > expected_in_local:
-                    ordinary_start = check_in_local
-                
-                # Salida tardía (hora extra)
-                if check_out_local > expected_out_local:
-                    late_extra_start = expected_out_local
-                    late_extra_end = check_out_local
-                    ordinary_end = expected_out_local
-                # Salida temprana (se ajusta el fin del horario ordinario)
-                elif check_out_local < expected_out_local:
-                    ordinary_end = check_out_local
+            # Obtener intervalos de trabajo del calendario
+            calendar = rec.employee_id.resource_calendar_id
+            if not calendar:
+                continue
             
-            # Calcular horas ordinarias (ya vienen redondeadas)
-            if is_holiday:
-                rec.hfd, rec.rnd = self._calculate_hours_by_shift(
-                    ordinary_start, ordinary_end
-                )
-            else:
-                rec.hdo, rec.rn = self._calculate_hours_by_shift(
-                    ordinary_start, ordinary_end
-                )
+            work_intervals = self._get_work_intervals_from_calendar(calendar, att_date, tz)
+            
+            if not work_intervals:
+                continue
+
+            # Procesar cada intervalo de trabajo
+            for interval_start, interval_end in work_intervals:
+                # Determinar los límites efectivos de trabajo en este intervalo
+                actual_start = max(rec.check_in, interval_start)
+                actual_end = min(rec.check_out, interval_end)
+                
+                # Si el empleado no trabajó en este intervalo, continuar
+                if actual_start >= actual_end:
+                    continue
+
+                # Determinar si este tiempo es ordinario o extra
+                is_ordinary = True
+                ordinary_start = actual_start
+                ordinary_end = actual_end
+                
+                if rec.expected_check_in and rec.expected_check_out:
+                    # Si el intervalo está completamente fuera del horario esperado, es extra
+                    if interval_end <= rec.expected_check_in or interval_start >= rec.expected_check_out:
+                        is_ordinary = False
+                    else:
+                        # Ajustar límites ordinarios al horario esperado
+                        ordinary_start = max(actual_start, rec.expected_check_in)
+                        ordinary_end = min(actual_end, rec.expected_check_out)
+
+                # Calcular horas ordinarias en este intervalo
+                if is_ordinary and ordinary_start < ordinary_end:
+                    ordinary_start_local = pytz.UTC.localize(ordinary_start).astimezone(tz)
+                    ordinary_end_local = pytz.UTC.localize(ordinary_end).astimezone(tz)
+                    
+                    if is_holiday:
+                        hfd_temp, rnd_temp = self._calculate_hours_by_shift(
+                            ordinary_start_local, ordinary_end_local
+                        )
+                        rec.hfd += hfd_temp
+                        rec.rnd += rnd_temp
+                    else:
+                        hdo_temp, rn_temp = self._calculate_hours_by_shift(
+                            ordinary_start_local, ordinary_end_local
+                        )
+                        rec.hdo += hdo_temp
+                        rec.rn += rn_temp
 
             # Calcular horas extras si están aprobadas
             if rec.approved_overtime > 0:
-                total_extra_available = rec.approved_overtime
-                extra_consumed = 0.0
+                self._calculate_overtime_hours(rec, work_intervals, is_holiday, tz)
 
-                # 1. Procesar entrada anticipada primero
-                if early_extra_start and early_extra_end:
-                    early_hours = (early_extra_end - early_extra_start).total_seconds() / 3600
-                    early_hours_rounded = self._round_to_quarter_hour(early_hours)
-                    early_approved = min(early_hours_rounded, total_extra_available - extra_consumed)
+    def _calculate_overtime_hours(self, rec, work_intervals, is_holiday, tz):
+        """
+        NUEVO MÉTODO: Calcula las horas extras considerando los intervalos de trabajo.
+        """
+        total_extra_available = rec.approved_overtime
+        extra_consumed = 0.0
+
+        # Entrada anticipada
+        if rec.expected_check_in and rec.check_in < rec.expected_check_in:
+            early_hours = (rec.expected_check_in - rec.check_in).total_seconds() / 3600
+            early_hours_rounded = self._round_to_quarter_hour(early_hours)
+            early_approved = min(early_hours_rounded, total_extra_available - extra_consumed)
+            
+            if early_approved > 0:
+                approved_early_start = rec.expected_check_in - timedelta(hours=early_approved)
+                
+                # Calcular solo en intervalos de trabajo
+                for interval_start, interval_end in work_intervals:
+                    overlap_start = max(approved_early_start, interval_start)
+                    overlap_end = min(rec.expected_check_in, interval_end)
                     
-                    if early_approved > 0:
-                        # Calcular el tiempo límite aprobado de entrada anticipada
-                        approved_early_start = early_extra_end - timedelta(hours=early_approved)
+                    if overlap_start < overlap_end:
+                        overlap_start_local = pytz.UTC.localize(overlap_start).astimezone(tz)
+                        overlap_end_local = pytz.UTC.localize(overlap_end).astimezone(tz)
                         
-                        # Las horas ya vienen redondeadas
                         extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                            approved_early_start, early_extra_end
+                            overlap_start_local, overlap_end_local
                         )
                         
                         if is_holiday:
@@ -488,23 +585,31 @@ class HrAttendance(models.Model):
                         else:
                             rec.hed += extra_diurna
                             rec.hen += extra_nocturna
-                        
-                        extra_consumed += early_approved
+                
+                extra_consumed += early_approved
 
-                # 2. Procesar salida tardía
-                if late_extra_start and late_extra_end and extra_consumed < total_extra_available:
-                    late_hours = (late_extra_end - late_extra_start).total_seconds() / 3600
-                    late_hours_rounded = self._round_to_quarter_hour(late_hours)
-                    late_hours_remaining = total_extra_available - extra_consumed
-                    late_approved = min(late_hours_rounded, late_hours_remaining)
+        # Salida tardía
+        if rec.expected_check_out and rec.check_out > rec.expected_check_out and extra_consumed < total_extra_available:
+            late_hours = (rec.check_out - rec.expected_check_out).total_seconds() / 3600
+            late_hours_rounded = self._round_to_quarter_hour(late_hours)
+            late_hours_remaining = total_extra_available - extra_consumed
+            late_approved = min(late_hours_rounded, late_hours_remaining)
+            
+            if late_approved > 0:
+                approved_late_end = rec.expected_check_out + timedelta(hours=late_approved)
+                approved_late_end = min(approved_late_end, rec.check_out)
+                
+                # Calcular solo en intervalos de trabajo
+                for interval_start, interval_end in work_intervals:
+                    overlap_start = max(rec.expected_check_out, interval_start)
+                    overlap_end = min(approved_late_end, interval_end)
                     
-                    if late_approved > 0:
-                        approved_late_end = late_extra_start + timedelta(hours=late_approved)
-                        approved_late_end = min(approved_late_end, late_extra_end)
+                    if overlap_start < overlap_end:
+                        overlap_start_local = pytz.UTC.localize(overlap_start).astimezone(tz)
+                        overlap_end_local = pytz.UTC.localize(overlap_end).astimezone(tz)
                         
-                        # Las horas ya vienen redondeadas
                         extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                            late_extra_start, approved_late_end
+                            overlap_start_local, overlap_end_local
                         )
                         
                         if is_holiday:
@@ -518,13 +623,6 @@ class HrAttendance(models.Model):
         """
         Calcula horas diurnas y nocturnas entre start_dt y end_dt.
         Horario diurno: 06:00–19:00 | Nocturno: 19:00–06:00
-        
-        Args:
-            start_dt: datetime de inicio (con timezone)
-            end_dt: datetime de fin (con timezone)
-            apply_rounding: si True, redondea las horas a intervalos de 30 minutos
-        
-        Retorna: (horas_diurnas, horas_nocturnas)
         """
         diurna_hours = 0.0
         nocturna_hours = 0.0
@@ -533,21 +631,17 @@ class HrAttendance(models.Model):
         while current < end_dt:
             hour = current.hour
 
-            # Calcular el próximo límite de segmento (diurno/nocturno)
             if 6 <= hour < 19:
-                # Periodo diurno: avanzar hasta las 19:00
                 next_boundary = current.replace(
                     hour=19, minute=0, second=0, microsecond=0
                 )
                 if next_boundary <= current:
                     next_boundary += timedelta(days=1)
             elif hour >= 19:
-                # Periodo nocturno (tarde): avanzar hasta las 06:00 del día siguiente
                 next_boundary = (current + timedelta(days=1)).replace(
                     hour=6, minute=0, second=0, microsecond=0
                 )
             else:
-                # Periodo nocturno (madrugada, hour < 6): avanzar hasta las 06:00
                 next_boundary = current.replace(
                     hour=6, minute=0, second=0, microsecond=0
                 )
@@ -562,7 +656,6 @@ class HrAttendance(models.Model):
 
             current = next_time
 
-        # Aplicar redondeo si está habilitado
         if apply_rounding:
             diurna_hours = self._round_to_quarter_hour(diurna_hours)
             nocturna_hours = self._round_to_quarter_hour(nocturna_hours)
@@ -576,16 +669,14 @@ class HrAttendance(models.Model):
         """
         Determina si una fecha es festivo o domingo.
         """
-        # Domingo
         if date.weekday() == 6:
             return True
 
-        # Festivos: buscar en resource.calendar.leaves
         date_dt_start = datetime.combine(date, datetime.min.time())
         date_dt_end = datetime.combine(date, datetime.max.time())
 
         leave = self.env['resource.calendar.leaves'].search([
-            ('resource_id', '=', False),  # Festivo global
+            ('resource_id', '=', False),
             ('date_from', '<=', date_dt_end),
             ('date_to', '>=', date_dt_start),
         ], limit=1)
@@ -594,28 +685,15 @@ class HrAttendance(models.Model):
     
     def _round_to_half_hour(self, hours):
         """
-        Redondea horas al intervalo de 30 minutos según regla personalizada.
-        
-        Basado en análisis de ejemplos:
-        - 1:17 (77 min, 1.283h) → 1.0
-        - 1:35 (95 min, 1.583h) → 1.5
-        - 1:45 (105 min, 1.75h) → 1.5
-        
-        Patrón detectado:
-        - Si los minutos están entre 0-29: redondea a .0
-        - Si los minutos están entre 30-59: redondea a .5
+        Redondea horas al intervalo de 30 minutos.
         """
         if hours <= 0:
             return 0.0
         
-        # Convertir a minutos totales
         total_minutes = hours * 60
-        
-        # Extraer horas completas y minutos restantes
         full_hours = int(total_minutes // 60)
         remaining_minutes = int(total_minutes % 60)
         
-        # Aplicar regla de redondeo
         if remaining_minutes < 30:
             return float(full_hours)
         else:
@@ -624,11 +702,8 @@ class HrAttendance(models.Model):
     def _round_discount_to_quarter_hour(self, hours):
         """
         Redondea descuentos siempre hacia arriba (favorece al empleador).
-        Cualquier fracción de cuarto de hora cuenta como cuarto completo.
         """
         if hours <= 0:
             return 0.0
         
-        # Redondear hacia arriba al próximo cuarto de hora
-        import math
         return math.ceil(hours * 4) / 4
