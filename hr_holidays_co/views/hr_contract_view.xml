@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="hr_contract_view_form_vc" model="ir.ui.view">
+      <field name="name">hr.contract.hr_contract_view_form_vc</field>
+      <field name="model">hr.contract</field>
+      <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='date_end']" position="after">
+            <field name="contract_end_date"/>
+        </xpath>	  
+	  
+        <xpath expr="//page[@name='information']" position="after">
+          <page name="registro_dias" string="Vacaciones">
+            <group>
+              <separator string="Días Vacaciones"/>
+                <field name="leave_ids_vc"  nolabel="1">
+                  <list string="Dias Vacaciones">
+                    <field name="name" />
+					          <field name="date_from"/>
+                    <field name="date_to"/>
+                    <field name="number_of_days"/>
+					          <field name="number_of_days_real"/>
+                    <field name="approve_date"/>
+                    <field name="state"/>
+                  </list>
+                </field>
+                <group>
+                  <field name="vacaciones_tomadas" class="oe_subtotal_footer_separator"/>
+                </group>
+                <br />
+                <separator string="Días Sanciones, Ausencias o Licencias no Remuneradas"/>
+                  <field name="leave_ids_sn"  nolabel="1">
+                    <list string="Dias Vacaciones">
+                      <field name="name" />
+                      <field name="number_of_days" />
+                      <field name="approve_date" />
+                      <field name="date_from" />
+                      <field name="date_to" />
+                      <field name="state" />
+                    </list>
+                  </field>
+                <group>
+                  <field name="sanciones" class="oe_subtotal_footer_separator"/>
+                </group>
+                  <group class="oe_subtotal_footer oe_right">
+                    <field name="dias_vacaciones_pendientes" class="oe_subtotal_footer_separator"/>
+                  </group>
+            </group>
+          </page>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="hr_contract_view_list_vc" model="ir.ui.view">
+      <field name="name">hr.contract.view.list.vc</field>
+      <field name="model">hr.contract</field>
+      <field name="inherit_id" ref="hr_contract.hr_contract_view_tree"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='date_end']" position="after">
+            <field name="dias_vacaciones_pendientes"/>
+        </xpath>
+      </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Liquidación de contrato-->
+
+    <data noupdate="1">
+
+    <record id="action_report_contract_liquidation_only" model="ir.actions.report">
+        <field name="name">Liquidación de contrato - solo</field>
+        <field name="model">hr.contract.liquidation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_holidays_co.contract_liquidation_report_only</field>
+        <field name="report_file">hr_holidays_co.contract_liquidation_report_only</field>
+		<field name="print_report_name">'Liquidación - %s' % (object.name or '')</field>
+        <field name="binding_model_id" ref="hr_holidays_co.model_hr_contract_liquidation"/>
+        <field name="binding_type">report</field>
+		<field name="paperformat_id" ref="hr_holidays_co.paperformat_contract_liquidation"/>
+    </record>
+
+	<!-- Main template -->
+	<template id="contract_liquidation_report_only">
+		<t t-call="web.html_container">
+			<t t-foreach="docs" t-as="o">
+				<t t-set="lang" t-value="o.employee_id.work_contact_id.lang"/>
+				<t t-call="hr_holidays_co.contract_liquidation_report_document_only" t-lang="lang"/>
+			</t>
+		</t>
+	</template>
+
+	<template id="contract_liquidation_report_document_only">
+
+      <t t-call="web.html_container">
+       <t t-call="web.external_layout">
+        <t t-foreach="docs" t-as="o">
+          <h2 style="font-size: 80%;text-align: center;"><B>DEPARTAMENTO DE GESTION HUMANA</B></h2>
+          <h2 style="font-size: 80%;text-align: center;"><B>LIQUIDACION CONTRATO INDIVIDUAL DE TRABAJO</B></h2>
+
+        <div class="page">
+ 
+          <table class="table table-sm table-bordered" style="font-size: 10px;">
+            <tr style="height:10px;">
+              <td><strong>Empleado</strong></td>
+              <td><span t-field="o.employee_id"/></td>
+              <td><strong>Cédula No</strong></td>
+              <td><span t-field="o.employee_id.identification_id"/></td>
+            </tr>
+            <tr style="height:10px;">
+              <td><strong>Cargo</strong></td>
+              <td><span t-field="o.employee_id.job_id"/></td>
+              <td><strong>Fecha ingreso</strong></td>
+              <td><span t-field="o.contract_id.date_start"/></td>
+            </tr>
+
+            <tr>
+              <td><strong>Motivo de retiro</strong></td>
+              <td><span t-field="o.motivo_retiro"/></td>
+              <td><strong>Fecha de retiro</strong></td>
+              <td><span t-field="o.date_liquidacion"/></td>
+            </tr>
+
+            <tr>
+              <td><strong>Cuenta bancaria</strong></td>
+              <td><span t-field="o.employee_id.bank_account_id"/></td>
+              <td><strong>Total</strong></td>
+              <td><span t-field="o.total_liquidation"/></td>
+            </tr>
+          
+            <!-- tr>
+              <td><strong>Fecha desde</strong></td>
+              <td><span t-field="o.slip_id.date_from"/></td>
+              <td><strong>Fecha hasta</strong></td>
+              <td><span t-field="o.slip_id.date_to"/></td>
+            </tr -->
+
+        </table>
+
+        <h3 style="font-size: 80%;text-align: center;"><B>Tabla de bases</B></h3>
+          <table class="table table-sm table-bordered" style="font-size: 10px;"> 
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th class="text-center">Base</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Días</th>
+                <th class="text-center">valor</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr t-foreach="o.details_ids" t-as="l">
+                <td><span t-field="l.input_type_id.name"/></td>
+                <td class="text-center"><span t-field="l.total_average"/></td>
+                <td><span t-field="l.date_from"/></td>
+                <td><span t-field="l.date_to"/></td>
+                <td><span t-field="l.days_total"/></td>
+                <td class="text-right"><span t-field="l.amount"/></td>
+              </tr>
+            </tbody>
+          </table>
+
+
+          <!--vh3 style="font-size: 80%;text-align: center;"><B>Tabla de conceptos</B></h3>
+
+            <table class="table table-sm table-bordered" style="font-size: 10px;">
+              <tr>
+                <th class="text-center">Concepto</th>
+                <th class="text-center">Código</th>
+                <th class="text-center">Total</th>
+              </tr> 
+              <tbody>
+                <tr t-foreach="o.slip_id.line_ids.filtered(lambda line: line.appears_on_payslip)" t-as="p">
+                  <td><span t-field="p.name"/></td>
+                  <td><span t-field="p.code"/></td>
+                  <td class="text-right"><span t-field="p.amount"/></td>
+                </tr>
+              </tbody>
+            </table -->
+
+            <table class="table table-condensed">
+              <tr>
+                <td><strong/></td>
+                <td colspan="3" style="font-size: 50%;">
+
+
+
+ARTICULO 128 Ley 50/90 "no constituye salario las sumas ocasi
+onales y por mera liberalidad que recibe el trabajador del empleador como
+primas, bonificaciones o gratificaciones ocasionales, participación de utilidades,excedentes de las empresas de economía
+solidaria y de lo que recibe no para su beneficio, ni para enriquecer su patrimonio, sino para desempeñar a cabalidad con sus funciones
+como gastos de representación, medios de transporte, elementos de trabajo y otros semejantes".
+
+
+                </td>
+                <td colspan="3" style="font-size: 9px">
+CONSTANCIA
+1. Que el patrono ha incorporado en la liquidación anterior, en lo pertinente, la totalidad de los valores correspondientes a salarios, descansos
+remunerados, cesantias, vacaciones, primas y en general todo concepto relacionado con salarios, prestaciones o indemnizaciones.
+2. Que no obstante lo anterior, se hará constatar por las partes que con el pago de la suma de dineros a que hace referencia la presente
+liquidacion, queda transada cualquier diferencia relativa al contrato de trabajo que ha quedado terminado, pues ha sido su comun minino
+transar definitivamente, como en efecto transa, todo reclamo pasado, presente o futuro que tenga por causa el mencionado contrato.
+Por consiguiente, esta transacción tiene como efecto la extinción de las obligaciones provenientes de la relación laboral que existe entre el
+patrono y el trabajador quienes reciprocamente se declaran a paz y salvo por los conceptos expresados.
+El empleador y trabajador reconocen, ratifican y aceptan que la prima extralegal de vacaciones no es contitutiva de salario, de acuerdo
+con lo dispuesto en el articulo 15 de la Ley 50 de 1990 subrogatorio del articulo 128 del Codigo Sustantivo de Trabajo
+
+
+
+                </td>
+
+              </tr>
+
+            </table>
+
+            <div>
+              </div>
+                <table border="0" style="width:100%;font-size: 90%;margin:60px;">
+                  <tr border="0">
+                    <td>__________________________</td>
+                    <td>__________________________</td>
+                    <td>__________________________</td>
+                  </tr>
+                  <tr border="0">
+                    <td><strong>ELABORO</strong></td>
+                    <td><strong>APROBO</strong></td>
+                    <td><strong>TRABAJADOR</strong></td>
+                  </tr>
+                  <tr border="0">
+                    <td/>
+                    <td/>
+                    <td>CC: _______________________</td>
+                  </tr>
+                </table>
+        </div>
+        </t>
+      </t>
+    </t>  
+
+	</template>
+
+    </data>
+
+</odoo>
