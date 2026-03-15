@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="module_hr_overtime_management" model="ir.module.category">
+        <field name="name">Horas Extras</field>
+        <field name="description">Gestión de horas extras</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="group_hr_overtime_manager" model="res.groups">
+        <field name="name">Gestor de Horas Extras</field>
+        <field name="category_id" ref="module_hr_overtime_management"/>
+        <field name="implied_ids" eval="[(4, ref('hr.group_hr_manager'))]"/>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+
+</odoo>
