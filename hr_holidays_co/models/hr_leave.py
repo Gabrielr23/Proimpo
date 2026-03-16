@@ -86,7 +86,7 @@ class HrLeave(models.Model):
                     leave.contract_id = contract
                 elif leave.state in ('validate', 'validate1'):
                     raise ValidationError(
-                        'No se encuentra un contrato activo para el empleado %s'
+                        'No se encuentra un contrato activo para el empleado hrgc_ %s'
                         % (leave.employee_id.name,)
                     )
 

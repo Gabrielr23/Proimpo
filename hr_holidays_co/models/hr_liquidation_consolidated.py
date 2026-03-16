@@ -112,7 +112,7 @@ class HrLiquidationConsolidated(models.Model):
 
                 contract_id = emp.get_contract(liq.date_liquidation)
                 if not contract_id:
-                   raise ValidationError('No se encuentra un contrato activo para el empleado %s' % (emp.name,))
+                   raise ValidationError('No se encuentra un contrato activo para el empleado hrlcon %s' % (emp.name,))
 
                 contract = self.env['hr.contract'].sudo().browse([contract_id])[0]
                 aprendiz_lectiva = contract._get_rule_parameter('APRENDIZ_LECTIVA', liq.date_liquidation)
