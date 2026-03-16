@@ -80,15 +80,16 @@ class HrLeave(models.Model):
     def _get_contract(self):
         for leave in self:
             leave.contract_id = False
+            
             if leave.request_date_from and leave.employee_id:
                 contract = leave.employee_id.get_contract(leave.request_date_from)
                 if contract:
                     leave.contract_id = contract
-                elif leave.state in ('validate', 'validate1'):
-                    raise ValidationError(
-                        'No se encuentra un contrato activo para el empleado hrgc_ %s'
-                        % (leave.employee_id.name,)
-                    )
+                # elif leave.state in ('validate', 'validate1'):
+                #     raise ValidationError(
+                #         'No se encuentra un contrato activo para el empleado hrgc_ %s'
+                #         % (leave.employee_id.name,)
+                #     )
 
     def _check_date_period(self):
         for holiday in self:
