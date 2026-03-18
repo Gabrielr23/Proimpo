@@ -80,16 +80,15 @@ class HrLeave(models.Model):
     def _get_contract(self):
         for leave in self:
             leave.contract_id = False
-            
             if leave.request_date_from and leave.employee_id:
                 contract = leave.employee_id.get_contract(leave.request_date_from)
                 if contract:
                     leave.contract_id = contract
-                # elif leave.state in ('validate', 'validate1'):
-                #     raise ValidationError(
-                #         'No se encuentra un contrato activo para el empleado hrgc_ %s'
-                #         % (leave.employee_id.name,)
-                #     )
+                elif leave.state in ('validate', 'validate1'):
+                    raise ValidationError(
+                        'No se encuentra un contrato activo para el empleado %s'
+                        % (leave.employee_id.name,)
+                    )
 
     def _check_date_period(self):
         for holiday in self:
@@ -128,7 +127,9 @@ class HrLeave(models.Model):
               elif (f_desde.strftime('%A').lower() in ('sunday','domingo')):              
                  print('Es un domingo')
               else:                            
-                 if self.env['hr.holidays.public'].is_public_holiday(f_desde):   
+                 is_festivo = 'hr.holidays.public' in self.env.registry and \
+                              self.env['hr.holidays.public'].is_public_holiday(f_desde)
+                 if is_festivo:
                     print('Es festivo')
                  else:   
                     diff_day = diff_day + 1

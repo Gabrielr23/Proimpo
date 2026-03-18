@@ -78,7 +78,7 @@ class HrContractLiquidation(models.Model):
                liq.contract_id = liq.employee_id.get_contract(liq.date_liquidacion)
 
                if not liq.contract_id:
-                  raise ValidationError('No se encuentra un contrato activo para el empleado hcl %s' % (liq.employee_id.name,))
+                  raise ValidationError('No se encuentra un contrato activo para el empleado %s' % (liq.employee_id.name,))
 
                liq.contract_end_date = liq.contract_id.contract_end_date
                liq.date_vacation = liq.contract_id.date_start
