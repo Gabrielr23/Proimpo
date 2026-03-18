@@ -7,7 +7,7 @@
     "version": "18.0.1.0.4",
     "license": "AGPL-3",
     "category": "Human Resources",
-    "author": "Michael Telahun Makonnen, "
+    "author": "Michael Telahun Makonnen"
     "Tecnativa, "
     "Fekete Mihai (Forest and Biomass Services Romania), "
     "Druidoo, "
