@@ -58,7 +58,7 @@ class SaleOrder(models.Model):
 
 		print('ALL_DUE ---------------------------------------- ',all_due)
 
-    # Busca solo las facturas vencidas
+		# Busca solo las facturas vencidas
 		all_invoices = self.env['account.move'].search([
 				                 ('partner_id', '=', partner.id),
 				                 ('move_type', '=', 'out_invoice'),
@@ -94,7 +94,7 @@ class SaleOrder(models.Model):
 
 			self.env.cr.execute("select min(i.invoice_date_due), min(i.name) fecha from account_move i\
                                  where i.state = 'posted' \
-							     and i.payment_state not in ('paid','in_payment')\
+				\t\t\t\t     and i.payment_state not in ('paid','in_payment')\
                                  and i.move_type = 'out_invoice' \
                                  and i.partner_id = %s",(self.partner_id.id,))
                                
@@ -124,19 +124,19 @@ class SaleOrder(models.Model):
                                
 					res = self.env.cr.fetchone() or False   
 					print('res factura: ',res)   
-					#print('data ',data)
 					print('d ',d)
 
-					#if data + d < datetime.now():
-					if data < datetime.now():
+					# CORRECCIÓN: Se aplican los días de gracia (d) y se verifica
+					# que haya saldo vencido real (all_date_due > 0)
+					if data + d < datetime.now() and all_date_due > 0:
 						#Busca el total vencido
 						all_invoices = self.env['account.move'].search([('partner_id', '=', partner.id),
-				                 										('move_type', '=', 'out_invoice'),
-				                 										('company_id', '=', self.company_id.id),
-				                 										('state', 'in', ['posted']),
-																		('payment_state', 'not in', ['paid','in_payment']),
-				                 										('invoice_date_due','<',datetime.now())
-					  												   ])
+				                 									('move_type', '=', 'out_invoice'),
+				                 									('company_id', '=', self.company_id.id),
+				                 									('state', 'in', ['posted']),
+																	('payment_state', 'not in', ['paid','in_payment']),
+				                 									('invoice_date_due','<',datetime.now())
+				  												   ])
 
 						all_due=0.0
 
@@ -145,13 +145,13 @@ class SaleOrder(models.Model):
 
 		
 						params = {'sale_order':self.id,
-						     	  'invoice_amount':self.amount_total,
-								  'new_balance': new_balance,
-								  'debt':partner.credit,
-								  'my_credit_limit': partner.my_credit_limit,
-								  'due_not_invoiced':due_notinv,
-								  'balance_due' : all_due
-							     }
+							     	  'invoice_amount':self.amount_total,
+									  'new_balance': new_balance,
+									  'debt':partner.credit,
+									  'my_credit_limit': partner.my_credit_limit,
+									  'due_not_invoiced':due_notinv,
+									  'balance_due' : all_due
+							         }
 
 						return [params]
 					
@@ -205,4 +205,3 @@ class SaleOrder(models.Model):
 							'view_id': self.env.ref('control_credit_limit.my_credit_limit_wizard',False).id,
 							'target': 'new',
 						}
-
