@@ -200,13 +200,18 @@
         </field>
     </record>
 
+    <!-- Menú raíz propio — no depende de hr_payroll.menu_hr_payroll_root que no existe en Odoo 18 Enterprise -->
+    <menuitem id="menu_payroll_edi_root"
+              name="Nómina Electrónica"
+              sequence="90"/>
+
     <menuitem id="menu_payslip_edi"
-              name="Edi Payslips"
-              parent="hr_payroll.menu_hr_payroll_root"
-              groups="hr_payroll.group_hr_payroll_user"/>
+              name="Nóminas EDI"
+              parent="l10n_co_hr_payroll.menu_payroll_edi_root"
+              groups="base.group_user"/>
     <menuitem action="action_view_hr_payslip_edi"
               id="menu_payslip_edi_tree"
-              name="All Edi Payslips"
+              name="Todas las nóminas EDI"
               parent="l10n_co_hr_payroll.menu_payslip_edi"
-              groups="hr_payroll.group_hr_payroll_user"/>
+              groups="base.group_user"/>
 </odoo>

@@ -47,7 +47,7 @@
 
     <menuitem action="action_view_hr_payslip_edi_generate"
               id="menu_payslip_edi_generate_wizard"
-              name="Generate Edi Payslips"
+              name="Generar nóminas EDI"
               parent="l10n_co_hr_payroll.menu_payslip_edi"
-              groups="hr_payroll.group_hr_payroll_user"/>
+              groups="base.group_user"/>
 </odoo>
