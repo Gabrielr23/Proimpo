@@ -17,24 +17,25 @@
                     <group string="Habilitación Nómina Electrónica">
                         <field name="edi_payroll_enable"/>
                         <field name="edi_payroll_is_not_test"
-                               attrs="{'invisible': [('edi_payroll_enable','=',False)]}"/>
+                               invisible="not edi_payroll_enable"/>
                         <field name="edi_payroll_consolidated_enable"
-                               attrs="{'invisible': [('edi_payroll_enable','=',False)]}"/>
+                               invisible="not edi_payroll_enable"/>
                         <field name="edi_payroll_enable_validate_state"
-                               attrs="{'invisible': [('edi_payroll_enable','=',False)]}"/>
+                               invisible="not edi_payroll_enable"/>
                         <field name="edi_payroll_always_validate"
-                               attrs="{'invisible': [('edi_payroll_enable','=',False)]}"/>
+                               invisible="not edi_payroll_enable"/>
                     </group>
                     <group string="Credenciales DIAN"
-                           attrs="{'invisible': [('edi_payroll_enable','=',False)]}">
+                           invisible="not edi_payroll_enable">
                         <field name="edi_payroll_id"/>
                         <field name="edi_payroll_pin" password="True"/>
                         <field name="edi_payroll_test_set_id"
-                               attrs="{'invisible': [('edi_payroll_is_not_test','=',True)]}"/>
+                               invisible="edi_payroll_is_not_test"/>
                     </group>
                     <group string="Certificado Digital (Certicámara)"
-                           attrs="{'invisible': [('edi_payroll_enable','=',False)]}">
-                        <field name="dian_certificate_p12" filename="dian_certificate_p12_filename"/>
+                           invisible="not edi_payroll_enable">
+                        <field name="dian_certificate_p12"
+                               filename="dian_certificate_p12_filename"/>
                         <field name="dian_certificate_p12_filename" invisible="1"/>
                         <field name="dian_certificate_password" password="True"/>
                     </group>

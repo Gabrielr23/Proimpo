@@ -4,9 +4,6 @@
 
 import logging
 from odoo import fields, models, api
-from odoo.modules import module
-from pathlib import Path
-import csv
 
 _logger = logging.getLogger(__name__)
 
@@ -100,40 +97,11 @@ class ResCompany(models.Model):
     # ── Métodos requeridos por data/data.xml ────────────────────────────────
     def uninstall_custom_models(self, module_name):
         """
-        Llamado antes de cargar datos CSV para limpiar secuencias.
-        En stub: solo reinicia secuencias de las tablas de catálogos de nómina.
+        Stub no-op: los catálogos son manejados por init_csv_data con
+        INSERT ... ON CONFLICT DO UPDATE — no se necesita truncar tablas.
+        NO llamar rollback aquí: abortaría la transacción de carga de Odoo.
         """
-        payroll_tables = [
-            'l10n_co_edi_jorels_languages',
-            'l10n_co_edi_jorels_countries',
-            'l10n_co_edi_jorels_departments',
-            'l10n_co_edi_jorels_municipalities',
-            'l10n_co_edi_jorels_postal',
-            'l10n_co_edi_jorels_postal_department',
-            'l10n_co_edi_jorels_postal_municipality',
-            'l10n_co_edi_jorels_payment_forms',
-            'l10n_co_edi_jorels_payment_methods',
-            'l10n_co_edi_jorels_payroll_periods',
-            'l10n_co_edi_jorels_subtype_workers',
-            'l10n_co_edi_jorels_type_contracts',
-            'l10n_co_edi_jorels_type_currencies',
-            'l10n_co_edi_jorels_type_document_identifications',
-            'l10n_co_edi_jorels_type_environments',
-            'l10n_co_edi_jorels_type_incapacities',
-            'l10n_co_edi_jorels_type_payroll_notes',
-            'l10n_co_edi_jorels_type_times',
-            'l10n_co_edi_jorels_type_workers',
-            'l10n_co_edi_jorels_type_organizations',
-            'l10n_co_edi_jorels_type_regimes',
-            'l10n_co_edi_jorels_type_liabilities',
-        ]
-        for table in payroll_tables:
-            try:
-                self._cr.execute(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE")
-                _logger.debug("Truncated table: %s", table)
-            except Exception as e:
-                _logger.debug("uninstall_custom_models skip %s: %s", table, e)
-                self._cr.rollback()
+        _logger.debug("uninstall_custom_models stub: no-op para módulo %s", module_name)
 
     # ── Compute ─────────────────────────────────────────────────────────────
     @api.depends('vat', 'type_document_identification_id')
