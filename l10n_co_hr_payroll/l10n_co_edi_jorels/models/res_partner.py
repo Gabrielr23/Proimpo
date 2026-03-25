@@ -181,7 +181,9 @@ class ResPartner(models.Model):
                     if len(split_name) > 1:
                         # Surnames
                         split_surname = split_name[0].split()
-                        if len(split_surname) == 0 or len(split_surname) == 1:
+                        if len(split_surname) == 0:
+                            pass  # No surname data — skip
+                        elif len(split_surname) == 1:
                             rec.surname = split_surname[0]
                         elif len(split_surname) == 2:
                             rec.surname = split_surname[0]
@@ -192,9 +194,10 @@ class ResPartner(models.Model):
 
                         # Names
                         split_names = split_name[1].split()
-                        rec.first_name = split_names[0]
-                        if len(split_names) > 1:
-                            rec.other_names = ' '.join(split_names[1:])
+                        if split_names:  # Guard: avoid IndexError when name after comma is empty
+                            rec.first_name = split_names[0]
+                            if len(split_names) > 1:
+                                rec.other_names = ' '.join(split_names[1:])
                     else:
                         split_name = rec.name.split()
                         if len(split_name) == 0 or len(split_name) == 1:
