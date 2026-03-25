@@ -1368,8 +1368,8 @@ class HrPayslip(models.Model):
                 payload = copied_payslip.get_json_request()
                 copied_payslip.write({'edi_payload': json.dumps(payload, indent=2, sort_keys=False)})
 
-        formview_ref = self.env.ref('hr_payroll_community.hr_payslip_view_form', False)
-        treeview_ref = self.env.ref('hr_payroll_community.hr_payslip_view_tree', False)
+        formview_ref = self.env.ref('hr_payroll.hr_payslip_view_form', False)
+        treeview_ref = self.env.ref('hr_payroll.hr_payslip_view_list', False)
 
         if copied_payslip is not None:
             domain = "[('id', 'in', %s)]" % copied_payslip.ids

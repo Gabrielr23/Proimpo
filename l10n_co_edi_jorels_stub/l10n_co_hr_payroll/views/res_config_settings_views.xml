@@ -20,31 +20,9 @@
  -->
 <odoo>
 
-    <record id="res_config_settings_view_form_payroll_l10n_co_hr_payroll" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.l10n_co_hr_payroll.payroll.inherit</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="hr_payroll_community.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//div[@id='hr_payroll_localization']" position="replace">
-                <field name="module_l10n_co_hr_payroll" invisible="1"/>
-                <div class="row mt16 o_settings_container" id="hr_payroll_localization" invisible="1"/>
-                <div class="row mt16 o_settings_container" id="hr_payroll_localization_co"
-                     invisible="not module_l10n_co_hr_payroll">
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane"/>
-                            <div class="o_setting_right_pane">
-                                <span class="fa fa-lg fa-building-o" title="Values set here are company-specific."
-                                      aria-label="Values set here are company-specific."
-                                      groups="base.group_multi_company"
-                                      role="img"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </xpath>
-        </field>
-    </record>
+    <!-- Record eliminado: heredaba de hr_payroll_community.res_config_settings_view_form
+         que no existe en Odoo 18 Enterprise. El div #hr_payroll_localization tampoco
+         existe en la vista base de Odoo 18. -->
 
     <record id="res_config_settings_view_form_base_l10n_co_hr_payroll" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.l10n_co_hr_payroll.base.inherit</field>
@@ -54,7 +32,7 @@
             <xpath expr="//form" position="inside">
                 <app data-string="Electronic payroll"
                      string="Electronic payroll" name="l10n_co_hr_payroll"
-                     groups="l10n_co_edi_jorels.l10n_co_edi_jorels_group_manager">
+                     groups="base.group_system">
                     <h2>Parameters</h2>
                     <div class="row mt16 o_settings_container">
                         <div class="col-12 col-lg-6 o_setting_box">
