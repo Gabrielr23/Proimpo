@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stub l10n_co_edi_jorels — Solo catálogos necesarios para Nómina Electrónica DIAN -->
+<!-- Carga datos vía SQL directo (init_csv_data de update_from_csv) — sin xmlids -->
+<odoo>
+    <data noupdate="0">
+        <!-- Limpiar datos anteriores si los hubiera -->
+        <function
+                model="res.company"
+                name="uninstall_custom_models"
+                eval="[0,'l10n_co_edi_jorels']"
+        />
+
+        <!-- Base: idiomas -->
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.languages']"
+        />
+
+        <!-- Geografía -->
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.countries']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.departments']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.municipalities']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.postal_department']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.postal_municipality']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.postal']"
+        />
+
+        <!-- Formas y métodos de pago -->
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.payment_forms']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.payment_methods']"
+        />
+
+        <!-- Tipos de documentos e identificación -->
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_document_identifications']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_currencies']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_environments']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_organizations']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_regimes']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_liabilities']"
+        />
+
+        <!-- Catálogos específicos de nómina DIAN -->
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_workers']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.subtype_workers']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_contracts']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_incapacities']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.payroll_periods']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_payroll_notes']"
+        />
+        <function
+                model="res.company"
+                name="init_csv_data"
+                eval="[0,'l10n_co_edi_jorels.l10n_co_edi_jorels.type_times']"
+        />
+    </data>
+</odoo>
