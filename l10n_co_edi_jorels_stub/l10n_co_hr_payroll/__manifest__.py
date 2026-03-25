@@ -39,7 +39,7 @@
         'data/hr_payroll_sequence.xml',
         'views/hr_contract_views.xml',
         # 'views/hr_salary_rule_views.xml',  # Desactivado: hr_payroll.hr_salary_rule_view_form no existe en Odoo 18 Enterprise
-        'views/hr_payslip_views.xml',
+        # 'views/hr_payslip_views.xml',  # Desactivado: hr_payroll.hr_payslip_view_form no existe en Odoo 18 Enterprise
         'views/hr_payslip_edi_views.xml',
         'views/edi_gen_views.xml',
         'views/hr_employee_views.xml',
