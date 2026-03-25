@@ -31,7 +31,8 @@
     'images': ['static/images/main_screenshot.png'],
     'support': 'info@jorels.com',
     'depends': [
-        # 'hr_payroll_community',
+        # 'hr_payroll_community',  # OCA — no usar en Odoo 18 Enterprise
+        'hr_payroll',              # Odoo 18 Enterprise — requerido para vistas y grupos de nómina
         'l10n_co_edi_jorels',
     ],
     'data': [
