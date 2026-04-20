@@ -1,3 +1,5 @@
+import string
+
 from odoo import models, fields, api
 from datetime import datetime, timedelta
 import pytz
@@ -12,6 +14,7 @@ class HrAttendance(models.Model):
     # Si el empleado llega dentro de este margen, no se considera llegada tarde
     TOLERANCE_MINUTES = 5
     
+    #Se definen los campos para almacenar la información de horarios esperados, estado de llegada tarde/salida temprana, uso de planificación y desglose de horas trabajadas. Todos los campos relacionados con tiempos esperados se calculan en base al turno planificado o al horario del calendario del empleado.
     expected_check_in = fields.Datetime(
         string="Entrada esperada",
         compute="_compute_expected_times",
@@ -44,18 +47,21 @@ class HrAttendance(models.Model):
         store=True,
         help="Nombre del turno planificado usado"
     )
+   # Campo para horas extras aprobadas
     approved_overtime = fields.Float(
         string="HEA",
         compute="_get_limit_extras_hours",
         store=True,
         help="Horas extras aprobadas"
     )
+    # Campo para horas descontadas por llegadas tarde o salidas tempranas, considerando los descansos del calendario
     hd = fields.Float(
         string="HD",
         compute="_compute_discounted_hours",
         store=True,
         help="Horas descontadas por llegada tarde o salida temprana"
     )
+    # Campos para desglose de horas trabajadas
     hdo = fields.Float(
         string="HDO",
         compute="_compute_work_hours_breakdown",
@@ -92,6 +98,36 @@ class HrAttendance(models.Model):
         store=True,
         help="Horas trabajadas en horario nocturno en festivo/dominical"
     )
+    # Campos para gestión de estados y razones de incosistencia
+    reason_text = fields.Char(
+        string="Motivo inconsistencia",
+        compute='_compute_reason_text', 
+        store=True
+    )
+    has_issue = fields.Boolean(
+        compute='_compute_has_issue', 
+        store=True
+    )
+
+        #Estados de asistencia
+    state = fields.Selection(
+        [
+        ('pending', 'Pendiente'),
+        ('valid', 'Valida'),
+    ], string="Estado", default='pending', tracking=True)
+    
+    """
+    Metodos y campos relacionados con la gestión de estados y razones de asistencia se agregan para permitir que los responsables de RRHH o supervisores puedan marcar manualmente registros de asistencia que requieran revisión o corrección. Esto es útil para casos donde el sistema no puede determinar automáticamente la causa de una inconsistencia (por ejemplo, falta de salida, ausencia de turno planificado, rango de horas inválido, duración sospechosa, etc.). Al marcar un registro como 'pending' y asignarle una razón, se facilita el seguimiento y la resolución de estos casos por parte del equipo encargado.
+    """
+    #Estados de asistencia
+    reason = fields.Selection([
+        ('missing_checkout', 'Falta salida'),
+        ('no_planning', 'Sin turno'),
+        ('invalid_range', 'Horas inválidas'),
+        ('suspicious_duration', 'Duración sospechosa'),
+        ('inconsistent_check_in', 'Entrada inconsistente'),
+        ('inconsistent_expected_check_in', "Hora de entrada esperada no encontrada"),
+    ])
     
     def _get_employee_tz(self, employee):
         """
@@ -115,6 +151,8 @@ class HrAttendance(models.Model):
             rec.left_early = False
             rec.used_planning = False
             rec.planning_slot_name = False
+            rec.state = 'valid'
+            rec.reason = False
             
             if not rec.employee_id or not rec.check_in:
                 continue
@@ -153,6 +191,32 @@ class HrAttendance(models.Model):
                 if rec.check_out:
                     # Salió temprano si sale antes del margen de tolerancia
                     rec.left_early = rec.check_out < (expected_out_utc - timedelta(minutes=self.TOLERANCE_MINUTES))
+            
+                
+            #CASOS PARA DEFINIR EL ESTADO DE ASISTENCIA
+            if not rec.check_out:
+                # Caso de salida anterior a entrada, marcar como inconsistencia
+                rec.state = 'pending'
+                rec.reason = 'missing_checkout'
+            
+            if rec.check_out and rec.check_in:
+                duration = (rec.check_out - rec.check_in).total_seconds() / 3600
+                if duration > 16 or duration < 1:
+                    # Duración sospechosa, marcar para revisión
+                    rec.state = 'pending'
+                    rec.reason = 'suspicious_duration'
+            
+            if rec.expected_check_in and rec.check_in:
+                duration = abs((rec.check_in - rec.expected_check_in)).total_seconds() / 3600
+                if duration > 3:
+                    # Se verifica si la entrada está muy alejada del horario esperado (más de 3 horas de diferencia)
+                    rec.state = 'pending'
+                    rec.reason = 'inconsistent_check_in'
+            
+            if not rec.expected_check_in:
+                    # Si no se pudo determinar una hora de entrada esperada, marcar para revisión
+                    rec.state = 'pending'
+                    rec.reason = 'inconsistent_expected_check_in'
     
     def _get_planning_slot(self, employee, date, tz):
         """
@@ -753,3 +817,25 @@ class HrAttendance(models.Model):
             return 0.0
         
         return math.ceil(hours * 4) / 4
+    
+# ========================
+# COMPUTES Y MÉTODOS AUXILIARES PARA ESTADOS Y RAZONES DE ASISTENCIA
+# ========================  
+
+    @api.depends('reason')
+    def _compute_reason_text(self):
+        for rec in self:
+            mapping = {
+                'missing_checkout': "No se ha registrado la salida",
+                'no_planning': "No hay turno asignado",
+                'invalid_range': "El horario de entrada/salida es inválido",
+                'suspicious_duration': "Duración fuera de rango, mas de 16 horas o menos de 1 hora",
+                'inconsistent_check_in': "Entrada incosistente con el horario esperado",
+                'inconsistent_expected_check_in': "Hora de entrada esperada incosistente"
+            }
+            rec.reason_text = mapping.get(rec.reason, "")
+
+    @api.depends('state')
+    def _compute_has_issue(self):
+        for rec in self:
+            rec.has_issue = rec.state == 'pending'
