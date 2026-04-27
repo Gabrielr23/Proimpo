@@ -40,9 +40,16 @@ if records:
                 <field name="left_early" readonly="1"/>
             </field>
 
+            <field name="check_out" position="before">
+                <field name="state" readonly="1" widget="badge" decoration-success="state == 'valid'"
+                decoration-warning="state == 'pending'"/>
+                <field name="reason_text" readonly="1"/>
+            </field>
+
+
             <!-- NUEVO GRUPO correctamente insertado -->
             <xpath expr="//form/sheet" position="inside">
-                <group string="Detalle Horas!" col="6">
+                <group string="Detalle Horas" col="6">
                     <group col="1">
                         <field name="hdo"/>
                         <field name="rn"/>
@@ -90,6 +97,13 @@ if records:
                 <field name="hfd" optional="hide"  sum="Total HFD"/>
                 <field name="rnd" optional="hide"  sum="Total RND"/>
                 <field name="hd" optional="hide"  sum="Total HD"/>
+            </field>
+            <!-- Campos de razon  -->
+            <field name="worked_hours" position="before">
+                <field name="state" optional="hide"  widget="badge" 
+                decoration-success="state == 'valid'"
+                decoration-warning="state == 'pending'"/>
+                <field name="reason_text" optional="hide"/>
             </field>
         </field>
     </record>
