@@ -24,10 +24,10 @@ class AccountMove(models.Model):
 
         if not moves_to_process:
             raise UserError(_(
-                'No hay documentos pendientes de envío a la DIAN en la selección.\n\n'
-                'Verifique que los documentos:\n'
-                '  • Estén confirmados (publicados).\n'
-                '  • No hayan sido enviados ya (sin CUFE/CUDE asignado).'
+                'No hay documentos válidos para enviar a la DIAN en la selección.\n\n'
+                'Verifique que los documentos seleccionados:\n'
+                '  • Estén confirmados (publicados, no en borrador).\n'
+                '  • No hayan sido ya validados por la DIAN (con CUFE/CUDE).'
             ))
 
         move_ids = moves_to_process.ids
@@ -70,26 +70,27 @@ class AccountMove(models.Model):
     @staticmethod
     def _is_pending_edi(move):
         """
-        Devuelve True si el documento necesita ser enviado a la DIAN.
+        Devuelve True si el documento está listo para enviar a la DIAN.
 
-        Lógica:
+        Reglas:
         1. Debe estar confirmado (state == 'posted').
-        2. Framework antiguo (Carvajal): edi_document_ids con state='to_send'.
-        3. Servicio Gratuito DIAN (nuevo framework): campo l10n_co_edi_cufe_cude
-           vacío indica que aún no se ha enviado/validado por la DIAN.
+        2. Si ya tiene CUFE/CUDE asignado → ya fue validado por DIAN → excluir.
+        3. Todo documento posted sin CUFE/CUDE se considera pendiente.
+
+        Nota sobre el campo l10n_co_edi_cufe_cude:
+        - Si el campo existe y tiene valor ('ABC123...'): ya enviado → False.
+        - Si el campo existe y está vacío (False / ''):   pendiente  → True.
+        - Si el campo NO existe en el modelo (None):      pendiente  → True.
+          (Usar `not cufe` cubre los tres casos correctamente.)
         """
         if move.state != 'posted':
             return False
 
-        # — Framework antiguo (Carvajal) —
-        if move.edi_document_ids:
-            return any(doc.state == 'to_send' for doc in move.edi_document_ids)
-
-        # — Servicio Gratuito DIAN —
-        # El campo l10n_co_edi_cufe_cude (Char) lo agrega el módulo l10n_co_edi.
-        # Vacío (False/'') = documento no enviado; con valor = ya validado por DIAN.
         cufe = getattr(move, 'l10n_co_edi_cufe_cude', None)
-        return cufe is not None and not cufe
+        if cufe:          # Tiene valor → DIAN ya lo validó → excluir
+            return False
+
+        return True       # posted + sin CUFE → pendiente de envío
 
     @staticmethod
     def _send_edi_batch_thread(dbname, uid, move_ids):
