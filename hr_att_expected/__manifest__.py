@@ -1,6 +1,7 @@
 {
     "name": "HR Attendance Expected Times",
     "version": "1.0",
+    "license": "LGPL-3",
     "depends": ["hr_attendance", "hr"],
     "author": "Tu Nombre",
     "category": "Human Resources",
