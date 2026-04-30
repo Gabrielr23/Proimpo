@@ -13,12 +13,8 @@ class AccountMove(models.Model):
 
     def action_send_edi_batch(self):
         """
-        Envía a la DIAN los documentos EDI seleccionados en la vista lista.
-
-        Soporta dos frameworks según el proveedor configurado:
-        - Servicio Gratuito DIAN (Odoo 18+): usa account.move.send.
-          El estado pendiente se detecta por ausencia de CUFE/CUDE.
-        - Carvajal (framework antiguo): usa edi_document_ids + state='to_send'.
+        Envía a la DIAN los documentos EDI seleccionados en la vista lista
+        usando el Servicio Gratuito de Odoo (Odoo 18+).
         """
         moves_to_process = self.filtered(AccountMove._is_pending_edi)
 
@@ -35,8 +31,7 @@ class AccountMove(models.Model):
         uid = self.env.uid
 
         _logger.info(
-            'Lote EDI (DIAN Gratuito): iniciando envío de %d documentos '
-            'en segundo plano. IDs: %s',
+            'Lote EDI: iniciando envío de %d documentos en segundo plano. IDs: %s',
             len(move_ids), move_ids,
         )
 
@@ -64,40 +59,31 @@ class AccountMove(models.Model):
         }
 
     # ------------------------------------------------------------------
-    # Helpers estáticos (usados en el hilo de fondo)
+    # Filtro
     # ------------------------------------------------------------------
 
     @staticmethod
     def _is_pending_edi(move):
         """
-        Devuelve True si el documento está listo para enviar a la DIAN.
+        True si el documento está publicado y aún no tiene CUFE/CUDE de la DIAN.
 
-        Reglas:
-        1. Debe estar confirmado (state == 'posted').
-        2. Si ya tiene CUFE/CUDE asignado → ya fue validado por DIAN → excluir.
-        3. Todo documento posted sin CUFE/CUDE se considera pendiente.
-
-        Nota sobre el campo l10n_co_edi_cufe_cude:
-        - Si el campo existe y tiene valor ('ABC123...'): ya enviado → False.
-        - Si el campo existe y está vacío (False / ''):   pendiente  → True.
-        - Si el campo NO existe en el modelo (None):      pendiente  → True.
-          (Usar `not cufe` cubre los tres casos correctamente.)
+        l10n_co_edi_cufe_cude:
+          - Campo inexistente (None) → incluir (estado desconocido).
+          - Campo vacío (False / '')  → incluir (pendiente de envío).
+          - Campo con valor           → excluir (ya validado por DIAN).
         """
         if move.state != 'posted':
             return False
-
         cufe = getattr(move, 'l10n_co_edi_cufe_cude', None)
-        if cufe:          # Tiene valor → DIAN ya lo validó → excluir
-            return False
+        return not cufe   # None, False o '' son pendientes; un valor real excluye
 
-        return True       # posted + sin CUFE → pendiente de envío
+    # ------------------------------------------------------------------
+    # Hilo de fondo
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _send_edi_batch_thread(dbname, uid, move_ids):
-        """
-        Hilo de fondo: procesa cada documento en su propia transacción
-        para aislar errores y evitar bloqueos mutuos.
-        """
+        """Procesa cada documento en su propia transacción para aislar errores."""
         success_ids = []
         error_ids = []
 
@@ -111,16 +97,11 @@ class AccountMove(models.Model):
                     cr.commit()
 
                     success_ids.append(move_id)
-                    _logger.info(
-                        'Lote EDI: account.move(%d) enviado correctamente.',
-                        move_id,
-                    )
+                    _logger.info('Lote EDI: move(%d) procesado correctamente.', move_id)
+
             except Exception:
                 error_ids.append(move_id)
-                _logger.exception(
-                    'Lote EDI: error al procesar account.move(%d).',
-                    move_id,
-                )
+                _logger.exception('Lote EDI: error procesando move(%d).', move_id)
 
         _logger.info(
             'Lote EDI finalizado — Exitosos: %d %s | Con error: %d %s',
@@ -128,49 +109,101 @@ class AccountMove(models.Model):
             len(error_ids), error_ids,
         )
 
+    # ------------------------------------------------------------------
+    # Lógica de envío — detección automática del método correcto
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _send_single_edi(move, env):
         """
-        Elige el método de envío apropiado según el framework disponible.
+        Detecta y llama el método de envío apropiado para este move.
 
-        Framework antiguo (Carvajal):
-            Usa edi_document_ids + action_process_edi_web_services().
+        Estrategia (en orden):
+        1. Framework antiguo (Carvajal): edi_document_ids con state='to_send'.
+        2. Método específico l10n_co_edi si existe en el modelo (p. ej. Odoo Enterprise).
+        3. account.move.send con contexto completo (Odoo 17/18 nuevo framework).
 
-        Nuevo framework (Servicio Gratuito DIAN, Odoo 17/18):
-            Usa account.move.send, que es el mismo mecanismo que invoca el
-            botón "Enviar Documento Soporte a la DIAN" del formulario.
-            Se crea el wizard programáticamente, deshabilitando el envío de
-            email para no saturar buzones en un envío masivo.
+        También registra información de diagnóstico en el log para facilitar
+        la identificación del método correcto si ninguno funciona.
         """
-        # — Framework antiguo (Carvajal) —
+        # ── 1. Framework antiguo (Carvajal) ──────────────────────────────
         if move.edi_document_ids and any(
             d.state == 'to_send' for d in move.edi_document_ids
         ):
-            _logger.info(
-                'Lote EDI: move %d → framework antiguo (edi_document_ids).',
-                move.id,
-            )
+            _logger.info('Lote EDI move(%d): usando framework antiguo.', move.id)
             move.action_process_edi_web_services()
             return
 
-        # — Servicio Gratuito DIAN (account.move.send) —
+        # ── Diagnóstico: métodos l10n_co disponibles ──────────────────────
+        available_l10n = sorted(
+            m for m in dir(type(move))
+            if 'l10n_co' in m and not m.startswith('__')
+        )
         _logger.info(
-            'Lote EDI: move %d → account.move.send (Servicio Gratuito DIAN).',
+            'Lote EDI move(%d): atributos l10n_co en account.move → %s',
+            move.id, available_l10n,
+        )
+
+        # ── 2. Método directo del módulo l10n_co_edi (Enterprise) ─────────
+        # Odoo Enterprise suele exponer un método público específico para el
+        # botón "Enviar Documento Soporte a la DIAN".  Probamos los nombres
+        # más comunes según los patrones de nomenclatura de Odoo 17/18.
+        direct_method_candidates = [
+            'action_l10n_co_edi_send',
+            'action_l10n_co_edi_send_document',
+            'l10n_co_action_send_to_dian',
+            'button_l10n_co_edi_send',
+            'action_send_edi_to_dian',
+        ]
+        for method_name in direct_method_candidates:
+            method = getattr(move, method_name, None)
+            if callable(method):
+                _logger.info(
+                    'Lote EDI move(%d): método directo encontrado → %s',
+                    move.id, method_name,
+                )
+                method()
+                return
+
+        # ── 3. account.move.send (nuevo framework Odoo 17/18) ────────────
+        _logger.info(
+            'Lote EDI move(%d): usando account.move.send con contexto.',
             move.id,
         )
-        send_model = env['account.move.send']
-        wizard_vals = {
-            'move_ids': [Command.set([move.id])],
-        }
+        send_model = env['account.move.send'].with_context(
+            active_ids=[move.id],
+            active_id=move.id,
+            active_model='account.move',
+        )
 
-        # Deshabilitar envío de email en el lote (si el campo existe en esta
-        # versión de Odoo) para no generar correos masivos innecesarios.
+        wizard_vals = {'move_ids': [Command.set([move.id])]}
         if 'send_mail' in send_model._fields:
             wizard_vals['send_mail'] = False
 
         wizard = send_model.create(wizard_vals)
 
-        # action_send_and_print() en el wizard ejecuta el envío real
-        # (es el handler del botón "Enviar" dentro del wizard).
-        # El valor de retorno es un ir.action que ignoramos en segundo plano.
-        wizard.action_send_and_print()
+        # Diagnóstico: registrar todos los campos del wizard relacionados con
+        # EDI/envío para entender qué opciones están activas.
+        relevant_wizard_fields = {
+            fname: getattr(wizard, fname, '?')
+            for fname in sorted(wizard._fields)
+            if any(k in fname for k in ('edi', 'send', 'dian', 'l10n', 'print', 'co_'))
+        }
+        _logger.info(
+            'Lote EDI move(%d): wizard(%d) campos relevantes → %s',
+            move.id, wizard.id, relevant_wizard_fields,
+        )
+
+        result = wizard.action_send_and_print()
+        _logger.info(
+            'Lote EDI move(%d): resultado de action_send_and_print → %s',
+            move.id, result,
+        )
+
+        # Verificar si se asignó el CUFE tras el envío
+        move.invalidate_recordset(['l10n_co_edi_cufe_cude'])
+        cufe_after = getattr(move, 'l10n_co_edi_cufe_cude', None)
+        _logger.info(
+            'Lote EDI move(%d): CUFE/CUDE tras envío → %s',
+            move.id, cufe_after or '⚠ SIN ASIGNAR',
+        )
