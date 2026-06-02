@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Actualiza cantidades Consumidas en MRP",
-
+    "license": "LGPL-3",
     'summary': """
         Actualiza las cantidades consumidas con base en las transferencias
         """,
