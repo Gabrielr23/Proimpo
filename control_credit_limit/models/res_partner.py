@@ -24,7 +24,7 @@ class CreditPartner(models.Model):
 		#sign = 1
 		#if account_type == 'payable':
 			#sign = -1
-		res = self._cr.execute('''
+		self.env.cr.execute('''
 			SELECT partner.id, SUM(aml.amount_residual),my_credit_limit
 			FROM res_partner partner
 			LEFT JOIN account_move_line aml ON aml.partner_id = partner.id
@@ -33,7 +33,7 @@ class CreditPartner(models.Model):
 			  AND NOT acc.deprecated
 			GROUP BY partner.id
 			HAVING  COALESCE(SUM(aml.amount_residual), 0) > partner.my_credit_limit ''' )
-		res = self._cr.fetchall()
+		res = self.env.cr.fetchall()
 		dd=[]
 		for row in res:
 					_logger.debug(' \n\n \t '+str(row))

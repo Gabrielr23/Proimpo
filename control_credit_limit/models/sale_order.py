@@ -164,7 +164,7 @@ class SaleOrder(models.Model):
 		#print('** action_confirm cupos')
 		_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
 		for order in self:
-			b=order._context.get('can_exceed_limit')
+			b=self.env.context.get('can_exceed_limit')
 			_logger.debug(' \n\n \n My Context \n\n\n')
 			_logger.debug(b)
 			if b==1:
