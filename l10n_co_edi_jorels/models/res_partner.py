@@ -181,8 +181,8 @@ class ResPartner(models.Model):
                     if len(split_name) > 1:
                         # Surnames
                         split_surname = split_name[0].split()
-                        if len(split_surname) == 0 or len(split_surname) == 1:
-                            rec.surname = split_surname[0]
+                        if len(split_surname) <= 1:
+                            rec.surname = split_surname[0] if split_surname else None
                         elif len(split_surname) == 2:
                             rec.surname = split_surname[0]
                             rec.second_surname = split_surname[1]
@@ -192,7 +192,7 @@ class ResPartner(models.Model):
 
                         # Names
                         split_names = split_name[1].split()
-                        rec.first_name = split_names[0]
+                        rec.first_name = split_names[0] if split_names else None
                         if len(split_names) > 1:
                             rec.other_names = ' '.join(split_names[1:])
                     else:
@@ -458,5 +458,3 @@ class ResPartner(models.Model):
 
             if partner.name.upper() == 'CONSUMIDOR FINAL':
                 self._get_dian_acquirer_and_replace(partner)
-
-        return partners
