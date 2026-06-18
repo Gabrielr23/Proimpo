@@ -596,7 +596,7 @@ class HrAttendance(models.Model):
             check_in_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
             check_out_local = pytz.UTC.localize(rec.check_out).astimezone(tz)
             att_date = check_in_local.date()
-            is_holiday = self._is_holiday_or_sunday(att_date)
+            is_holiday = self._is_holiday_or_sunday(att_date,tz)
 
             
             # Obtener intervalos de trabajo del calendario
@@ -797,21 +797,29 @@ class HrAttendance(models.Model):
         
         return diurna_hours, nocturna_hours
     
-    def _is_holiday_or_sunday(self, date):
+    def _is_holiday_or_sunday(self, date, tz=None):
         """
         Determina si una fecha es festivo o domingo.
         """
         if date.weekday() == 6:
             return True
         
-        date_dt_start = datetime.combine(date, datetime.min.time())
-        date_dt_end = datetime.combine(date, datetime.max.time())
-        
+        if tz is None:
+            tz = pytz.UTC
+
+        # Construir inicio y fin del día en la zona horaria local, luego convertir a UTC
+        day_start_local = tz.localize(datetime.combine(date, datetime.min.time()))
+        day_end_local = tz.localize(datetime.combine(date, datetime.max.time()))
+
+        day_start_utc = day_start_local.astimezone(pytz.UTC).replace(tzinfo=None)
+        day_end_utc = day_end_local.astimezone(pytz.UTC).replace(tzinfo=None)
+
         leave = self.env['resource.calendar.leaves'].search([
             ('resource_id', '=', False),
-            ('date_from', '<=', date_dt_end),
-            ('date_to', '>=', date_dt_start),
+            ('date_from', '<=', day_end_utc),
+            ('date_to', '>=', day_start_utc),
         ], limit=1)
+
         
         return bool(leave)
     
