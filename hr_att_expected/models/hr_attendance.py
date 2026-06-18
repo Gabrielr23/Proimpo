@@ -12,7 +12,7 @@ class HrAttendance(models.Model):
     
     # Margen de tolerancia en minutos para llegadas tarde y salidas tempranas
     # Si el empleado llega dentro de este margen, no se considera llegada tarde
-    TOLERANCE_MINUTES = 5
+    TOLERANCE_MINUTES = 15
     
     #Se definen los campos para almacenar la información de horarios esperados, estado de llegada tarde/salida temprana, uso de planificación y desglose de horas trabajadas. Todos los campos relacionados con tiempos esperados se calculan en base al turno planificado o al horario del calendario del empleado.
     expected_check_in = fields.Datetime(
@@ -47,6 +47,7 @@ class HrAttendance(models.Model):
         store=True,
         help="Nombre del turno planificado usado"
     )
+
    # Campo para horas extras aprobadas
     approved_overtime = fields.Float(
         string="HEA",
@@ -54,50 +55,70 @@ class HrAttendance(models.Model):
         store=True,
         help="Horas extras aprobadas"
     )
+
     # Campo para horas descontadas por llegadas tarde o salidas tempranas, considerando los descansos del calendario
-    hd = fields.Float(
-        string="HD",
+    hdes = fields.Float(
+        string="HDES",
         compute="_compute_discounted_hours",
         store=True,
-        help="Horas descontadas por llegada tarde o salida temprana"
+        help="Horas descontadas por llegada tarde, salida temprana o ausencia"
     )
+
     # Campos para desglose de horas trabajadas
-    hdo = fields.Float(
-        string="HDO",
+    ho = fields.Float(
+        string="HO",
         compute="_compute_work_hours_breakdown",
         store=True,
-        help="Horas trabajadas en horario diurno ordinario (6AM-7PM) sin extras"
-    )
-    rn = fields.Float(
-        string="RN",
-        compute="_compute_work_hours_breakdown",
-        store=True,
-        help="Horas trabajadas en horario nocturno (7PM-6AM) sin extras"
+        help="Horas en horario ordinario sin extras"
     )
     hed = fields.Float(
         string="HED",
         compute="_compute_work_hours_breakdown",
         store=True,
-        help="Horas extras trabajadas en horario diurno (6AM-7PM)"
+        help="Horas extras en horario diurno (6AM-7PM)"
     )
     hen = fields.Float(
         string="HEN",
         compute="_compute_work_hours_breakdown",
         store=True,
-        help="Horas extras trabajadas en horario nocturno (7PM-6AM)"
+        help="Horas extras en horario nocturno (7PM-6AM)"
     )
-    hfd = fields.Float(
-        string="HFD",
+    hrn = fields.Float(
+        string="HRN",
         compute="_compute_work_hours_breakdown",
         store=True,
-        help="Horas trabajadas en festivo durante horario diurno"
+        help="Horas en horario nocturno (7PM-6AM) sin extras"
     )
-    rnd = fields.Float(
-        string="RND",
+
+    heddf = fields.Float(
+        string="HEDDF",
         compute="_compute_work_hours_breakdown",
         store=True,
-        help="Horas trabajadas en horario nocturno en festivo/dominical"
+        help="Horas extras diurna dominical y festiva (6AM-7PM)"
     )
+
+    hrddf = fields.Float(
+        string="HRDDF",
+        compute="_compute_work_hours_breakdown",
+        store=True,
+        help="Horas recargo diurna dominical y festiva (6AM-7PM)"
+    )
+
+    hendf = fields.Float(
+        string="HENDF",
+        compute="_compute_work_hours_breakdown",
+        store=True,
+        help="Horas extras trabajadas en festivo/dominical durante horario nocturno (7PM-6AM)"
+    )
+      
+    hrndf = fields.Float(
+        string="HRNDF",
+        compute="_compute_work_hours_breakdown",
+        store=True,
+        help="Horas con recargo nocturno dominical y festivo (7PM-6AM)"
+    )
+    
+    
     # Campos para gestión de estados y razones de incosistencia
     reason_text = fields.Char(
         string="Motivo inconsistencia",
@@ -409,15 +430,12 @@ class HrAttendance(models.Model):
         total_minutes = hours * 60
         full_hours = int(total_minutes // 60)
         remaining_minutes = int(total_minutes % 60)
+
+
+        quarter_hours = math.ceil(remaining_minutes / self.TOLERANCE_MINUTES)
+
+        return full_hours + max(0, quarter_hours) * 0.25
         
-        if remaining_minutes < 15:
-            return float(full_hours)
-        elif remaining_minutes < 30:
-            return full_hours + 0.25
-        elif remaining_minutes < 45:
-            return full_hours + 0.5
-        else:
-            return full_hours + 0.75
     
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
     def _compute_discounted_hours(self):
@@ -426,10 +444,10 @@ class HrAttendance(models.Model):
         Aplica un margen de tolerancia de 5 minutos para llegadas tarde y salidas tempranas.
         
         La lógica de ajuste aquí es idéntica a la de _compute_work_hours_breakdown para
-        garantizar consistencia entre HD y HDO/RN/etc.
+        garantizar consistencia entre HDES y HO/RN/etc.
         """
         for rec in self:
-            rec.hd = 0.0
+            rec.hdes = 0.0
             if not rec.check_in or not rec.check_out:
                 continue
             if not rec.employee_id:
@@ -498,7 +516,7 @@ class HrAttendance(models.Model):
             
             # Redondear hacia arriba al próximo cuarto de hora
             if discounted_hours > 0:
-                rec.hd = self._round_discount_to_quarter_hour(discounted_hours)
+                rec.hdes = self._round_discount_to_quarter_hour(discounted_hours)
     
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out')
     def _get_limit_extras_hours(self):
@@ -562,12 +580,14 @@ class HrAttendance(models.Model):
             _logger.debug("Calculando desglose de horas para %d registros", len(self))
         
         for rec in self:
-            rec.hdo = 0.0
-            rec.rn = 0.0
+            rec.ho = 0.0
             rec.hed = 0.0
             rec.hen = 0.0
-            rec.hfd = 0.0
-            rec.rnd = 0.0
+            rec.hrn = 0.0
+            rec.heddf = 0.0
+            rec.hrddf = 0.0
+            rec.hendf = 0.0
+            rec.hrndf = 0.0
             
             if not rec.check_in or not rec.check_out or not rec.employee_id:
                 continue
@@ -577,6 +597,7 @@ class HrAttendance(models.Model):
             check_out_local = pytz.UTC.localize(rec.check_out).astimezone(tz)
             att_date = check_in_local.date()
             is_holiday = self._is_holiday_or_sunday(att_date)
+
             
             # Obtener intervalos de trabajo del calendario
             calendar = rec.employee_id.resource_calendar_id
@@ -589,7 +610,7 @@ class HrAttendance(models.Model):
                 continue
             
             # PASO 1: Ajustar check_in y check_out aplicando el margen de tolerancia
-            # Este ajuste se usará para TODOS los cálculos (HDO, RN, HED, HEN, HFD, RND)
+            # Este ajuste se usará para TODOS los cálculos (HO, RN, HED, HEN, HFD, RND)
             adjusted_check_in = rec.check_in
             adjusted_check_out = rec.check_out
             
@@ -641,17 +662,18 @@ class HrAttendance(models.Model):
                     ordinary_end_local = pytz.UTC.localize(ordinary_end).astimezone(tz)
                     
                     if is_holiday:
-                        hfd_temp, rnd_temp = self._calculate_hours_by_shift(
+                        hrddf_temp, hrndf_temp = self._calculate_hours_by_shift(
                             ordinary_start_local, ordinary_end_local
                         )
-                        rec.hfd += hfd_temp
-                        rec.rnd += rnd_temp
+                        rec.hrddf += hrddf_temp
+                        rec.hrndf += hrndf_temp
+                        rec.ho += hrddf_temp + hrndf_temp
                     else:
-                        hdo_temp, rn_temp = self._calculate_hours_by_shift(
+                        ho_temp, hrn_temp = self._calculate_hours_by_shift(
                             ordinary_start_local, ordinary_end_local
                         )
-                        rec.hdo += hdo_temp
-                        rec.rn += rn_temp
+                        rec.ho += ho_temp + hrn_temp
+                        rec.hrn += hrn_temp
             
             # PASO 3: Calcular horas extras si están aprobadas
             # Las horas extras también usan los tiempos ajustados
@@ -691,8 +713,8 @@ class HrAttendance(models.Model):
                            adjusted_check_in, rec.expected_check_in, early_hours, early_approved, extra_diurna, extra_nocturna)
                 
                 if is_holiday:
-                    rec.hfd += extra_diurna
-                    rec.rnd += extra_nocturna
+                    rec.heddf += extra_diurna
+                    rec.hendf += extra_nocturna
                 else:
                     rec.hed += extra_diurna
                     rec.hen += extra_nocturna
@@ -724,8 +746,8 @@ class HrAttendance(models.Model):
                            adjusted_check_out, rec.expected_check_out, late_hours, late_approved, extra_diurna, extra_nocturna, is_holiday)
                 
                 if is_holiday:
-                    rec.hfd += extra_diurna
-                    rec.rnd += extra_nocturna
+                    rec.heddf += extra_diurna
+                    rec.hendf += extra_nocturna
                 else:
                     rec.hed += extra_diurna
                     rec.hen += extra_nocturna
@@ -815,8 +837,22 @@ class HrAttendance(models.Model):
         """
         if hours <= 0:
             return 0.0
+
+        # fractional_part = hours % 1
+        # if fractional_part >= (3600-(self.TOLERANCE_MINUTES*60))/3600:  # >= 58.8 minutos (~59 minutos)
+        #     _logger.debug("Redondeando descuento hacia arriba por cercanía a hora completa: hours=%.6f, fractional_part=%.6f",
+        #                    hours, fractional_part)
+        #     return float(int(hours) + 1)
         
-        return math.ceil(hours * 4) / 4
+        total_minutes = hours * 60
+        full_hours = int(total_minutes // 60)
+        remaining_minutes = int(total_minutes % 60)
+
+        quarter_hours = math.floor(remaining_minutes / self.TOLERANCE_MINUTES)
+        _logger.debug("Redondeando descuento: hours=%.6f, full_hours=%d, remaining_minutes=%d, quarter_hours=%d",
+                       hours, full_hours, remaining_minutes, quarter_hours)
+
+        return full_hours + max(0, quarter_hours) * 0.25
     
 # ========================
 # COMPUTES Y MÉTODOS AUXILIARES PARA ESTADOS Y RAZONES DE ASISTENCIA

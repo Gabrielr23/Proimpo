@@ -49,19 +49,19 @@ if records:
 
             <!-- NUEVO GRUPO correctamente insertado -->
             <xpath expr="//form/sheet" position="inside">
-                <group string="Detalle Horas" col="6">
+                <group string="Detalle Horas" col="2">
                     <group col="1">
-                        <field name="hdo"/>
-                        <field name="rn"/>
-                    </group>
-                    <group col="1">
+                        <field name="ho"/>
+                        <field name="hdes"/>
                         <field name="hed"/>
                         <field name="hen"/>
+                        <field name="hrn"/>
                     </group>
-                    <group col="1">
-                        <field name="hfd"/>
-                        <field name="rnd"/>
-                        <field name="hd"/>
+                     <group col="2">
+                        <field name="heddf"/>
+                        <field name="hrddf"/>
+                        <field name="hendf"/>
+                        <field name="hrndf"/>
                     </group>
                 </group>
             </xpath>
@@ -90,13 +90,14 @@ if records:
             </field>
             <!-- Agregar después de approved_overtime o al final -->
             <field name="worked_hours" position="after">
-                <field name="hdo" optional="hide"  sum="Total HDO"/>
-                <field name="rn" optional="hide"  sum="Total RN"/>
+                <field name="ho" optional="hide"  sum="Total HO"/>
                 <field name="hed" optional="hide"  sum="Total HED"/>
                 <field name="hen" optional="hide"  sum="Total HEN"/>
-                <field name="hfd" optional="hide"  sum="Total HFD"/>
-                <field name="rnd" optional="hide"  sum="Total RND"/>
-                <field name="hd" optional="hide"  sum="Total HD"/>
+                <field name="hrn" optional="hide"  sum="Total RN"/>
+                <field name="heddf" optional="hide"  sum="Total HEDDF"/>
+                <field name="hrddf" optional="hide"  sum="Total HRDDF"/>
+                <field name="hendf" optional="hide"  sum="Total HENDF"/>
+                <field name="hrndf" optional="hide"  sum="Total HRNDF"/>
             </field>
             <!-- Campos de razon  -->
             <field name="worked_hours" position="before">
