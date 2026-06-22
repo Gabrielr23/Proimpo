@@ -13,8 +13,8 @@ def migrate(cr, version):
     
     # Ensure biometric log table structure is correct
     cr.execute("""
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema=database() AND table_name='biometric_log'
+        SELECT 1 FROM information_schema.tables
+        WHERE table_catalog=current_database() AND table_name='biometric_log'
     """)
     
     if not cr.fetchone():
