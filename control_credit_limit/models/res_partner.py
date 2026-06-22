@@ -16,7 +16,6 @@ class CreditPartner(models.Model):
 
 	def search_over_limit(self, operation, operand):
 		_logger.debug(' \n\n \t Having a shitty time here  \n\n\n'+str(self.display_name)+'\n\n\n')
-		acc_type='receivable'
 		   #if operator not in ('<', '=', '>', '>=', '<='):
 			#return []
 		#if type(operand) not in (float, int):
@@ -45,7 +44,6 @@ class CreditPartner(models.Model):
 		return [('id' ,  'in' , dd)]
 
 	@api.depends('credit','debit', 'my_credit_limit')
-	@api.model
 	def compute_over_limit(self):
 		_logger.debug(' \n\n \t Calling Over Limit \n\n\n')
 		for item in self:			
@@ -54,7 +52,6 @@ class CreditPartner(models.Model):
 	
 
 	@api.depends('credit','debit', 'my_credit_limit')
-	@api.model
 	def compute_my_credit_is_over(self):
 		_logger.debug(' \n\n \t CHECKING OVER LIMIT FOR CUSTOMER \n\n\n')
 #		self.ensure_one();
