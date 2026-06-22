@@ -59,12 +59,9 @@
                 <filter name="skipped" string="Ignorados" domain="[('processed','=',False)]"/>
                 <filter name="check_in" string="Entradas" domain="[('status','=','check_in')]"/>
                 <filter name="check_out" string="Salidas" domain="[('status','=','check_out')]"/>
-                <separator/>
-                <group string="Agrupar por">
-                    <filter name="group_employee" string="Empleado" context="{'group_by':'employee_id'}"/>
-                    <filter name="group_date" string="Fecha" context="{'group_by':'timestamp'}"/>
-                    <filter name="group_status" string="Estado" context="{'group_by':'status'}"/>
-                </group>
+                <filter name="group_employee" string="Empleado" context="{'group_by':'employee_id'}"/>
+                <filter name="group_date" string="Fecha" context="{'group_by':'timestamp'}"/>
+                <filter name="group_status" string="Estado" context="{'group_by':'status'}"/>
             </search>
         </field>
     </record>
