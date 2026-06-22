@@ -36,9 +36,9 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="account.view_partner_property_form"/>
         <field name="arch" type="xml">
-          <xpath expr="//group[@name='banks']/field[@name='bank_ids']/list/field[@name='bank_id']" position="after">
-				    <field name="tipo_cta"/>
-					</xpath>
+          <xpath expr="//field[@name='bank_ids']/list/field[@name='bank_id']" position="after">
+            <field name="tipo_cta"/>
+          </xpath>
         </field>
       </record>
 
