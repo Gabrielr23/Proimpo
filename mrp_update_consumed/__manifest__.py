@@ -29,8 +29,4 @@
         'views/stock_picking.xml',
         'views/stock_picking_type.xml',
     ],
-    # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
-    ],
 }
