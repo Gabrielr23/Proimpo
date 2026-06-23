@@ -31,17 +31,6 @@
         </field>
       </record>
 
-      <record model="ir.ui.view" id="res_partner_bank_type_partner">
-        <field name="name">res.partner.bank.type.partner</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="account.view_partner_property_form"/>
-        <field name="arch" type="xml">
-          <xpath expr="//field[@name='bank_ids']/list/field[@name='bank_id']" position="after">
-            <field name="tipo_cta"/>
-          </xpath>
-        </field>
-      </record>
-
   </data>
 </odoo>
 
