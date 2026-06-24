@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Acción de servidor para enviar documentos EDI en lote desde la vista lista
+        de facturas (Contabilidad > Proveedores > Facturas o Documentos Soporte).
+        Aparece en el menú "Acción" al seleccionar uno o varios registros.
+    -->
+    <record id="action_send_edi_batch" model="ir.actions.server">
+        <field name="name">Enviar a DIAN en lote (Servicio Gratuito)</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_send_edi_batch()</field>
+    </record>
+</odoo>
