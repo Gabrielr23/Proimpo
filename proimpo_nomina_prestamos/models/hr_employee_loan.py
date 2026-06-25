@@ -1,0 +1,81 @@
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
+
+
+class HrEmployeeLoan(models.Model):
+    _name = 'hr.employee.loan'
+    _description = 'Préstamo / Libranza del empleado'
+    _order = 'date desc, id desc'
+
+    name = fields.Char(string='Referencia', required=True, default='Nuevo', copy=False)
+    employee_id = fields.Many2one('hr.employee', string='Empleado', required=True, ondelete='cascade')
+    loan_type = fields.Selection([
+        ('libranza', 'Libranza'),
+        ('prestamo', 'Préstamo'),
+        ('otro', 'Otro descuento'),
+    ], string='Tipo', required=True, default='libranza')
+    partner_id = fields.Many2one('res.partner', string='Entidad / Tercero',
+                                 help='Banco, cooperativa o entidad a la que se gira la libranza.')
+    date = fields.Date(string='Fecha de inicio', default=fields.Date.context_today, required=True)
+    note = fields.Char(string='Observación')
+    currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
+
+    amount_total = fields.Monetary(string='Valor total', required=True)
+    installment_amount = fields.Monetary(string='Valor cuota', required=True)
+
+    line_ids = fields.One2many('hr.employee.loan.line', 'loan_id', string='Cuotas descontadas')
+    amount_paid = fields.Monetary(string='Abonado', compute='_compute_amounts', store=True)
+    amount_residual = fields.Monetary(string='Saldo', compute='_compute_amounts', store=True)
+
+    state = fields.Selection([
+        ('draft', 'Borrador'),
+        ('open', 'Activo'),
+        ('done', 'Pagado'),
+        ('cancel', 'Cancelado'),
+    ], string='Estado', default='draft', required=True, copy=False)
+
+    @api.depends('amount_total', 'line_ids.amount')
+    def _compute_amounts(self):
+        for loan in self:
+            paid = sum(loan.line_ids.mapped('amount'))
+            loan.amount_paid = paid
+            loan.amount_residual = loan.amount_total - paid
+
+    @api.constrains('amount_total', 'installment_amount')
+    def _check_amounts(self):
+        for loan in self:
+            if loan.amount_total <= 0:
+                raise ValidationError(_('El valor total debe ser mayor que cero.'))
+            if loan.installment_amount <= 0:
+                raise ValidationError(_('El valor de la cuota debe ser mayor que cero.'))
+
+    def get_period_installment(self):
+        """Cuota a descontar en el período = min(cuota, saldo). 0 si no está activo."""
+        self.ensure_one()
+        if self.state != 'open':
+            return 0.0
+        return max(min(self.installment_amount, self.amount_residual), 0.0)
+
+    def action_open(self):
+        self.write({'state': 'open'})
+
+    def action_draft(self):
+        self.write({'state': 'draft'})
+
+    def action_cancel(self):
+        self.write({'state': 'cancel'})
+
+
+class HrEmployeeLoanLine(models.Model):
+    _name = 'hr.employee.loan.line'
+    _description = 'Cuota descontada de préstamo/libranza'
+    _order = 'date desc, id desc'
+
+    loan_id = fields.Many2one('hr.employee.loan', string='Préstamo/Libranza',
+                              required=True, ondelete='cascade')
+    payslip_id = fields.Many2one('hr.payslip', string='Recibo', ondelete='cascade')
+    employee_id = fields.Many2one(related='loan_id.employee_id', store=True)
+    date = fields.Date(string='Fecha', default=fields.Date.context_today)
+    amount = fields.Monetary(string='Valor descontado')
+    currency_id = fields.Many2one(related='loan_id.currency_id')
