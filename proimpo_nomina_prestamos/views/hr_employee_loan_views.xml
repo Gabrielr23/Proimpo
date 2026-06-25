@@ -31,6 +31,7 @@
                         <group>
                             <field name="amount_total"/>
                             <field name="installment_amount"/>
+                            <field name="frequency"/>
                             <field name="amount_paid"/>
                             <field name="amount_residual"/>
                             <field name="currency_id" invisible="1"/>
@@ -63,6 +64,7 @@
                 <field name="partner_id"/>
                 <field name="amount_total"/>
                 <field name="installment_amount"/>
+                <field name="frequency"/>
                 <field name="amount_paid"/>
                 <field name="amount_residual"/>
                 <field name="state"/>

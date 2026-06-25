@@ -15,10 +15,9 @@ class HrPayslip(models.Model):
             loans = self.env['hr.employee.loan'].search([
                 ('employee_id', '=', employee.id), ('state', '=', 'open')])
             for loan in loans:
-                # Evitar duplicar el abono para el mismo recibo
                 if loan.line_ids.filtered(lambda l: l.payslip_id.id == slip.id):
                     continue
-                cuota = loan.get_period_installment()
+                cuota = loan.get_installment_for_date(slip.date_to)
                 if cuota <= 0:
                     continue
                 LoanLine.create({
