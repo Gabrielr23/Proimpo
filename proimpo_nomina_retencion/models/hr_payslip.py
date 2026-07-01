@@ -36,6 +36,9 @@ class HrPayslip(models.Model):
     rtf_6_retencion_mes = fields.Monetary(string="Retención del mes")
     rtf_6_ya_retenido = fields.Monetary(string="Menos valores descontados (1Q)")
     rtf_6_valor = fields.Monetary(string="Retención del período")
+    # Valores reales del período (para que la 2Q sume el mes)
+    rtf_periodo_salarial = fields.Monetary(string="Base salarial del período")
+    rtf_periodo_nosal = fields.Monetary(string="Bonos no salariales del período")
 
     # ------------------------------------------------------------------
     # Utilidades
@@ -104,20 +107,23 @@ class HrPayslip(models.Model):
             return 0.020
         return 0.0
 
-    def _proimpo_rtf(self, gross=0.0, basico=0.0, ibc=0.0, devsal=0.0):
+    def _proimpo_rtf(self, basico=0.0, devsal=0.0, devnosal=0.0):
         """Calcula la retención del período, almacena la depuración y devuelve el valor.
 
-        Recibe desde la regla RTF los valores del período actual: gross, básico, IBC y
-        DEVSAL (devengado salarial: comisiones, extras, bonos salariales). Salud (4%),
-        pensión (4%) y FSP se calculan internamente desde el IBC proyectado, para no
-        depender de reglas condicionales (FSP) que pueden no estar definidas.
+        Recibe desde la regla RTF: básico, DEVSAL (devengado salarial: comisiones,
+        extras, bonos salariales) y DEVNOSAL (devengado no salarial). De DEVNOSAL se
+        excluye el auxilio de rodamiento (estimado desde el contrato); el resto son
+        bonificaciones no salariales, que SÍ son ingreso gravable para retención.
 
-        Base de retención = ingreso salarial (básico + devengado salarial). Se excluyen
-        los auxilios de transporte y de rodamiento (no son ingreso para retención).
+        Base de ingresos = básico + devengado salarial + bonos no salariales.
+        Se excluyen los auxilios de transporte y rodamiento (no son ingreso gravable).
+
+        Ley 1393: si los pagos no salariales superan el 40% de la remuneración total,
+        el exceso se suma al IBC (sube salud/pensión).
 
         Proyección 1Q = básico real de la 1Q + una segunda quincena completa; las
-        variables salariales se proyectan x2. En 2Q se toma el real del mes (1Q + 2Q)
-        y se descuenta lo ya retenido en la 1Q.
+        variables se proyectan x2. En 2Q se toma el real del mes (1Q + 2Q, leyendo los
+        valores guardados de la 1Q) y se descuenta lo ya retenido en la 1Q.
         """
         self.ensure_one()
         contract = self.contract_id
@@ -129,15 +135,28 @@ class HrPayslip(models.Model):
 
         # Valores del período actual (recibidos desde la regla)
         basico = basico or 0.0
-        ibc = ibc or 0.0
         devsal = devsal or 0.0
+        devnosal = devnosal or 0.0
         cap = 25.0 * smmlv
+
+        # Separar el rodamiento (auxilio, se excluye) de las bonificaciones no salariales
+        dia_val = contract.wage / 30.0
+        dias_pag = (basico / dia_val) if dia_val else 0.0
+        rod = self._proimpo_cfield(contract, 'x_studio_auxilio_de_rodamiento') / 30.0 * dias_pag
+        salarial_periodo = basico + devsal
+        bonos_periodo = max(devnosal - rod, 0.0)
 
         def _aportes(base_ibc):
             b = min(base_ibc, cap) if base_ibc > 0 else 0.0
             s = b * 0.04
             p = b * 0.04 + b * self._proimpo_fsp_pct(b, smmlv)
             return s, p
+
+        def _base_1393(salarial, bonos):
+            # Ley 1393: exceso de no salariales sobre el 40% del total se vuelve IBC
+            total = salarial + bonos
+            exceso = max(bonos - 0.40 * total, 0.0)
+            return salarial + exceso
 
         es_1q = self.date_from and self.date_from.day <= 15
 
@@ -148,21 +167,25 @@ class HrPayslip(models.Model):
                     and contract.date_end.month == self.date_from.month):
                 d = contract.date_end.day
                 seg = 0.0 if d <= 15 else contract.wage / 30.0 * min(d - 15, 15)
-            salario_proy = basico + seg
-            base_ibc = salario_proy + devsal * 2.0
-            ingreso = base_ibc
+            salarial_proy = (basico + seg) + devsal * 2.0
+            bonos_proy = bonos_periodo * 2.0
+            ingreso = salarial_proy + bonos_proy
+            base_ibc = _base_1393(salarial_proy, bonos_proy)
             incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = 0.0
             proyectada = True
         else:
-            # 2Q: real del mes = base salarial 1Q + 2Q; se descuenta lo retenido en 1Q
+            # 2Q: real del mes = período actual + 1Q (valores guardados)
             slip1 = self._proimpo_slip_1q()
-            base_1q = r1 = 0.0
+            sal_1q = bon_1q = r1 = 0.0
             if slip1:
-                base_1q = slip1._proimpo_line('IBC')
+                sal_1q = slip1.rtf_periodo_salarial or slip1._proimpo_line('IBC')
+                bon_1q = slip1.rtf_periodo_nosal
                 r1 = abs(slip1._proimpo_line('RTF'))
-            base_ibc = (basico + devsal) + base_1q
-            ingreso = base_ibc
+            salarial_mes = salarial_periodo + sal_1q
+            bonos_mes = bonos_periodo + bon_1q
+            ingreso = salarial_mes + bonos_mes
+            base_ibc = _base_1393(salarial_mes, bonos_mes)
             incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = r1
             proyectada = False
@@ -228,5 +251,7 @@ class HrPayslip(models.Model):
             'rtf_6_retencion_mes': retencion_mes,
             'rtf_6_ya_retenido': ya_retenido,
             'rtf_6_valor': valor,
+            'rtf_periodo_salarial': salarial_periodo,
+            'rtf_periodo_nosal': bonos_periodo,
         })
         return valor
