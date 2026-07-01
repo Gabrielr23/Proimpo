@@ -86,8 +86,13 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     # Depuración de retención (Procedimiento 1) - replica reporte CGUNO
     # ------------------------------------------------------------------
-    def _proimpo_rtf(self):
-        """Calcula la retención del período, almacena la depuración y devuelve el valor."""
+    def _proimpo_rtf(self, gross=0.0, basico=0.0, salud=0.0, pens=0.0, fsp=0.0):
+        """Calcula la retención del período, almacena la depuración y devuelve el valor.
+
+        Los valores del período actual (gross, básico, salud, pensión, FSP) se reciben
+        como argumentos desde la regla RTF, porque durante el cálculo las líneas del
+        recibo aún no están escritas y no se pueden leer con line_ids.
+        """
         self.ensure_one()
         contract = self.contract_id
         company = contract.company_id
@@ -95,11 +100,11 @@ class HrPayslip(models.Model):
         if not uvt or not contract:
             return 0.0
 
-        # Valores del período actual (ya calculados por las reglas previas)
-        gross = self._proimpo_line('GROSS')
-        basico = self._proimpo_line('BASIC')
-        salud = abs(self._proimpo_line('SALUD'))
-        pension = abs(self._proimpo_line('PENS')) + abs(self._proimpo_line('FSP'))
+        # Valores del período actual (recibidos desde la regla)
+        gross = gross or 0.0
+        basico = basico or 0.0
+        salud = abs(salud or 0.0)
+        pension = abs(pens or 0.0) + abs(fsp or 0.0)
 
         es_1q = self.date_from and self.date_from.day <= 15
 
