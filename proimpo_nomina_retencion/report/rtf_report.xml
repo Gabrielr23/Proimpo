@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_rtf" model="ir.actions.report">
+        <field name="name">Auditoría Retención en la Fuente</field>
+        <field name="model">hr.payslip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">proimpo_nomina_retencion.report_rtf_document</field>
+        <field name="report_file">proimpo_nomina_retencion.report_rtf_document</field>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_rtf_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3 class="text-center mb-0">Auditoría de Retención en la Fuente</h3>
+                        <p class="text-center text-muted" style="font-size:11px;">Procedimiento 1 - Art. 383, 387, 336 E.T.</p>
+
+                        <table class="table table-sm" style="font-size:11px;">
+                            <tr>
+                                <td><strong>Empleado:</strong> <span t-field="o.employee_id.name"/></td>
+                                <td><strong>Documento:</strong> <span t-field="o.employee_id.identification_id"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Período:</strong> <span t-field="o.date_from"/> a <span t-field="o.date_to"/></td>
+                                <td><strong>Proyectada:</strong> <t t-if="o.rtf_proyectada">SÍ (1Q)</t><t t-else="">NO (2Q real)</t></td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-sm table-bordered" style="font-size:11px;">
+                            <thead class="table-light">
+                                <tr><th colspan="2">1. INGRESOS BRUTOS</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>1.1 Total ingresos brutos</td><td class="text-end"><span t-field="o.rtf_1_ingresos" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                            </tbody>
+                            <thead class="table-light">
+                                <tr><th colspan="2">2. INGRESOS NO CONSTITUTIVOS DE RENTA</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Pensión obligatoria / solidaridad (Art. 55)</td><td class="text-end"><span t-field="o.rtf_2_pension" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>Salud obligatoria (Art. 56)</td><td class="text-end"><span t-field="o.rtf_2_salud" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr class="table-light"><td><strong>2.1 Subtotal INCRNGO</strong></td><td class="text-end"><strong><span t-field="o.rtf_2_incrngo" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                                <tr class="table-light"><td><strong>2.2 Total ingresos netos</strong></td><td class="text-end"><strong><span t-field="o.rtf_2_neto" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                            </tbody>
+                            <thead class="table-light">
+                                <tr><th colspan="2">3. DEDUCCIONES (Art. 387)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Medicina prepagada (hasta 16 UVT)</td><td class="text-end"><span t-field="o.rtf_3_medicina" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>Dependientes (10% hasta 32 UVT)</td><td class="text-end"><span t-field="o.rtf_3_dependientes" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>Intereses de vivienda (hasta 100 UVT)</td><td class="text-end"><span t-field="o.rtf_3_vivienda" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr class="table-light"><td><strong>3.2 Total deducibles</strong></td><td class="text-end"><strong><span t-field="o.rtf_3_deducibles" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                                <tr class="table-light"><td><strong>3.3 Subtotal (2.2 - 3.2)</strong></td><td class="text-end"><strong><span t-field="o.rtf_3_subtotal" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                            </tbody>
+                            <thead class="table-light">
+                                <tr><th colspan="2">4. RENTAS EXENTAS</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>AFC / Pensión voluntaria (30% hasta 3.800 UVT)</td><td class="text-end"><span t-field="o.rtf_4_exentas" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>4.2 Subtotal ingreso gravable</td><td class="text-end"><span t-field="o.rtf_4_gravable" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>4.3 25% exento (hasta 790 UVT anual)</td><td class="text-end"><span t-field="o.rtf_4_25exento" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr class="table-light"><td><strong>4.4 Subtotal (4.2 - 4.3)</strong></td><td class="text-end"><strong><span t-field="o.rtf_4_subtotal" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                            </tbody>
+                            <thead class="table-light">
+                                <tr><th colspan="2">5. CÁLCULO EXCEDENTE (límite 40% - Art. 336)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>5.1 Total deducciones (3.2 + 4.1 + 4.3)</td><td class="text-end"><span t-field="o.rtf_5_deducciones" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>5.2 Límite 40% ingresos (hasta 1.340 UVT anual)</td><td class="text-end"><span t-field="o.rtf_5_limite40" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>5.3 Base excedente (5.1 - 5.2)</td><td class="text-end"><span t-field="o.rtf_5_excedente" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr class="table-light"><td><strong>5.4 Base líquida gravable (4.4 + 5.3)</strong></td><td class="text-end"><strong><span t-field="o.rtf_5_base" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                            </tbody>
+                            <thead class="table-light">
+                                <tr><th colspan="2">6. VALORES RETENCIÓN</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>6.1 Base gravada en UVT</td><td class="text-end"><span t-field="o.rtf_6_base_uvt"/></td></tr>
+                                <tr><td>6.2 Total en UVT (tabla Art. 383)</td><td class="text-end"><span t-field="o.rtf_6_ret_uvt"/></td></tr>
+                                <tr><td>Retención del mes</td><td class="text-end"><span t-field="o.rtf_6_retencion_mes" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr><td>Menos valores descontados (1Q)</td><td class="text-end"><span t-field="o.rtf_6_ya_retenido" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></td></tr>
+                                <tr class="table-secondary"><td><strong>TOTAL RETENCIÓN DEL PERÍODO</strong></td><td class="text-end"><strong><span t-field="o.rtf_6_valor" t-options='{"widget":"monetary","display_currency":o.currency_id}'/></strong></td></tr>
+                            </tbody>
+                        </table>
+                        <p style="font-size:10px;" class="text-muted">UVT vigente: <span t-field="o.company_id.uvt_value" t-options='{"widget":"monetary","display_currency":o.currency_id}'/>. Documento informativo de la depuración de retención en la fuente.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
