@@ -22,6 +22,7 @@ Incluye un reporte PDF de auditoría por recibo.
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': [
         'report/rtf_report.xml',
+        'views/hr_payslip_views.xml',
     ],
     'installable': True,
     'application': False,
