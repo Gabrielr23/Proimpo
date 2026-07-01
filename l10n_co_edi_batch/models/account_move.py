@@ -147,7 +147,7 @@ class AccountMove(models.Model):
                         raise_if_not_found=False,
                     )
                     if report:
-                        pdf_content, _ = report.sudo()._render_qweb_pdf(
+                        pdf_content, _mime = report.sudo()._render_qweb_pdf(
                             res_ids=[move_id]
                         )
                 except Exception:
