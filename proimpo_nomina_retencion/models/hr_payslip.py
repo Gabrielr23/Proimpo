@@ -104,12 +104,20 @@ class HrPayslip(models.Model):
             return 0.020
         return 0.0
 
-    def _proimpo_rtf(self, gross=0.0, basico=0.0, ibc=0.0):
+    def _proimpo_rtf(self, gross=0.0, basico=0.0, ibc=0.0, devsal=0.0):
         """Calcula la retención del período, almacena la depuración y devuelve el valor.
 
-        Recibe desde la regla RTF los valores del período actual (gross, básico e IBC);
-        a partir del IBC calcula salud (4%), pensión (4%) y FSP internamente, para no
+        Recibe desde la regla RTF los valores del período actual: gross, básico, IBC y
+        DEVSAL (devengado salarial: comisiones, extras, bonos salariales). Salud (4%),
+        pensión (4%) y FSP se calculan internamente desde el IBC proyectado, para no
         depender de reglas condicionales (FSP) que pueden no estar definidas.
+
+        Base de retención = ingreso salarial (básico + devengado salarial). Se excluyen
+        los auxilios de transporte y de rodamiento (no son ingreso para retención).
+
+        Proyección 1Q = básico real de la 1Q + una segunda quincena completa; las
+        variables salariales se proyectan x2. En 2Q se toma el real del mes (1Q + 2Q)
+        y se descuenta lo ya retenido en la 1Q.
         """
         self.ensure_one()
         contract = self.contract_id
@@ -120,34 +128,42 @@ class HrPayslip(models.Model):
             return 0.0
 
         # Valores del período actual (recibidos desde la regla)
-        gross = gross or 0.0
         basico = basico or 0.0
         ibc = ibc or 0.0
-        salud = ibc * 0.04
-        pension = ibc * 0.04 + ibc * self._proimpo_fsp_pct(ibc, smmlv)
+        devsal = devsal or 0.0
+        cap = 25.0 * smmlv
+
+        def _aportes(base_ibc):
+            b = min(base_ibc, cap) if base_ibc > 0 else 0.0
+            s = b * 0.04
+            p = b * 0.04 + b * self._proimpo_fsp_pct(b, smmlv)
+            return s, p
 
         es_1q = self.date_from and self.date_from.day <= 15
 
         if es_1q:
-            # Proyección: salario mensual completo + variables de la quincena x2
-            variables = gross - basico
-            ingreso = contract.wage + variables * 2.0
-            incr_salud = salud * 2.0
-            incr_pension = pension * 2.0
+            # Proyección: básico real de la 1Q + segunda quincena completa
+            seg = contract.wage / 2.0
+            if (contract.date_end and contract.date_end.year == self.date_from.year
+                    and contract.date_end.month == self.date_from.month):
+                d = contract.date_end.day
+                seg = 0.0 if d <= 15 else contract.wage / 30.0 * min(d - 15, 15)
+            salario_proy = basico + seg
+            base_ibc = salario_proy + devsal * 2.0
+            ingreso = base_ibc
+            incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = 0.0
             proyectada = True
         else:
-            # 2Q: real del mes = 1Q + 2Q, se descuenta lo ya retenido en 1Q
+            # 2Q: real del mes = base salarial 1Q + 2Q; se descuenta lo retenido en 1Q
             slip1 = self._proimpo_slip_1q()
-            g1 = s1 = p1 = r1 = 0.0
+            base_1q = r1 = 0.0
             if slip1:
-                g1 = slip1._proimpo_line('GROSS')
-                s1 = abs(slip1._proimpo_line('SALUD'))
-                p1 = abs(slip1._proimpo_line('PENS')) + abs(slip1._proimpo_line('FSP'))
+                base_1q = slip1._proimpo_line('IBC')
                 r1 = abs(slip1._proimpo_line('RTF'))
-            ingreso = gross + g1
-            incr_salud = salud + s1
-            incr_pension = pension + p1
+            base_ibc = (basico + devsal) + base_1q
+            ingreso = base_ibc
+            incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = r1
             proyectada = False
 
