@@ -86,25 +86,45 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     # Depuración de retención (Procedimiento 1) - replica reporte CGUNO
     # ------------------------------------------------------------------
-    def _proimpo_rtf(self, gross=0.0, basico=0.0, salud=0.0, pens=0.0, fsp=0.0):
+    @staticmethod
+    def _proimpo_fsp_pct(ibc, smmlv):
+        """Porcentaje del Fondo de Solidaridad Pensional según el IBC."""
+        r = (ibc / smmlv) if smmlv else 0.0
+        if 4 <= r < 16:
+            return 0.010
+        elif 16 <= r < 17:
+            return 0.012
+        elif 17 <= r < 18:
+            return 0.014
+        elif 18 <= r < 19:
+            return 0.016
+        elif 19 <= r < 20:
+            return 0.018
+        elif r >= 20:
+            return 0.020
+        return 0.0
+
+    def _proimpo_rtf(self, gross=0.0, basico=0.0, ibc=0.0):
         """Calcula la retención del período, almacena la depuración y devuelve el valor.
 
-        Los valores del período actual (gross, básico, salud, pensión, FSP) se reciben
-        como argumentos desde la regla RTF, porque durante el cálculo las líneas del
-        recibo aún no están escritas y no se pueden leer con line_ids.
+        Recibe desde la regla RTF los valores del período actual (gross, básico e IBC);
+        a partir del IBC calcula salud (4%), pensión (4%) y FSP internamente, para no
+        depender de reglas condicionales (FSP) que pueden no estar definidas.
         """
         self.ensure_one()
         contract = self.contract_id
         company = contract.company_id
         uvt = company.uvt_value or 0.0
+        smmlv = company.smmlv_value or 0.0
         if not uvt or not contract:
             return 0.0
 
         # Valores del período actual (recibidos desde la regla)
         gross = gross or 0.0
         basico = basico or 0.0
-        salud = abs(salud or 0.0)
-        pension = abs(pens or 0.0) + abs(fsp or 0.0)
+        ibc = ibc or 0.0
+        salud = ibc * 0.04
+        pension = ibc * 0.04 + ibc * self._proimpo_fsp_pct(ibc, smmlv)
 
         es_1q = self.date_from and self.date_from.day <= 15
 
