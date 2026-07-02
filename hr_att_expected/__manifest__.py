@@ -3,7 +3,7 @@
     "version": "1.0",
     "license": "LGPL-3",
     "depends": ["hr_attendance", "hr"],
-    "author": "Proimo",
+    "author": "Proimpo SAS",
     "category": "Human Resources",
     "description": """
         Añade campos de entrada y salida esperada según el horario del empleado.
