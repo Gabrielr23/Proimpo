@@ -107,9 +107,11 @@ class AccountMove(models.Model):
 
         for move_id in move_ids:
             try:
-                # 1. Enviar a la DIAN
+                # no_document=True evita que 'documents_account' intente crear registros
+                # en el workspace de Documentos al adjuntar el XML, lo que causaba
+                # 'cursor already closed' en hilos de fondo.
                 with odoo.modules.registry.Registry(dbname).cursor() as cr:
-                    env = odoo.api.Environment(cr, uid, {})
+                    env = odoo.api.Environment(cr, uid, {'no_document': True})
                     move = env['account.move'].browse(move_id)
                     move.l10n_co_dian_action_send_bill_support_document()
                     cr.commit()
@@ -120,6 +122,19 @@ class AccountMove(models.Model):
                 # 2. Adjuntar ZIP (XML + PDF) al chatter en transacción separada
                 AccountMove._attach_dian_zip(dbname, uid, move_id)
 
+            except UserError as exc:
+                msg = str(exc)
+                # Regla 90: la DIAN ya tenía el documento — no es un error real
+                if 'procesado anteriormente' in msg:
+                    _logger.warning(
+                        'Lote EDI: move(%d) ya fue procesado por la DIAN. Se omite.',
+                        move_id,
+                    )
+                else:
+                    error_ids.append(move_id)
+                    _logger.error(
+                        'Lote EDI: move(%d) rechazado por la DIAN: %s', move_id, msg,
+                    )
             except Exception:
                 error_ids.append(move_id)
                 _logger.exception('Lote EDI: error procesando move(%d).', move_id)
