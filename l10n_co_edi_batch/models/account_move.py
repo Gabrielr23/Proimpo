@@ -5,7 +5,7 @@ import threading
 import zipfile
 
 import odoo
-from odoo import models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -13,6 +13,26 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
+
+    l10n_co_edi_dian_state = fields.Selection(
+        selection=[
+            ('sent', 'Aceptado DIAN'),
+            ('pending', 'Pendiente DIAN'),
+        ],
+        string='Estado DIAN',
+        compute='_compute_l10n_co_edi_dian_state',
+        store=True,
+    )
+
+    @api.depends('state', 'l10n_co_edi_cufe_cude')
+    def _compute_l10n_co_edi_dian_state(self):
+        for move in self:
+            if move.state != 'posted':
+                move.l10n_co_edi_dian_state = False
+            elif move.l10n_co_edi_cufe_cude:
+                move.l10n_co_edi_dian_state = 'sent'
+            else:
+                move.l10n_co_edi_dian_state = 'pending'
 
     def action_send_edi_batch(self):
         """
