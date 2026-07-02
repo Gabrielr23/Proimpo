@@ -8,7 +8,7 @@
         y enviarlos directamente a la DIAN usando el Servicio Gratuito de Odoo
         en segundo plano (background), sin bloquear la interfaz del usuario.
     """,
-    'author': 'PROIMPO SAS',
+    'author': 'PROIMPO S.A.S',
     'depends': ['l10n_co_edi'],
     'data': [
         'data/server_action.xml',
