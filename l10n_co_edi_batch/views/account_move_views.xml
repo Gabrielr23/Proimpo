@@ -7,7 +7,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_in_invoice_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='payment_state']" position="before">
+            <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="l10n_co_edi_dian_state"
                        optional="show"
                        widget="badge"
@@ -17,13 +17,14 @@
         </field>
     </record>
 
-    <!-- Filtro de búsqueda: documentos pendientes de envío a la DIAN -->
-    <record id="view_in_invoice_filter_l10n_co_edi_batch" model="ir.ui.view">
-        <field name="name">account.move.search.l10n_co_edi_batch</field>
+    <!-- Filtros de búsqueda en la lista de facturas de proveedor -->
+    <record id="view_account_bill_filter_l10n_co_edi_batch" model="ir.ui.view">
+        <field name="name">account.move.bill.search.l10n_co_edi_batch</field>
         <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="inherit_id" ref="account.view_account_bill_filter"/>
         <field name="arch" type="xml">
-            <xpath expr="//filter[@name='draft']" position="after">
+            <xpath expr="//search" position="inside">
+                <separator/>
                 <filter name="dian_pending"
                         string="Pendientes DIAN"
                         domain="[('state', '=', 'posted'), ('l10n_co_edi_cufe_cude', 'in', [False, ''])]"/>

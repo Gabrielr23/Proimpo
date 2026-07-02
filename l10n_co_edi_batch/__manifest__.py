@@ -1,6 +1,6 @@
 {
     'name': 'EDI Colombia - Envío en Lote',
-    'version': '18.0.1.6.0',
+    'version': '18.0.1.8.0',
     'category': 'Accounting/Localizations/EDI',
     'summary': 'Envío en lote de documentos electrónicos a la DIAN (Servicio Gratuito)',
     'description': """
