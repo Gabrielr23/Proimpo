@@ -99,6 +99,57 @@ class HrPayslip(models.Model):
         return max(base, ini) if ini else base
 
     # ------------------------------------------------------------------
+    # Vacaciones disfrutadas (separar del básico para la nómina electrónica)
+    # ------------------------------------------------------------------
+    # Código de la entrada de trabajo / tipo de ausencia de vacaciones
+    VAC_WE_CODE = '5'
+
+    def _es_vacacion_we(self, wet):
+        if not wet:
+            return False
+        code = (wet.code or '').strip()
+        name = (wet.name or '').lower()
+        return code == self.VAC_WE_CODE or 'vacacion' in name
+
+    def _es_vacacion_leave(self, leave):
+        st = leave.holiday_status_id
+        if not st:
+            return False
+        name = (st.name or '').lower()
+        wet = getattr(st, 'work_entry_type_id', False)
+        code = (wet.code or '').strip() if wet else ''
+        return 'vacacion' in name or code == self.VAC_WE_CODE
+
+    def _vac_disfrutadas(self):
+        """Días de vacaciones disfrutadas del período: hábiles (de las entradas de
+        trabajo) y no hábiles (calendario del rango de la ausencia, menos hábiles)."""
+        self.ensure_one()
+        habiles = sum(wd.number_of_days for wd in self.worked_days_line_ids
+                      if self._es_vacacion_we(wd.work_entry_type_id))
+        total = 0
+        if self.date_from and self.date_to:
+            leaves = self.env['hr.leave'].search([
+                ('employee_id', '=', self.employee_id.id),
+                ('request_date_from', '<=', self.date_to),
+                ('request_date_to', '>=', self.date_from),
+                ('state', '=', 'validate'),
+            ])
+            for lv in leaves:
+                if not self._es_vacacion_leave(lv):
+                    continue
+                d1 = max(lv.request_date_from, self.date_from)
+                d2 = min(lv.request_date_to, self.date_to)
+                if d2 >= d1:
+                    total += (d2 - d1).days + 1
+        total = max(total, habiles)
+        no_habiles = max(total - habiles, 0)
+        return {'habiles': habiles, 'no_habiles': no_habiles, 'total': total}
+
+    def _vac_valor_disfrutadas(self):
+        """Valor a pagar por vacaciones disfrutadas = base de vacaciones / 30 x días."""
+        return self._liq_base('vac') / 30.0 * self._vac_disfrutadas()['total']
+
+        # ------------------------------------------------------------------
     # Conceptos de liquidación
     # ------------------------------------------------------------------
     def _liq_cesantias(self):
