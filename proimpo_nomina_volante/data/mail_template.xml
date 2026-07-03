@@ -14,6 +14,6 @@
                 <p>Atentamente,<br/><t t-out="object.company_id.name or ''"/></p>
             </div>
         </field>
-        <field name="auto_delete" eval="True"/>
+        <field name="auto_delete" eval="False"/>
     </record>
 </odoo>
