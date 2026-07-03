@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Botón individual en el recibo -->
+    <record id="view_hr_payslip_form_volante" model="ir.ui.view">
+        <field name="name">hr.payslip.form.volante</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_enviar_volante" type="object"
+                        string="Enviar volante" class="btn-primary"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Acción masiva: aparece en el menú Acción de la lista de recibos -->
+    <record id="action_server_enviar_volante" model="ir.actions.server">
+        <field name="name">Enviar volante por correo</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_enviar_volante()</field>
+    </record>
+</odoo>
