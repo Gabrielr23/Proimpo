@@ -3,7 +3,7 @@
 
     <record id="paperformat_volante" model="report.paperformat">
         <field name="name">Volante compacto</field>
-        <field name="format">letter</field>
+        <field name="format">Letter</field>
         <field name="orientation">Portrait</field>
         <field name="margin_top">8</field>
         <field name="margin_bottom">8</field>
