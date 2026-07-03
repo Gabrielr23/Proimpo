@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="param_convenio" model="ir.config_parameter">
+            <field name="key">proimpo_banco.convenio</field>
+            <field name="value">0056000780000</field>
+        </record>
+        <record id="param_cola" model="ir.config_parameter">
+            <field name="key">proimpo_banco.cola</field>
+            <field name="value">06531979002D</field>
+        </record>
+        <record id="param_tipo_pago" model="ir.config_parameter">
+            <field name="key">proimpo_banco.tipo_pago</field>
+            <field name="value">225</field>
+        </record>
+        <record id="param_desc" model="ir.config_parameter">
+            <field name="key">proimpo_banco.desc</field>
+            <field name="value">PAGO NOMIN</field>
+        </record>
+        <record id="param_concepto" model="ir.config_parameter">
+            <field name="key">proimpo_banco.concepto</field>
+            <field name="value">PAGNOMINA</field>
+        </record>
+    </data>
+</odoo>
