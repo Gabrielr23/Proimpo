@@ -121,12 +121,14 @@ class HrPayslip(models.Model):
         return 'vacacion' in name or code == self.VAC_WE_CODE
 
     def _vac_disfrutadas(self):
-        """Días de vacaciones disfrutadas del período: hábiles (de las entradas de
-        trabajo) y no hábiles (calendario del rango de la ausencia, menos hábiles)."""
+        """Días de vacaciones disfrutadas del período. total = días calendario del rango
+        de la ausencia; hábiles = días L-V (o los de las entradas de trabajo si existen);
+        no hábiles = total - hábiles."""
         self.ensure_one()
-        habiles = sum(wd.number_of_days for wd in self.worked_days_line_ids
-                      if self._es_vacacion_we(wd.work_entry_type_id))
+        habiles_we = sum(wd.number_of_days for wd in self.worked_days_line_ids
+                         if self._es_vacacion_we(wd.work_entry_type_id))
         total = 0
+        habiles_cal = 0
         if self.date_from and self.date_to:
             leaves = self.env['hr.leave'].search([
                 ('employee_id', '=', self.employee_id.id),
@@ -139,8 +141,13 @@ class HrPayslip(models.Model):
                     continue
                 d1 = max(lv.request_date_from, self.date_from)
                 d2 = min(lv.request_date_to, self.date_to)
-                if d2 >= d1:
-                    total += (d2 - d1).days + 1
+                dd = d1
+                while dd <= d2:
+                    total += 1
+                    if dd.weekday() < 5:
+                        habiles_cal += 1
+                    dd += datetime.timedelta(days=1)
+        habiles = round(habiles_we) if habiles_we else habiles_cal
         total = max(total, habiles)
         no_habiles = max(total - habiles, 0)
         return {'habiles': habiles, 'no_habiles': no_habiles, 'total': total}
