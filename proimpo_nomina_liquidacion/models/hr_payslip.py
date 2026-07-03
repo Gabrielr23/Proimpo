@@ -127,12 +127,17 @@ class HrPayslip(models.Model):
     # Indemnización por despido sin justa causa (Art. 64 CST)
     # ------------------------------------------------------------------
     def _liq_tipo_contrato(self):
-        """Devuelve 'fijo', 'obra' o 'indefinido' según el tipo del contrato."""
-        t = (self.contract_id.contract_type_id.name or '').lower()
-        if 'obra' in t or 'labor' in t:
-            return 'obra'
-        if 'fij' in t:
+        """Tipo colombiano de contrato (campo type_contract_id de Jorels).
+        Codigos: 1=Termino fijo, 2=Indefinido, 3=Obra o labor, 4=Aprendizaje, 5=Practicas."""
+        tc = getattr(self.contract_id, 'type_contract_id', False)
+        code = (tc.code or '').strip() if tc else ''
+        name = (tc.name or '').lower() if tc else ''
+        if code == '1' or 'fij' in name:
             return 'fijo'
+        if code == '3' or 'obra' in name or 'labor' in name:
+            return 'obra'
+        if code in ('4', '5') or 'aprend' in name or 'pasant' in name or 'practic' in name or 'práctic' in name:
+            return 'aprendiz'
         return 'indefinido'
 
     def _liq_indemnizacion(self):
@@ -144,6 +149,9 @@ class HrPayslip(models.Model):
         dia = base / 30.0
         tipo = self._liq_tipo_contrato()
         ret = self.date_to
+
+        if tipo == 'aprendiz':
+            return 0.0
 
         if tipo == 'fijo':
             # Salarios que faltan hasta la fecha pactada de terminación
