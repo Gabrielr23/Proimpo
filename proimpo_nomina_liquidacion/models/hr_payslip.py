@@ -126,6 +126,19 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     # Indemnización por despido sin justa causa (Art. 64 CST)
     # ------------------------------------------------------------------
+    def _liq_tiene_sinjusta(self):
+        """True si el recibo tiene la entrada de 'sin justa causa'. La reconoce por el
+        código (SINJUSTA) o por el nombre del tipo de entrada (contiene 'justa')."""
+        for il in self.input_line_ids:
+            code = (il.code or '').upper()
+            nm = ''
+            it = getattr(il, 'input_type_id', False)
+            if it:
+                nm = (it.name or '').upper()
+            if 'SINJUSTA' in code or 'JUSTA' in code or 'JUSTA' in nm:
+                return True
+        return False
+
     def _liq_tipo_contrato(self):
         """Tipo colombiano de contrato (campo type_contract_id de Jorels).
         Codigos: 1=Termino fijo, 2=Indefinido, 3=Obra o labor, 4=Aprendizaje, 5=Practicas."""
@@ -143,6 +156,8 @@ class HrPayslip(models.Model):
     def _liq_indemnizacion(self):
         """Indemnización por despido sin justa causa. Devuelve 0 si es con justa causa
         (para ello no se digita / la regla se condiciona por una entrada)."""
+        if not self._liq_tiene_sinjusta():
+            return 0.0
         contract = self.contract_id
         smmlv = contract.company_id.smmlv_value or 0.0
         base = self._liq_base('indem')
