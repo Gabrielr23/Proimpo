@@ -21,7 +21,7 @@ class AccountMove(models.Model):
         ],
         string='Estado DIAN',
         compute='_compute_l10n_co_edi_dian_state',
-        store=True,
+        store=False,
     )
 
     @api.depends('state', 'l10n_co_edi_cufe_cude')
