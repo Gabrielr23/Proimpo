@@ -123,6 +123,11 @@ class HrPayslip(models.Model):
         dias_causados = dias_trab * 15.0 / 360.0
         return base / 30.0 * max(dias_causados - (dias_disfrutados or 0.0), 0.0)
 
+    def _liq_vacaciones_compensadas(self, dias):
+        """Valor de vacaciones compensadas en dinero: base de vacaciones / 30 x días.
+        La base es el promedio del último año, sin horas extra ni auxilio de transporte."""
+        return self._liq_base('vac') / 30.0 * (dias or 0.0)
+
     # ------------------------------------------------------------------
     # Indemnización por despido sin justa causa (Art. 64 CST)
     # ------------------------------------------------------------------
