@@ -17,6 +17,11 @@ class HrContract(models.Model):
     pila_ccf_code = fields.Char(
         string="Código Caja de Compensación",
         help="Código de la Caja de Compensación Familiar (ej. CCF57 Comfandi).")
+    pila_pensionado = fields.Boolean(
+        string="Pensionado (no cotiza a pensión)",
+        help="Marcar si el trabajador ya está pensionado. En ese caso NO se calculan "
+             "los aportes a pensión (empleado y empleador) ni el FSP; salud, ARL y "
+             "parafiscales siguen aplicando.")
     pila_municipio_code = fields.Char(
         string="Municipio de labor (DANE)",
         help="Código DANE departamento+municipio donde labora (5 dígitos, ej. 76001 Cali).")

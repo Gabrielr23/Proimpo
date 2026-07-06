@@ -19,6 +19,7 @@
                             <field name="type_worker_id"/>
                             <field name="subtype_worker_id"/>
                             <field name="high_risk_pension"/>
+                            <field name="pila_pensionado"/>
                         </group>
                     </group>
                 </page>
