@@ -17,6 +17,10 @@ class HrContract(models.Model):
     pila_ccf_code = fields.Char(
         string="Código Caja de Compensación",
         help="Código de la Caja de Compensación Familiar (ej. CCF57 Comfandi).")
+    pila_etapa_aprendiz = fields.Selection(
+        [('lectiva', 'Lectiva'), ('productiva', 'Productiva')],
+        string="Etapa (aprendiz)",
+        help="Solo para contratos de aprendizaje (Ley 2466/2025). Lectiva: apoyo 75%% SMMLV, solo salud y ARL a cargo de la empresa (usar estructura Aprendiz Lectiva). Productiva: apoyo 100%% SMMLV con seguridad social y prestaciones plenas (estructura normal). En ambas etapas NO aplican parafiscales.")
     pila_pensionado = fields.Boolean(
         string="Pensionado (no cotiza a pensión)",
         help="Marcar si el trabajador ya está pensionado. En ese caso NO se calculan "

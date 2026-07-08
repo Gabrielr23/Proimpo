@@ -20,6 +20,7 @@
                             <field name="subtype_worker_id"/>
                             <field name="high_risk_pension"/>
                             <field name="pila_pensionado"/>
+                            <field name="pila_etapa_aprendiz"/>
                         </group>
                     </group>
                 </page>
