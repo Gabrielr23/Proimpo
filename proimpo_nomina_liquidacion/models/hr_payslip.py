@@ -121,14 +121,19 @@ class HrPayslip(models.Model):
         return 'vacacion' in name or code == self.VAC_WE_CODE
 
     def _vac_disfrutadas(self):
-        """Días de vacaciones disfrutadas del período. total = días calendario del rango
-        de la ausencia; hábiles = días L-V (o los de las entradas de trabajo si existen);
-        no hábiles = total - hábiles."""
+        """Días de vacaciones del período.
+        - total: días calendario de vacaciones que caen dentro del período (se RESTAN del básico).
+        - pagar: días de vacaciones a PAGAR en este período. Como el pago es anticipado (todo
+          en el período donde inicia la vacación), 'pagar' = días completos de las ausencias que
+          INICIAN dentro de este período; si la vacación empezó en un período anterior, es 0
+          (ya se pagó) y solo restan del básico.
+        - habiles / no_habiles: desglose de 'total' (para el reporte DIAN)."""
         self.ensure_one()
         habiles_we = sum(wd.number_of_days for wd in self.worked_days_line_ids
                          if self._es_vacacion_we(wd.work_entry_type_id))
         total = 0
         habiles_cal = 0
+        pagar = 0
         if self.date_from and self.date_to:
             leaves = self.env['hr.leave'].search([
                 ('employee_id', '=', self.employee_id.id),
@@ -139,6 +144,7 @@ class HrPayslip(models.Model):
             for lv in leaves:
                 if not self._es_vacacion_leave(lv):
                     continue
+                # días dentro del período (para restar del básico)
                 d1 = max(lv.request_date_from, self.date_from)
                 d2 = min(lv.request_date_to, self.date_to)
                 dd = d1
@@ -147,10 +153,17 @@ class HrPayslip(models.Model):
                     if dd.weekday() < 5:
                         habiles_cal += 1
                     dd += datetime.timedelta(days=1)
+                # pago anticipado: solo si la vacación INICIA en este período, se pagan
+                # todos sus días (aunque se extiendan a quincenas siguientes)
+                if self.date_from <= lv.request_date_from <= self.date_to:
+                    dd = lv.request_date_from
+                    while dd <= lv.request_date_to:
+                        pagar += 1
+                        dd += datetime.timedelta(days=1)
         habiles = round(habiles_we) if habiles_we else habiles_cal
         total = max(total, habiles)
         no_habiles = max(total - habiles, 0)
-        return {'habiles': habiles, 'no_habiles': no_habiles, 'total': total}
+        return {'habiles': habiles, 'no_habiles': no_habiles, 'total': total, 'pagar': pagar}
 
     def _vac_valor_disfrutadas(self):
         """Valor a pagar por vacaciones disfrutadas = base de vacaciones / 30 x días."""
