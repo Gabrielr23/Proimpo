@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_exogena_formato_list" model="ir.ui.view">
+        <field name="name">exogena.formato.list</field>
+        <field name="model">exogena.formato</field>
+        <field name="arch" type="xml">
+            <list string="Formatos de Exógena">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="version"/>
+                <field name="year"/>
+                <field name="concepto_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_exogena_formato_form" model="ir.ui.view">
+        <field name="name">exogena.formato.form</field>
+        <field name="model">exogena.formato</field>
+        <field name="arch" type="xml">
+            <form string="Formato de Exógena">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Pagos o abonos en cuenta y retenciones practicadas"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="version"/>
+                        </group>
+                        <group>
+                            <field name="year"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Notas del formato..."/>
+                    <notebook>
+                        <page string="Conceptos">
+                            <field name="concepto_ids">
+                                <list editable="bottom">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="tipo"/>
+                                    <field name="cuenta_count" string="Cuentas"/>
+                                    <field name="nota" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_exogena_formato" model="ir.actions.act_window">
+        <field name="name">Formatos de Exógena</field>
+        <field name="res_model">exogena.formato</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Cree su primer formato de exógena</p>
+            <p>Defina formatos (1001, 1007, 1008, 1009...), sus conceptos y las cuentas contables asociadas.</p>
+        </field>
+    </record>
+
+</odoo>

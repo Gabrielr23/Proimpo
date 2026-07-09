@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_exogena_formato_user,exogena.formato.user,model_exogena_formato,account.group_account_user,1,0,0,0
+access_exogena_formato_manager,exogena.formato.manager,model_exogena_formato,account.group_account_manager,1,1,1,1
+access_exogena_concepto_user,exogena.concepto.user,model_exogena_concepto,account.group_account_user,1,0,0,0
+access_exogena_concepto_manager,exogena.concepto.manager,model_exogena_concepto,account.group_account_manager,1,1,1,1
+access_exogena_concepto_cuenta_user,exogena.concepto.cuenta.user,model_exogena_concepto_cuenta,account.group_account_user,1,0,0,0
+access_exogena_concepto_cuenta_manager,exogena.concepto.cuenta.manager,model_exogena_concepto_cuenta,account.group_account_manager,1,1,1,1
+access_exogena_reporte_user,exogena.reporte.user,model_exogena_reporte,account.group_account_user,1,1,1,1

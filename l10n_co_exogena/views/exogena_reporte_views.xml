@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_exogena_reporte_form" model="ir.ui.view">
+        <field name="name">exogena.reporte.form</field>
+        <field name="model">exogena.reporte</field>
+        <field name="arch" type="xml">
+            <form string="Generar Información Exógena">
+                <group>
+                    <group>
+                        <field name="formato_id"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group string="Cuantías menores">
+                        <field name="umbral_uvt"/>
+                        <field name="uvt_valor"/>
+                    </group>
+                </group>
+                <field name="file_data" filename="file_name" invisible="not file_data" readonly="1"/>
+                <field name="file_name" invisible="1"/>
+                <footer>
+                    <button name="action_generar" type="object" string="Generar Excel" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_exogena_reporte" model="ir.actions.act_window">
+        <field name="name">Generar formato</field>
+        <field name="res_model">exogena.reporte</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

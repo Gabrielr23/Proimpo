@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ================= FORMATO 1001 ================= -->
+        <record id="formato_1001_2025" model="exogena.formato">
+            <field name="name">Pagos o abonos en cuenta y retenciones practicadas</field>
+            <field name="code">1001</field>
+            <field name="version">11</field>
+            <field name="year">2025</field>
+            <field name="description">Art. 1.3.5.2.1 Resolución 000227 de 2025. Excluye rentas de trabajo y pensiones (van al Formato 2276). Nota AG2025: el GMF (4x1000) se reporta con el concepto 5101 identificando al banco; validar contra la especificación técnica oficial de la versión 11.</field>
+        </record>
+
+        <!-- Conceptos principales (asocie sus cuentas del PUC en cada uno) -->
+        <record id="c_1001_5055" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5055</field><field name="tipo">pago_ded</field>
+            <field name="name">Viáticos (que no constituyen ingreso para el trabajador)</field>
+        </record>
+        <record id="c_1001_5056" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5056</field><field name="tipo">pago_ded</field>
+            <field name="name">Gastos de representación</field>
+        </record>
+        <record id="c_1001_5002" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5002</field><field name="tipo">pago_ded</field>
+            <field name="name">Honorarios</field>
+            <field name="nota">No incluir rentas de trabajo/pensiones</field>
+        </record>
+        <record id="c_1001_5003" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5003</field><field name="tipo">pago_ded</field>
+            <field name="name">Comisiones</field>
+            <field name="nota">No incluir rentas de trabajo/pensiones</field>
+        </record>
+        <record id="c_1001_5004" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5004</field><field name="tipo">pago_ded</field>
+            <field name="name">Servicios</field>
+            <field name="nota">No incluir rentas de trabajo/pensiones</field>
+        </record>
+        <record id="c_1001_5005" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5005</field><field name="tipo">pago_ded</field>
+            <field name="name">Arrendamientos</field>
+        </record>
+        <record id="c_1001_5006" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5006</field><field name="tipo">pago_ded</field>
+            <field name="name">Intereses y rendimientos financieros causados</field>
+        </record>
+        <record id="c_1001_5063" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5063</field><field name="tipo">pago_ded</field>
+            <field name="name">Intereses y rendimientos financieros efectivamente pagados</field>
+        </record>
+        <record id="c_1001_5007" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5007</field><field name="tipo">pago_ded</field>
+            <field name="name">Compra de activos movibles (E.T. art. 60)</field>
+        </record>
+        <record id="c_1001_5008" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5008</field><field name="tipo">pago_ded</field>
+            <field name="name">Compra de activos fijos (E.T. art. 60)</field>
+        </record>
+        <record id="c_1001_5010" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5010</field><field name="tipo">pago_ded</field>
+            <field name="name">Aportes parafiscales (SENA, Cajas de Compensación, ICBF)</field>
+        </record>
+        <record id="c_1001_5011" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5011</field><field name="tipo">pago_ded</field>
+            <field name="name">Aportes a EPS y Riesgos Laborales (incluye aporte del trabajador)</field>
+        </record>
+        <record id="c_1001_5012" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5012</field><field name="tipo">pago_ded</field>
+            <field name="name">Aportes obligatorios a pensiones (incluye aporte del trabajador)</field>
+        </record>
+        <record id="c_1001_5013" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5013</field><field name="tipo">pago_ded</field>
+            <field name="name">Donaciones en dinero</field>
+        </record>
+        <record id="c_1001_5015" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5015</field><field name="tipo">pago_ded</field>
+            <field name="name">Impuestos solicitados como deducción</field>
+        </record>
+        <record id="c_1001_5066" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5066</field><field name="tipo">pago_ded</field>
+            <field name="name">Impuesto nacional al consumo</field>
+        </record>
+        <record id="c_1001_5058" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5058</field><field name="tipo">pago_ded</field>
+            <field name="name">Aportes, tasas y contribuciones deducibles</field>
+        </record>
+        <record id="c_1001_5016" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5016</field><field name="tipo">pago_ded</field>
+            <field name="name">Los demás costos y deducciones</field>
+        </record>
+        <record id="c_1001_5020" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5020</field><field name="tipo">pago_ded</field>
+            <field name="name">Compra de activos fijos reales productivos (E.T. art. 158-3)</field>
+        </record>
+        <record id="c_1001_5027" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5027</field><field name="tipo">pago_ded</field>
+            <field name="name">Pagos al exterior por servicios técnicos</field>
+        </record>
+        <record id="c_1001_5023" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5023</field><field name="tipo">pago_ded</field>
+            <field name="name">Pagos al exterior por asistencia técnica</field>
+        </record>
+        <record id="c_1001_5067" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5067</field><field name="tipo">pago_ded</field>
+            <field name="name">Pagos al exterior por consultoría</field>
+        </record>
+        <record id="c_1001_5029" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5029</field><field name="tipo">pago_ded</field>
+            <field name="name">Gastos pagados por anticipado - Compras</field>
+        </record>
+        <record id="c_1001_5019" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5019</field><field name="tipo">pago_ded</field>
+            <field name="name">Amortizaciones realizadas</field>
+        </record>
+        <record id="c_1001_5070" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5070</field><field name="tipo">pago_ded</field>
+            <field name="name">Dividendos/participaciones exigibles 2017 y siguientes (Par. 2 art. 49 E.T.)</field>
+        </record>
+        <record id="c_1001_5100" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">5100</field><field name="tipo">pago_ded</field>
+            <field name="name">Prima en colocación de acciones y otros conceptos patrimoniales</field>
+        </record>
+
+        <!-- Retenciones practicadas (ejemplo: mapear cuentas 2365 / 2367) -->
+        <record id="c_1001_ret_renta" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">RFT</field><field name="tipo">ret_renta</field>
+            <field name="name">Retención en la fuente practicada - renta (asociar cuenta 2365)</field>
+        </record>
+        <record id="c_1001_ret_iva" model="exogena.concepto">
+            <field name="formato_id" ref="formato_1001_2025"/>
+            <field name="code">RIV</field><field name="tipo">ret_iva</field>
+            <field name="name">Retención en la fuente practicada - IVA (asociar cuenta 2367)</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_exogena_concepto_list" model="ir.ui.view">
+        <field name="name">exogena.concepto.list</field>
+        <field name="model">exogena.concepto</field>
+        <field name="arch" type="xml">
+            <list string="Conceptos de Exógena">
+                <field name="formato_id"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="tipo"/>
+                <field name="cuenta_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_exogena_concepto_form" model="ir.ui.view">
+        <field name="name">exogena.concepto.form</field>
+        <field name="model">exogena.concepto</field>
+        <field name="arch" type="xml">
+            <form string="Concepto de Exógena">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="formato_id"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="tipo"/>
+                            <field name="nota"/>
+                        </group>
+                    </group>
+                    <field name="name"/>
+                    <separator string="Cuentas contables asociadas"/>
+                    <field name="cuenta_ids">
+                        <list editable="bottom">
+                            <field name="account_id"/>
+                            <field name="valor"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_exogena_concepto" model="ir.actions.act_window">
+        <field name="name">Conceptos y cuentas</field>
+        <field name="res_model">exogena.concepto</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

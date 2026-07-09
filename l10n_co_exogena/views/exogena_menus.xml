@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_exogena_root"
+              name="Información Exógena"
+              parent="account.menu_finance"
+              sequence="90"/>
+
+    <menuitem id="menu_exogena_generar"
+              name="Generar formato"
+              parent="menu_exogena_root"
+              action="action_exogena_reporte"
+              sequence="10"/>
+
+    <menuitem id="menu_exogena_config"
+              name="Configuración"
+              parent="menu_exogena_root"
+              sequence="90"/>
+
+    <menuitem id="menu_exogena_formato"
+              name="Formatos"
+              parent="menu_exogena_config"
+              action="action_exogena_formato"
+              sequence="10"/>
+
+    <menuitem id="menu_exogena_concepto"
+              name="Conceptos y cuentas"
+              parent="menu_exogena_config"
+              action="action_exogena_concepto"
+              sequence="20"/>
+
+</odoo>
