@@ -14,7 +14,7 @@ CGUNO: **formatos → conceptos → cuentas contables asociadas → Excel**.
 | `exogena.concepto` | Conceptos DIAN (5002, 5004…) con su tipo/columna. |
 | `exogena.concepto.cuenta` | Asocia cuentas del PUC (`account.account`) a cada concepto. |
 | `exogena.reporte` | Asistente que extrae de `account.move.line`, agrupa por tercero y concepto, aplica el umbral de cuantías menores y exporta el Excel. |
-| Datos precargados | Formato **1001** con sus conceptos principales (sin cuentas: usted las asocia). |
+| Datos precargados | Formatos **1001, 1007, 1008 y 1009** con sus conceptos (sin cuentas: usted las asocia). |
 
 Menú: **Contabilidad → Información Exógena** (Generar formato / Configuración).
 

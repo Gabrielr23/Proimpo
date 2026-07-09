@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Información Exógena DIAN (Colombia)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Accounting/Localizations/Reporting',
     'summary': 'Genera los formatos de información exógena (medios magnéticos) '
                'de la DIAN a partir de la contabilidad de Odoo.',
@@ -28,6 +28,9 @@ Basado en la Resolución 000227 de 2025 (Resolución Única) y sus modificacione
         'views/exogena_reporte_views.xml',
         'views/exogena_menus.xml',
         'data/exogena_1001_data.xml',
+        'data/exogena_1007_data.xml',
+        'data/exogena_1008_data.xml',
+        'data/exogena_1009_data.xml',
     ],
     'installable': True,
     'application': True,
