@@ -37,7 +37,7 @@
 
     <menuitem id="menu_cierre_prestaciones"
               name="Cierre de prestaciones"
-              parent="hr.menu_hr_root"
+              parent="hr_payroll.menu_hr_payroll_payslips"
               action="action_cierre_prestaciones"
               sequence="91"/>
 </odoo>
