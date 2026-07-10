@@ -34,3 +34,12 @@ class HrContract(models.Model):
     pila_municipio_code = fields.Char(
         string="Municipio de labor (DANE)",
         help="Código DANE departamento+municipio donde labora (5 dígitos, ej. 76001 Cali).")
+    pila_arl_class = fields.Selection(
+        [('1', 'I - 0.522%'), ('2', 'II - 1.044%'), ('3', 'III - 2.436%'),
+         ('4', 'IV - 4.350%'), ('5', 'V - 6.960%')],
+        string="Clase de riesgo ARL", default='3',
+        help="Clase de riesgo laboral que determina la tarifa de ARL en la PILA.")
+    pila_centro_trabajo = fields.Char(
+        string="Centro de trabajo PILA",
+        help="Codigo de centro de trabajo/actividad para la PILA (pos 687-693). "
+             "Si se deja vacio se usa el valor por defecto de la compania.")
