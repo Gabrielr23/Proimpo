@@ -41,7 +41,7 @@ class HrPayslip(models.Model):
             d['arl'] += s._pila_line('APARL')
             d['ccf'] += s._pila_line('APCCF')
             d['fsp'] += abs(s._pila_line('FSP'))
-            d['dias'] += sum(s.worked_days_line_ids.filtered(lambda w: w.is_paid).mapped('number_of_days'))
+            d['dias'] += s._dias_cotizados_pila()
 
         output = io.BytesIO()
         wb = xlsxwriter.Workbook(output, {'in_memory': True})

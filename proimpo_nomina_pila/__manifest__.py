@@ -7,7 +7,7 @@
     'license': "LGPL-3",
     'category': "Human Resources",
     'version': "18.0.1.0.0",
-    'depends': ['l10n_co_hr_payroll_enterprise'],
+    'depends': ['l10n_co_hr_payroll_enterprise', 'proimpo_nomina_liquidacion'],
     'data': [
         'views/hr_contract_views.xml',
         'views/pila_reporte_views.xml',
