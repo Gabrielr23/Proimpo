@@ -2,6 +2,7 @@
 from odoo import models, fields
 from dateutil.relativedelta import relativedelta
 import datetime
+import calendar
 
 
 class HrPayslip(models.Model):
@@ -13,6 +14,38 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     # Utilidades
     # ------------------------------------------------------------------
+    def _dias_comerciales(self):
+        """Días del período en convención comercial (mes de 30), recortados al contrato.
+        El último día del mes cuenta como día 30, así la 2Q da 15 en meses de 28, 30 o 31 días."""
+        self.ensure_one()
+        c = self.contract_id
+        ini = self.date_from
+        if c.date_start and c.date_start > ini:
+            ini = c.date_start
+        fin = self.date_to
+        if c.date_end and c.date_end < fin:
+            fin = c.date_end
+        if not ini or not fin or fin < ini:
+            return 0
+
+        def dcom(d, es_fin):
+            ult = calendar.monthrange(d.year, d.month)[1]
+            if es_fin and d.day >= ult:
+                return 30
+            return min(d.day, 30)
+
+        if ini.year == fin.year and ini.month == fin.month:
+            return max(dcom(fin, True) - dcom(ini, False) + 1, 0)
+        # períodos multi-mes (raro en quincenal): fallback a días calendario
+        return (fin - ini).days + 1
+
+    def _dias_cotizados_pila(self):
+        """Días cotizados para PILA = días comerciales menos los días NO pagados."""
+        self.ensure_one()
+        base = self._dias_comerciales()
+        nopag = sum(wd.number_of_days for wd in self.worked_days_line_ids if not wd.is_paid)
+        return max(int(round(base - nopag)), 0)
+
     @staticmethod
     def _liq_dias360(d1, d2):
         """Días comerciales (meses de 30) entre d1 y d2, inclusivos."""
