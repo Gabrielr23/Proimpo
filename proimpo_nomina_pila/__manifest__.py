@@ -10,6 +10,7 @@
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': [
         'views/hr_contract_views.xml',
+        'views/pila_reporte_views.xml',
     ],
     'installable': True,
     'application': False,
