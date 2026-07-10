@@ -38,14 +38,35 @@
                     <field name="description" placeholder="Notas del formato..."/>
                     <notebook>
                         <page string="Conceptos">
-                            <field name="concepto_ids">
-                                <list editable="bottom">
+                            <p class="text-muted">
+                                Haga clic en un concepto para abrir su ficha y asociar las cuentas contables.
+                            </p>
+                            <field name="concepto_ids" mode="list">
+                                <list>
                                     <field name="code"/>
                                     <field name="name"/>
                                     <field name="tipo"/>
                                     <field name="cuenta_count" string="Cuentas"/>
-                                    <field name="nota" optional="hide"/>
                                 </list>
+                                <form string="Concepto">
+                                    <group>
+                                        <group>
+                                            <field name="code"/>
+                                            <field name="tipo"/>
+                                        </group>
+                                        <group>
+                                            <field name="name"/>
+                                            <field name="nota"/>
+                                        </group>
+                                    </group>
+                                    <separator string="Cuentas contables asociadas"/>
+                                    <field name="cuenta_ids">
+                                        <list editable="bottom">
+                                            <field name="account_id"/>
+                                            <field name="valor"/>
+                                        </list>
+                                    </field>
+                                </form>
                             </field>
                         </page>
                     </notebook>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Información Exógena DIAN (Colombia)',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'category': 'Accounting/Localizations/Reporting',
     'summary': 'Genera los formatos de información exógena (medios magnéticos) '
                'de la DIAN a partir de la contabilidad de Odoo.',
