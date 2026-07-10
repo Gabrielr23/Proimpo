@@ -32,14 +32,17 @@ class HrPayslip(models.Model):
             e = s.employee_id
             d = emp.setdefault(e.id, {
                 'emp': e, 'contract': s.contract_id,
-                'ibc': 0.0, 'pension': 0.0, 'salud': 0.0, 'arl': 0.0, 'ccf': 0.0, 'fsp': 0.0,
+                'ibc': 0.0, 'pension': 0.0, 'salud': 0.0, 'arl': 0.0, 'ccf': 0.0,
+                'sena': 0.0, 'icbf': 0.0, 'fsp': 0.0,
                 'dias': 0.0,
             })
-            d['ibc'] += s._pila_line('IBC')
+            d['ibc'] += s._pila_line('IBC') + s._pila_line('IBCAPR')
             d['pension'] += abs(s._pila_line('PENS')) + s._pila_line('APPENS')
-            d['salud'] += abs(s._pila_line('SALUD')) + s._pila_line('APSALUD')
-            d['arl'] += s._pila_line('APARL')
+            d['salud'] += abs(s._pila_line('SALUD')) + s._pila_line('APSALUD') + s._pila_line('APSALUDAPR')
+            d['arl'] += s._pila_line('APARL') + s._pila_line('APARLAPR')
             d['ccf'] += s._pila_line('APCCF')
+            d['sena'] += s._pila_line('APSENA')
+            d['icbf'] += s._pila_line('APICBF')
             d['fsp'] += abs(s._pila_line('FSP'))
             d['dias'] += s._dias_cotizados_pila()
 
@@ -56,7 +59,8 @@ class HrPayslip(models.Model):
 
         ws.write(0, 0, "Datos PILA (consolidado del mes) — validación", f_t)
         hdr = ['Cédula', 'Empleado', 'T.Cot', 'Sub', 'Municipio', 'EPS', 'AFP', 'ARL', 'Caja',
-               'Días', 'IBC', 'Cotiz. Pensión', 'Cotiz. Salud', 'Cotiz. ARL', 'Cotiz. Caja', 'FSP']
+               'Días', 'IBC', 'Cotiz. Pensión', 'Cotiz. Salud', 'Cotiz. ARL', 'Cotiz. Caja',
+               'Cotiz. SENA', 'Cotiz. ICBF', 'FSP']
         for c, h in enumerate(hdr):
             ws.write(2, c, h, f_h)
         r = 3
@@ -69,7 +73,7 @@ class HrPayslip(models.Model):
                     ct.pila_municipio_code or '', ct.pila_eps_code or '', ct.pila_afp_code or '',
                     ct.pila_arl_code or '', ct.pila_ccf_code or '',
                     round(d['dias']), round(d['ibc']), round(d['pension']), round(d['salud']),
-                    round(d['arl']), round(d['ccf']), round(d['fsp'])]
+                    round(d['arl']), round(d['ccf']), round(d['sena']), round(d['icbf']), round(d['fsp'])]
             for c, v in enumerate(vals):
                 if c >= 9:
                     ws.write(r, c, v, f_n); tot[c] += v
