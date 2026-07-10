@@ -12,12 +12,13 @@ HDR = '0100001PROIMPO SAS                                                       
 TRL = '060000114-11 000000089090379050000000000000               000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
 
 # Clase de riesgo ARL -> (tarifa, codigo pos 398, clase pos 513)
+# Centro de trabajo ARL (codigo CGUNO 01-05) -> (tarifa, pos 398, clase pos 513)
 ARL_MAP = {
-    '1': (0.00522, '1', '1'),
-    '2': (0.01044, '2', '2'),
-    '3': (0.02436, '5', '3'),
-    '4': (0.04350, '4', '4'),
-    '5': (0.06960, '5', '5'),
+    '1': (0.00522, '1', '1'),   # 01 Riesgo minimo
+    '2': (0.01044, '2', '2'),   # 02 Riesgo bajo
+    '3': (0.00000, '3', '0'),   # 03 Tarifa 0%
+    '4': (0.04350, '4', '4'),   # 04 Riesgo alto
+    '5': (0.02436, '5', '3'),   # 05 Centro 2.436 alto
 }
 
 
@@ -135,7 +136,7 @@ class HrPayslip(models.Model):
         _put(buf, 317, 5, _ap(ibc * rate_s))
 
         # --- ARL ---
-        tarifa, c398, c513 = ARL_MAP.get(ct.pila_arl_class or '3', ARL_MAP['3'])
+        tarifa, c398, c513 = ARL_MAP.get(ct.pila_arl_class or '5', ARL_MAP['5'])
         _put(buf, 384, 4, '%04d' % int(round(tarifa * 100000)))
         _put(buf, 398, 1, c398)
         _put(buf, 513, 1, c513)
