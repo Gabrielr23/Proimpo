@@ -17,6 +17,11 @@ class HrContract(models.Model):
     pila_ccf_code = fields.Char(
         string="Código Caja de Compensación",
         help="Código de la Caja de Compensación Familiar (ej. CCF57 Comfandi).")
+    pila_fecha_productiva = fields.Date(
+        string="Fecha inicio etapa productiva",
+        help="Día en que el aprendiz pasa de lectiva a productiva. Si el cambio cae a mitad de "
+             "quincena, se generan dos recibos: uno lectiva (hasta el día anterior) y uno productiva "
+             "(desde esta fecha).")
     pila_etapa_aprendiz = fields.Selection(
         [('lectiva', 'Lectiva'), ('productiva', 'Productiva')],
         string="Etapa (aprendiz)",
