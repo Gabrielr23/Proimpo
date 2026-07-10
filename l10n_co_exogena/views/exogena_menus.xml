@@ -2,7 +2,7 @@
 <odoo>
 
     <menuitem id="menu_exogena_root"
-              name="Información Exógena"
+              name="Exógena DIAN"
               parent="account.menu_finance"
               sequence="90"/>
 
