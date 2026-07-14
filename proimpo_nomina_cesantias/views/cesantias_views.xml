@@ -40,7 +40,7 @@
 
     <menuitem id="menu_cesantias_consignacion"
               name="Consignacion de cesantias"
-              parent="hr_payroll.menu_hr_payroll_payslips"
+              parent="hr_payroll.menu_hr_payroll_root"
               action="action_cesantias_consignacion"
               sequence="90"/>
 </odoo>
