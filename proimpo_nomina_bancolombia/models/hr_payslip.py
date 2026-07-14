@@ -5,6 +5,25 @@ from odoo import models, _
 from odoo.exceptions import UserError
 
 
+
+def _empresa_propia_param(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'proimpo_nomina.empresa_propia', 'PROIMPO SAS')
+
+
+def _dom_empresa_propia(env):
+    """Leaf de dominio: procesar solo empleados de la empresa propia (excluye temporales)."""
+    if 'x_studio_contrato_con' in env['hr.employee']._fields:
+        return [('employee_id.x_studio_contrato_con', '=', _empresa_propia_param(env))]
+    return []
+
+
+def _es_empleado_propio(emp):
+    if 'x_studio_contrato_con' not in emp.env['hr.employee']._fields:
+        return True
+    return emp.x_studio_contrato_con == _empresa_propia_param(emp.env)
+
+
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
@@ -28,6 +47,7 @@ class HrPayslip(models.Model):
         concepto = ICP.get_param('proimpo_banco.concepto', 'PAGNOMINA')
 
         slips = self.filtered(lambda s: s.state in ('done', 'paid')) or self
+        slips = slips.filtered(lambda s: _es_empleado_propio(s.employee_id))
         if not slips:
             raise UserError(_("No hay recibos válidos seleccionados."))
 
