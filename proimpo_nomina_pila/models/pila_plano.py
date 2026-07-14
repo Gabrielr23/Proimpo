@@ -53,6 +53,25 @@ def _split_nombre(nombre):
     return ap1, ap2, no1, no2
 
 
+
+def _empresa_propia_param(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'proimpo_nomina.empresa_propia', 'PROIMPO SAS')
+
+
+def _dom_empresa_propia(env):
+    """Leaf de dominio: procesar solo empleados de la empresa propia (excluye temporales)."""
+    if 'x_studio_contrato_con' in env['hr.employee']._fields:
+        return [('employee_id.x_studio_contrato_con', '=', _empresa_propia_param(env))]
+    return []
+
+
+def _es_empleado_propio(emp):
+    if 'x_studio_contrato_con' not in emp.env['hr.employee']._fields:
+        return True
+    return emp.x_studio_contrato_con == _empresa_propia_param(emp.env)
+
+
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
@@ -234,7 +253,7 @@ class HrPayslipRun(models.Model):
         slips = self.env['hr.payslip'].search([
             ('state', 'in', ('done', 'paid')),
             ('date_from', '<=', last), ('date_to', '>=', first),
-        ])
+        ] + _dom_empresa_propia(self.env))
         if not slips:
             raise UserError(_("No hay recibos confirmados en el mes %04d-%02d." % (y, m)))
         contenido = slips._pila_generar_plano(first)
