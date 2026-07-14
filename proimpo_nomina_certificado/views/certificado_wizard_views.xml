@@ -40,7 +40,7 @@
 
     <menuitem id="menu_certificado_ingresos"
               name="Certificado de ingresos (220)"
-              parent="hr_payroll.menu_hr_payroll_root"
+              parent="hr_payroll.menu_hr_payroll_payslips"
               action="action_certificado_ingresos"
               sequence="95"/>
 </odoo>
