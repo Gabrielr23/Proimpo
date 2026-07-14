@@ -31,6 +31,25 @@ def _dias360(d1, d2):
     return (d2.year - d1.year) * 360 + (d2.month - d1.month) * 30 + (a2 - a1) + 1
 
 
+
+def _empresa_propia_param(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'proimpo_nomina.empresa_propia', 'PROIMPO SAS')
+
+
+def _dom_empresa_propia(env):
+    """Leaf de dominio: procesar solo empleados de la empresa propia (excluye temporales)."""
+    if 'x_studio_contrato_con' in env['hr.employee']._fields:
+        return [('employee_id.x_studio_contrato_con', '=', _empresa_propia_param(env))]
+    return []
+
+
+def _es_empleado_propio(emp):
+    if 'x_studio_contrato_con' not in emp.env['hr.employee']._fields:
+        return True
+    return emp.x_studio_contrato_con == _empresa_propia_param(emp.env)
+
+
 class CierrePrestacionesWizard(models.TransientModel):
     _name = 'cierre.prestaciones.wizard'
     _description = 'Cierre mensual de prestaciones (consolidado vs provision)'
@@ -81,7 +100,7 @@ class CierrePrestacionesWizard(models.TransientModel):
             ('date_start', '<=', corte),
             '|', ('date_end', '=', False), ('date_end', '>=', ene1),
             ('state', 'in', ('open', 'close')),
-        ])
+        ] + _dom_empresa_propia(self.env))
         res = []
         for ct in contratos:
             if ct.integral_salary:
