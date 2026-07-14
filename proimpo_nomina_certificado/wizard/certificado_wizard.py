@@ -19,6 +19,25 @@ CAS_APO = [('50', 'Salud'), ('51', 'Pension+FSP'), ('52', 'RAIS'), ('53', 'APV')
            ('54', 'AFC/AVC'), ('55', 'Retencion')]
 
 
+
+def _empresa_propia_param(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'proimpo_nomina.empresa_propia', 'PROIMPO SAS')
+
+
+def _dom_empresa_propia(env):
+    """Leaf de dominio: procesar solo empleados de la empresa propia (excluye temporales)."""
+    if 'x_studio_contrato_con' in env['hr.employee']._fields:
+        return [('employee_id.x_studio_contrato_con', '=', _empresa_propia_param(env))]
+    return []
+
+
+def _es_empleado_propio(emp):
+    if 'x_studio_contrato_con' not in emp.env['hr.employee']._fields:
+        return True
+    return emp.x_studio_contrato_con == _empresa_propia_param(emp.env)
+
+
 class CertificadoIngresosWizard(models.TransientModel):
     _name = 'certificado.ingresos.wizard'
     _description = 'Certificado de ingresos y retenciones (220)'
@@ -33,11 +52,11 @@ class CertificadoIngresosWizard(models.TransientModel):
 
     def _empleados(self):
         if self.employee_ids:
-            return self.employee_ids
+            return self.employee_ids.filtered(lambda e: _es_empleado_propio(e))
         ini = date(self.anio, 1, 1); fin = date(self.anio, 12, 31)
         slips = self.env['hr.payslip'].search([
             ('state', 'in', ('done', 'paid')),
-            ('date_from', '>=', ini), ('date_to', '<=', fin)])
+            ('date_from', '>=', ini), ('date_to', '<=', fin)] + _dom_empresa_propia(self.env))
         return slips.mapped('employee_id')
 
     def action_generar_pdf(self):
