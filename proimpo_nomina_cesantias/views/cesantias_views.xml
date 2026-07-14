@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cesantias_consignacion_wizard_form" model="ir.ui.view">
+        <field name="name">cesantias.consignacion.wizard.form</field>
+        <field name="model">cesantias.consignacion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Consignacion anual de cesantias">
+                <group>
+                    <group>
+                        <field name="anio"/>
+                        <field name="incluir_transporte"/>
+                    </group>
+                    <group>
+                        <field name="smmlv"/>
+                        <field name="aux_transporte"/>
+                    </group>
+                </group>
+                <p class="text-muted">
+                    Recalcula las cesantias al 31 de diciembre del ano indicado
+                    (base x dias / 360) para los empleados activos con fondo asignado,
+                    agrupadas por fondo.
+                </p>
+                <footer>
+                    <button name="action_generar_plano" type="object" string="Generar plano (.TXT)"
+                            class="btn-primary"/>
+                    <button name="action_generar_reporte" type="object"
+                            string="Reporte de control (Excel)" class="btn-secondary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cesantias_consignacion" model="ir.actions.act_window">
+        <field name="name">Consignacion de cesantias</field>
+        <field name="res_model">cesantias.consignacion.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_cesantias_consignacion"
+              name="Consignacion de cesantias"
+              parent="hr_payroll.menu_hr_payroll_payslips"
+              action="action_cesantias_consignacion"
+              sequence="90"/>
+</odoo>
