@@ -33,6 +33,25 @@ def _split_nombre(nombre):
             nom[0] if nom else '', ' '.join(nom[1:]) if len(nom) > 1 else '')
 
 
+
+def _empresa_propia_param(env):
+    return env['ir.config_parameter'].sudo().get_param(
+        'proimpo_nomina.empresa_propia', 'PROIMPO SAS')
+
+
+def _dom_empresa_propia(env):
+    """Leaf de dominio: procesar solo empleados de la empresa propia (excluye temporales)."""
+    if 'x_studio_contrato_con' in env['hr.employee']._fields:
+        return [('employee_id.x_studio_contrato_con', '=', _empresa_propia_param(env))]
+    return []
+
+
+def _es_empleado_propio(emp):
+    if 'x_studio_contrato_con' not in emp.env['hr.employee']._fields:
+        return True
+    return emp.x_studio_contrato_con == _empresa_propia_param(emp.env)
+
+
 class CesantiasConsignacionWizard(models.TransientModel):
     _name = 'cesantias.consignacion.wizard'
     _description = 'Consignacion anual de cesantias'
@@ -58,7 +77,7 @@ class CesantiasConsignacionWizard(models.TransientModel):
             ('date_start', '<=', fin_ano),
             '|', ('date_end', '=', False), ('date_end', '>=', ini_ano),
             ('state', 'in', ('open', 'close')),
-        ])
+        ] + _dom_empresa_propia(self.env))
         res = []
         for ct in contratos:
             if ct.integral_salary:
