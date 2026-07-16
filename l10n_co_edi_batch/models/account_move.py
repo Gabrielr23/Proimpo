@@ -1,11 +1,8 @@
-import base64
-import io
 import logging
 import threading
-import zipfile
 
 import odoo
-from odoo import api, fields, models, _
+from odoo import models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -14,32 +11,11 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
-    l10n_co_edi_dian_state = fields.Selection(
-        selection=[
-            ('sent', 'Aceptado DIAN'),
-            ('pending', 'Pendiente DIAN'),
-        ],
-        string='Estado DIAN',
-        compute='_compute_l10n_co_edi_dian_state',
-        store=False,
-    )
-
-    @api.depends('state', 'l10n_co_edi_cufe_cude')
-    def _compute_l10n_co_edi_dian_state(self):
-        for move in self:
-            if move.state != 'posted':
-                move.l10n_co_edi_dian_state = False
-            elif move.l10n_co_edi_cufe_cude:
-                move.l10n_co_edi_dian_state = 'sent'
-            else:
-                move.l10n_co_edi_dian_state = 'pending'
-
     def action_send_edi_batch(self):
         """
         Envía a la DIAN los Documentos Soporte seleccionados en la vista lista,
         usando el mismo método que el botón "Enviar Documento Soporte a la DIAN"
-        en segundo plano. Tras el envío exitoso adjunta un ZIP con el XML y el
-        PDF de cada documento al chatter.
+        (l10n_co_dian_action_send_bill_support_document), en segundo plano.
         """
         moves_to_process = self.filtered(AccountMove._is_pending_edi)
 
@@ -83,10 +59,6 @@ class AccountMove(models.Model):
             },
         }
 
-    # ------------------------------------------------------------------
-    # Filtro
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _is_pending_edi(move):
         """True si el documento está publicado y aún no tiene CUFE/CUDE de la DIAN."""
@@ -94,10 +66,6 @@ class AccountMove(models.Model):
             return False
         cufe = getattr(move, 'l10n_co_edi_cufe_cude', None)
         return not cufe
-
-    # ------------------------------------------------------------------
-    # Hilo de fondo
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _send_edi_batch_thread(dbname, uid, move_ids):
@@ -107,34 +75,13 @@ class AccountMove(models.Model):
 
         for move_id in move_ids:
             try:
-                # no_document=True evita que 'documents_account' intente crear registros
-                # en el workspace de Documentos al adjuntar el XML, lo que causaba
-                # 'cursor already closed' en hilos de fondo.
                 with odoo.modules.registry.Registry(dbname).cursor() as cr:
-                    env = odoo.api.Environment(cr, uid, {'no_document': True})
+                    env = odoo.api.Environment(cr, uid, {})
                     move = env['account.move'].browse(move_id)
                     move.l10n_co_dian_action_send_bill_support_document()
                     cr.commit()
-
                 success_ids.append(move_id)
                 _logger.info('Lote EDI: move(%d) procesado correctamente.', move_id)
-
-                # 2. Adjuntar ZIP (XML + PDF) al chatter en transacción separada
-                AccountMove._attach_dian_zip(dbname, uid, move_id)
-
-            except UserError as exc:
-                msg = str(exc)
-                # Regla 90: la DIAN ya tenía el documento — no es un error real
-                if 'procesado anteriormente' in msg:
-                    _logger.warning(
-                        'Lote EDI: move(%d) ya fue procesado por la DIAN. Se omite.',
-                        move_id,
-                    )
-                else:
-                    error_ids.append(move_id)
-                    _logger.error(
-                        'Lote EDI: move(%d) rechazado por la DIAN: %s', move_id, msg,
-                    )
             except Exception:
                 error_ids.append(move_id)
                 _logger.exception('Lote EDI: error procesando move(%d).', move_id)
@@ -144,76 +91,3 @@ class AccountMove(models.Model):
             len(success_ids), success_ids,
             len(error_ids), error_ids,
         )
-
-    # ------------------------------------------------------------------
-    # ZIP con XML DIAN + PDF
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _attach_dian_zip(dbname, uid, move_id):
-        """
-        Tras un envío exitoso, genera un ZIP con el XML adjuntado por la DIAN
-        y el PDF del documento, y lo publica en el chatter.
-        """
-        try:
-            with odoo.modules.registry.Registry(dbname).cursor() as cr:
-                env = odoo.api.Environment(cr, uid, {})
-                move = env['account.move'].browse(move_id)
-
-                # ── XML: el servicio DIAN lo adjunta con nombre 'dian_<nombre>.xml' ──
-                xml_attach = env['ir.attachment'].search([
-                    ('res_model', '=', 'account.move'),
-                    ('res_id', '=', move_id),
-                    ('name', 'like', 'dian_'),
-                ], order='id desc', limit=1)
-
-                if not xml_attach:
-                    _logger.warning(
-                        'Lote EDI move(%d): XML DIAN no encontrado, omitiendo ZIP.',
-                        move_id,
-                    )
-                    return
-
-                # ── PDF: renderizar el informe de factura ──────────────────────────
-                pdf_content = None
-                try:
-                    report = env.ref(
-                        'account.action_account_invoice_from_invoice',
-                        raise_if_not_found=False,
-                    )
-                    if report:
-                        pdf_content, _mime = report.sudo()._render_qweb_pdf(
-                            res_ids=[move_id]
-                        )
-                except Exception:
-                    _logger.warning(
-                        'Lote EDI move(%d): no se pudo generar el PDF; el ZIP solo contendrá el XML.',
-                        move_id, exc_info=True,
-                    )
-
-                # ── Construir ZIP en memoria ───────────────────────────────────────
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-                    zf.writestr(xml_attach.name, base64.b64decode(xml_attach.datas))
-                    if pdf_content:
-                        zf.writestr(f'{move.name}.pdf', pdf_content)
-
-                # ── Crear adjunto y publicar en chatter ───────────────────────────
-                zip_attach = env['ir.attachment'].create({
-                    'name': f'dian_{move.name}.zip',
-                    'type': 'binary',
-                    'datas': base64.b64encode(zip_buffer.getvalue()).decode(),
-                    'res_model': 'account.move',
-                    'res_id': move_id,
-                    'mimetype': 'application/zip',
-                })
-
-                move.message_post(
-                    body=_('Envío DIAN en lote completado. ZIP con XML y PDF adjunto.'),
-                    attachment_ids=[zip_attach.id],
-                )
-                cr.commit()
-                _logger.info('Lote EDI move(%d): ZIP DIAN adjuntado al chatter.', move_id)
-
-        except Exception:
-            _logger.exception('Lote EDI move(%d): error generando ZIP DIAN.', move_id)
