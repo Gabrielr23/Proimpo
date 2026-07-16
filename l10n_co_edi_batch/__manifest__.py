@@ -1,6 +1,6 @@
 {
     'name': 'EDI Colombia - Envío en Lote',
-    'version': '18.0.1.8.0',
+    'version': '18.0.1.9.0',
     'category': 'Accounting/Localizations/EDI',
     'summary': 'Envío en lote de documentos electrónicos a la DIAN (Servicio Gratuito)',
     'description': """
@@ -8,7 +8,7 @@
         y enviarlos directamente a la DIAN usando el Servicio Gratuito de Odoo
         en segundo plano (background), sin bloquear la interfaz del usuario.
     """,
-    'author': 'PROIMPO S.A.S',
+    'author': 'PROIMPO SAS',
     'depends': ['l10n_co_edi'],
     'data': [
         'data/server_action.xml',
