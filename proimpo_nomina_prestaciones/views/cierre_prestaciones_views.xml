@@ -12,6 +12,7 @@
                     <group>
                         <field name="smmlv"/>
                         <field name="aux_transporte"/>
+                        <field name="journal_id"/>
                     </group>
                 </group>
                 <p class="text-muted">
@@ -22,6 +23,8 @@
                 <footer>
                     <button name="action_generar_reporte" type="object"
                             string="Generar reporte de consolidado" class="btn-primary"/>
+                    <button name="action_generar_asiento" type="object"
+                            string="Generar asiento de ajuste" class="btn-secondary"/>
                     <button string="Cancelar" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

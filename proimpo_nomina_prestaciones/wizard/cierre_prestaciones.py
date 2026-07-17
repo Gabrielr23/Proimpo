@@ -59,6 +59,12 @@ class CierrePrestacionesWizard(models.TransientModel):
     smmlv = fields.Float(string="SMMLV", required=True,
                          default=lambda s: s.env.company.smmlv_value or 0.0)
     aux_transporte = fields.Float(string="Auxilio de transporte", required=True, default=1)
+    journal_id = fields.Many2one(
+        'account.journal', string="Diario",
+        default=lambda s: s.env['account.journal'].search(
+            ['|', ('name', 'ilike', 'salario'), ('name', 'ilike', 'nomina')], limit=1)
+        or s.env['account.journal'].search([('type', '=', 'general')], limit=1),
+        help="Diario donde se registra el asiento de ajuste de provisiones.")
 
     # -------- helpers --------
     def _slips(self, ct, d1, d2):
@@ -143,6 +149,67 @@ class CierrePrestacionesWizard(models.TransientModel):
                 'dias_ano': dias_ano, 'dias_sem': dias_sem, 'dias_tot': dias_tot,
             })
         return res
+
+    def action_generar_asiento(self):
+        """Genera un asiento de ajuste de provisiones por empleado (diario Salarios),
+        usando las cuentas del mapeo por area."""
+        self.ensure_one()
+        if not self.journal_id:
+            raise UserError(_("Configure el diario del asiento."))
+        datos = self._computar()
+        Move = self.env['account.move']
+        Mapeo = self.env['proimpo.cuenta.mapeo']
+        # prestacion -> (nombre, regla de provision, clave causado, clave provision)
+        presta = [
+            ('Cesantias', 'PROVCES', 'ces', 'p_ces'),
+            ('Intereses cesantias', 'PROVINT', 'int', 'p_int'),
+            ('Prima', 'PROVPRIMA', 'prima', 'p_pri'),
+            ('Vacaciones', 'PROVVAC', 'vac', 'p_vac'),
+        ]
+        moves = self.env['account.move']
+        for d in datos:
+            if d.get('error'):
+                continue
+            ct = d['ct']; emp = d['emp']
+            aa = ct.analytic_account_id
+            area = aa.proimpo_area if aa else False
+            distrib = {str(aa.id): 100.0} if aa else False
+            lineas = []
+            for nombre, rule_code, k_caus, k_prov in presta:
+                ajuste = round((d.get(k_caus, 0) or 0) - (d.get(k_prov, 0) or 0))
+                if not ajuste:
+                    continue
+                mapeo = Mapeo.search([('rule_code', '=', rule_code), ('area', '=', area)], limit=1)
+                if not mapeo or not mapeo.account_debit_id or not mapeo.account_credit_id:
+                    continue
+                deb = ajuste if ajuste > 0 else 0.0
+                cred = -ajuste if ajuste < 0 else 0.0
+                lineas.append((0, 0, {
+                    'account_id': mapeo.account_debit_id.id,
+                    'name': 'Ajuste %s - %s' % (nombre, emp.name),
+                    'debit': deb, 'credit': cred,
+                    'analytic_distribution': distrib,
+                }))
+                lineas.append((0, 0, {
+                    'account_id': mapeo.account_credit_id.id,
+                    'name': 'Ajuste %s - %s' % (nombre, emp.name),
+                    'debit': cred, 'credit': deb,
+                }))
+            if lineas:
+                mv = Move.create({
+                    'journal_id': self.journal_id.id,
+                    'date': self.fecha_corte,
+                    'ref': 'Ajuste provisiones %s - %s' % (self.fecha_corte, emp.name),
+                    'line_ids': lineas,
+                })
+                moves |= mv
+        if not moves:
+            raise UserError(_("No hay ajustes que contabilizar (o falta el mapeo de cuentas)."))
+        return {
+            'type': 'ir.actions.act_window', 'res_model': 'account.move',
+            'view_mode': 'list,form', 'domain': [('id', 'in', moves.ids)],
+            'name': _('Asientos de ajuste de provisiones'), 'target': 'current',
+        }
 
     def action_generar_reporte(self):
         if xlsxwriter is None:
