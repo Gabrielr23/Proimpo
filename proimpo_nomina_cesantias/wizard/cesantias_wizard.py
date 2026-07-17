@@ -86,13 +86,13 @@ class CesantiasConsignacionWizard(models.TransientModel):
             if not ct.fondo_cesantias:
                 res.append({'ct': ct, 'emp': emp, 'error': 'Sin fondo de cesantias'})
                 continue
-            d1 = max(ct.date_start, ini_ano)
-            d2 = min(ct.date_end or fin_ano, fin_ano)
-            dias = _dias360(d1, d2)
-            base = ct.wage
-            if self.incluir_transporte and ct.wage <= 2 * self.smmlv:
-                base += self.aux_transporte
-            ces = round(base * dias / 360.0)
+            # MOTOR UNICO: cesantias causadas del ano (incluye promedio de variables)
+            corte = min(ct.date_end or fin_ano, fin_ano)
+            aux = self.aux_transporte if self.incluir_transporte else 0.0
+            p = ct._proimpo_prestaciones_causadas(corte, self.smmlv, aux)
+            base = round(p['base_ces'])
+            dias = p['dias_ano']
+            ces = round(p['ces'])
             # provision acumulada (comparacion)
             slips = self.env['hr.payslip'].search([
                 ('contract_id', '=', ct.id), ('state', 'in', ('done', 'paid')),
