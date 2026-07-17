@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_journal_form_confid" model="ir.ui.view">
+        <field name="name">account.journal.form.confidencial</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <field name="proimpo_confidencial"/>
+            </field>
+        </field>
+    </record>
+</odoo>

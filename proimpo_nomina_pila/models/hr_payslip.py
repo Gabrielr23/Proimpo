@@ -36,6 +36,34 @@ class HrPayslip(models.Model):
         self.ensure_one()
         return sum(self.line_ids.filtered(lambda l: l.salary_rule_id.code == code).mapped('total'))
 
+    def _pila_segmentos(self, e, ct, first, last):
+        """Divide los dias del mes por novedad PILA a partir de las ausencias de Odoo.
+        Devuelve {'total':d, 'worked':d, 'VAC':d, 'LR':d, 'IGE':d, 'IRL':d, 'LMA':d, 'SLN':d}."""
+        ini = max(ct.date_start, first) if (ct and ct.date_start) else first
+        fin = last
+        if ct and ct.date_end and ct.date_end < last:
+            fin = ct.date_end
+        d_fin = 30 if fin == last else min(fin.day, 30)
+        dias_mes = max(0, min(30, d_fin - min(ini.day, 30) + 1))
+        leaves = self.env['hr.leave'].search([
+            ('employee_id', '=', e.id), ('state', '=', 'validate'),
+            ('date_from', '<=', last), ('date_to', '>=', first)])
+        nov = {}
+        for lv in leaves:
+            pn = lv.holiday_status_id.pila_novedad or 'worked'
+            if pn == 'worked':
+                continue
+            ls = max(lv.date_from.date(), ini)
+            le = min(lv.date_to.date(), fin)
+            if le < ls:
+                continue
+            dd = (le - ls).days + 1
+            nov[pn] = nov.get(pn, 0) + dd
+        nov_total = sum(nov.values())
+        seg = {'total': dias_mes, 'worked': max(0, dias_mes - nov_total)}
+        seg.update(nov)
+        return seg
+
     def action_reporte_datos_pila(self):
         """Reporte Excel con los datos de PILA por empleado, consolidando el mes
         (todas las quincenas seleccionadas). Para validar contra el operador."""
@@ -109,6 +137,30 @@ class HrPayslip(models.Model):
             ws.set_column(c, c, w)
         ws.set_column(9, len(hdr) - 1, 13)
         ws.freeze_panes(3, 2)
+        # --- Hoja de novedades (division de dias por novedad PILA) ---
+        fechas_from = [x.date_from for x in slips if x.date_from]
+        fechas_to = [x.date_to for x in slips if x.date_to]
+        if fechas_from and fechas_to:
+            first = min(fechas_from); last = max(fechas_to)
+            ws2 = wb.add_worksheet('Novedades')
+            cols = ['Cedula', 'Empleado', 'Total dias', 'Trabajados', 'VAC', 'LR',
+                    'IGE', 'IRL', 'LMA', 'SLN']
+            ws2.write(0, 0, 'Division de dias por novedad PILA (desde ausencias de Odoo)', f_t)
+            for c, h in enumerate(cols):
+                ws2.write(2, c, h, f_h)
+            rr = 3
+            for dd in sorted(emp.values(), key=lambda x: (x['emp'].name or '')):
+                ee = dd['emp']; cc = dd['contract']
+                seg = self._pila_segmentos(ee, cc, first, last)
+                fila = [ee.identification_id or '', ee.name or '', seg.get('total', 0),
+                        seg.get('worked', 0), seg.get('VAC', 0), seg.get('LR', 0),
+                        seg.get('IGE', 0), seg.get('IRL', 0), seg.get('LMA', 0), seg.get('SLN', 0)]
+                for c, v in enumerate(fila):
+                    ws2.write(rr, c, v, f_x if c < 2 else f_n)
+                rr += 1
+            ws2.set_column(0, 0, 13); ws2.set_column(1, 1, 30); ws2.set_column(2, 9, 11)
+            ws2.freeze_panes(3, 2)
+
         wb.close(); output.seek(0)
         att = self.env['ir.attachment'].create({
             'name': 'Datos_PILA.xlsx', 'type': 'binary',

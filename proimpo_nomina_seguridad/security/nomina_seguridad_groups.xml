@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+    <record id="group_nomina_confidencial" model="res.groups">
+        <field name="name">Nomina Confidencial (ver asientos)</field>
+    </record>
+
+    <!-- Regla restrictiva: todos los usuarios NO ven diarios confidenciales -->
+    <record id="rule_move_ocultar_confidencial" model="ir.rule">
+        <field name="name">Asientos: ocultar diarios confidenciales</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('journal_id.proimpo_confidencial','=',False)]</field>
+    </record>
+    <record id="rule_moveline_ocultar_confidencial" model="ir.rule">
+        <field name="name">Apuntes: ocultar diarios confidenciales</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('journal_id.proimpo_confidencial','=',False)]</field>
+    </record>
+
+    <!-- Regla permisiva: el grupo Nomina Confidencial ve todo -->
+    <record id="rule_move_nomina_ve_todo" model="ir.rule">
+        <field name="name">Asientos: nomina confidencial ve todo</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="groups" eval="[(4, ref('group_nomina_confidencial'))]"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+    <record id="rule_moveline_nomina_ve_todo" model="ir.rule">
+        <field name="name">Apuntes: nomina confidencial ve todo</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="groups" eval="[(4, ref('group_nomina_confidencial'))]"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+</odoo>

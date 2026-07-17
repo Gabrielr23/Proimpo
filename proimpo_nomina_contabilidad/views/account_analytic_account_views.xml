@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_analytic_account_form_area" model="ir.ui.view">
+        <field name="name">account.analytic.account.form.area</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="proimpo_area"/>
+            </field>
+        </field>
+    </record>
+</odoo>
