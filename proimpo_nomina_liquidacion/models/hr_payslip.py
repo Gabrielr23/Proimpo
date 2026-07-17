@@ -103,18 +103,8 @@ class HrPayslip(models.Model):
         }
 
     def _liq_base(self, tipo):
-        """Base salarial según el concepto a liquidar."""
-        p = self._liq_promedios(self.date_to)
-        salario = self.contract_id.wage
-        # Si no hay historial suficiente, usar el salario del contrato como piso
-        fijo = p['basico'] if p['basico'] > 0 else salario
-        if tipo == 'prest':      # cesantías y prima: incluye transporte
-            return fijo + p['devsal'] + p['transporte']
-        elif tipo == 'indem':    # indemnización: fijo + variables, sin transporte
-            return fijo + p['devsal']
-        elif tipo == 'vac':      # vacaciones: sin extras y sin transporte
-            return fijo + (p['devsal'] - p['extras'])
-        return 0.0
+        """Base salarial legal (delegada al MOTOR UNICO del contrato)."""
+        return self.contract_id._proimpo_base(tipo, self.date_to)
 
     # ------------------------------------------------------------------
     # Fechas de inicio de cada acumulado
@@ -206,20 +196,13 @@ class HrPayslip(models.Model):
     # Conceptos de liquidación
     # ------------------------------------------------------------------
     def _liq_cesantias(self):
-        base = self._liq_base('prest')
-        dias = self._liq_dias360(self._liq_desde('cesantias'), self.date_to)
-        return base * dias / 360.0
+        return self.contract_id._proimpo_prestaciones_causadas(self.date_to)['ces']
 
     def _liq_intereses_cesantias(self):
-        base = self._liq_base('prest')
-        dias = self._liq_dias360(self._liq_desde('cesantias'), self.date_to)
-        cesantias = base * dias / 360.0
-        return cesantias * dias * 0.12 / 360.0
+        return self.contract_id._proimpo_prestaciones_causadas(self.date_to)['int']
 
     def _liq_prima(self):
-        base = self._liq_base('prest')
-        dias = self._liq_dias360(self._liq_desde('prima'), self.date_to)
-        return base * dias / 360.0
+        return self.contract_id._proimpo_prestaciones_causadas(self.date_to)['prima']
 
     def _liq_vacaciones(self, dias_disfrutados=0.0):
         base = self._liq_base('vac')
