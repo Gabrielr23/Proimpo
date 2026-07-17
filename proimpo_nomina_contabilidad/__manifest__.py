@@ -9,7 +9,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': "18.0.1.0.0",
+    'version': "18.0.1.0.1",
     'depends': ['hr_payroll_account', 'analytic'],
     'data': [
         'security/ir.model.access.csv',
