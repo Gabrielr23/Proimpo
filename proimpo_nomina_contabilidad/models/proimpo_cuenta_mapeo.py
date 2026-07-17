@@ -21,17 +21,17 @@ class ProimpoCuentaMapeo(models.Model):
 
     def aplicar_a_reglas(self):
         """Fija en cada regla salarial su cuenta por defecto (area Admin), para que
-        Odoo genere las lineas del asiento; el override luego cambia la cuenta por area."""
+        Odoo genere las lineas del asiento; el override luego cambia la cuenta por area.
+        Escribe SIEMPRE ambos campos (limpiando el que quede vacio en el mapeo) para no
+        dejar cuentas residuales que dupliquen lineas."""
         Rule = self.env['hr.salary.rule']
         n = 0
         for m in self.search([('area', '=', 'admin')]):
             rules = Rule.search([('code', '=', m.rule_code)])
-            vals = {}
-            if m.account_debit_id:
-                vals['account_debit'] = m.account_debit_id.id
-            if m.account_credit_id:
-                vals['account_credit'] = m.account_credit_id.id
-            if vals and rules:
-                rules.write(vals)
+            if rules:
+                rules.write({
+                    'account_debit': m.account_debit_id.id if m.account_debit_id else False,
+                    'account_credit': m.account_credit_id.id if m.account_credit_id else False,
+                })
                 n += len(rules)
         return n
