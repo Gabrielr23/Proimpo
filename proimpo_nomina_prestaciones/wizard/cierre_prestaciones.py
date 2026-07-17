@@ -112,26 +112,8 @@ class CierrePrestacionesWizard(models.TransientModel):
             if ct.integral_salary:
                 continue
             emp = ct.employee_id
-            d_ano = max(ct.date_start, ene1)
-            d_sem = max(ct.date_start, sem1)
-            transp = self._transporte(ct)
-            prom_ano = self._promedio_variable(ct, d_ano, corte)
-            prom_sem = self._promedio_variable(ct, d_sem, corte)
-
-            base_ces = ct.wage + transp + prom_ano
-            base_prima = ct.wage + transp + prom_sem
-            base_vac = ct.wage + prom_ano          # vacaciones NO incluye transporte
-
-            dias_ano = _dias360(d_ano, corte)
-            dias_sem = _dias360(d_sem, corte)
-            dias_tot = _dias360(ct.date_start, corte)
-
-            ces = base_ces * dias_ano / 360.0
-            interes = ces * dias_ano / 360.0 * 0.12
-            prima = base_prima * dias_sem / 360.0
-            vac_acum = base_vac * dias_tot / 720.0
-            vac_pag = self._suma_codigos(self._slips(ct, ct.date_start, corte), COD_VAC_PAG)
-            vac = vac_acum - vac_pag
+            # MOTOR UNICO: causado de prestaciones a la fecha de corte
+            p = ct._proimpo_prestaciones_causadas(corte, self.smmlv, self.aux_transporte)
 
             slips_ano = self._slips(ct, ene1, corte)
             slips_tot = self._slips(ct, ct.date_start, corte)
@@ -143,10 +125,10 @@ class CierrePrestacionesWizard(models.TransientModel):
 
             res.append({
                 'emp': emp, 'ct': ct,
-                'ces': round(ces), 'int': round(interes), 'prima': round(prima), 'vac': round(vac),
+                'ces': round(p['ces']), 'int': round(p['int']), 'prima': round(p['prima']), 'vac': round(p['vac']),
                 'p_ces': round(p_ces), 'p_int': round(p_int), 'p_pri': round(p_pri), 'p_vac': round(p_vac),
-                'base_ces': round(base_ces), 'base_vac': round(base_vac),
-                'dias_ano': dias_ano, 'dias_sem': dias_sem, 'dias_tot': dias_tot,
+                'base_ces': round(p['base_ces']), 'base_vac': round(p['base_vac']),
+                'dias_ano': p['dias_ano'], 'dias_sem': p['dias_sem'], 'dias_tot': p['dias_tot'],
             })
         return res
 
