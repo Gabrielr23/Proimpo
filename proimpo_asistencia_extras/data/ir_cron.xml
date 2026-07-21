@@ -7,7 +7,6 @@
         <field name="code">model.cron_reporte_extras_diario()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
-        <field name="numbercall">-1</field>
         <field name="active" eval="True"/>
         <!-- 12:00 UTC = 7:00 a.m. hora Colombia -->
         <field name="nextcall" eval="(DateTime.now().replace(hour=12, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
