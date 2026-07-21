@@ -109,7 +109,7 @@ class HrAttendance(models.Model):
   </p>
   <p style="font-size:11px;color:#777;">Mensaje automático — PROIMPO SAS. Las horas se aprueban o rechazan
   en cada registro de asistencia.</p>
-</div>""" % (dia.strftime('%d/%m/%Y'), len(regs), gran, cols, "".join(filas), tds_tot, gran, url)
+</div>""" % (" — %s" % destinatario if destinatario else "", dia.strftime('%d/%m/%Y'), len(regs), gran, cols, "".join(filas), tds_tot, gran, url)
 
     @api.model
     def _extras_enviar(self, email_to, asunto, cuerpo):
