@@ -572,10 +572,8 @@ class HrAttendance(models.Model):
             # Calcular horas extras totales
             extra_hours = 0.0
 
-            # Entrada anticipada
-            if rec.expected_check_in and rec.check_in < rec.expected_check_in:
-                early_entry = (rec.expected_check_in - rec.check_in).total_seconds() / 3600
-                extra_hours += early_entry
+            # Entrada anticipada: NO genera tiempo extra. Se toma la hora de entrada
+            # ESTIMADA como piso; marcar antes del horario no se paga como extra.
 
             # Salida tardía
             if rec.expected_check_out and rec.check_out > rec.expected_check_out:
@@ -716,8 +714,9 @@ class HrAttendance(models.Model):
         total_extra_available = rec.approved_overtime
         extra_consumed = 0.0
 
-        # Entrada anticipada (ANTES del horario esperado)
-        if rec.expected_check_in and adjusted_check_in < rec.expected_check_in:
+        # Entrada anticipada DESACTIVADA: la hora de entrada estimada es el piso;
+        # marcar antes del horario NO se paga como tiempo extra.
+        if False and rec.expected_check_in and adjusted_check_in < rec.expected_check_in:
             # Calcular horas extras directamente - el método _round_to_quarter_hour
             # maneja automáticamente valores cercanos a horas completas
             early_hours = (rec.expected_check_in - adjusted_check_in).total_seconds() / 3600

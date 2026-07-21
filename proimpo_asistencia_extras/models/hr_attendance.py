@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from datetime import datetime, timedelta, time
+import pytz
 from odoo import models, api, fields
 
 _logger = logging.getLogger(__name__)
@@ -46,6 +47,19 @@ class HrAttendance(models.Model):
         return regs.filtered(lambda r: r._extras_total() > 0)
 
     @api.model
+    @api.model
+    def _pa_hora_local(self, empleado, dt):
+        """Devuelve HH:MM del datetime (UTC) en la zona del empleado (o Colombia)."""
+        if not dt:
+            return ''
+        tz_name = (empleado.resource_calendar_id.tz if empleado and empleado.resource_calendar_id else None) \
+            or (empleado.tz if empleado else None) or 'America/Bogota'
+        try:
+            tz = pytz.timezone(tz_name)
+        except Exception:
+            tz = pytz.timezone('America/Bogota')
+        return pytz.UTC.localize(dt).astimezone(tz).strftime('%H:%M')
+
     def _extras_html(self, regs, dia, url, destinatario=None):
         """Arma el cuerpo HTML del correo."""
         def hhmm(v):
@@ -77,8 +91,8 @@ class HrAttendance(models.Model):
                 "<td style='padding:5px 8px;border:1px solid #ddd;text-align:center;font-size:12px;"
                 "font-weight:bold;background:#DDEBF7;'>%s</td></tr>" % (
                     r.employee_id.name or '',
-                    fields.Datetime.context_timestamp(r, r.check_in).strftime('%H:%M') if r.check_in else '',
-                    fields.Datetime.context_timestamp(r, r.check_out).strftime('%H:%M') if r.check_out else '',
+                    self._pa_hora_local(r.employee_id, r.check_in),
+                    self._pa_hora_local(r.employee_id, r.check_out),
                     tds, hhmm(r._extras_total())))
         tds_tot = "".join("<td style='padding:5px 8px;border:1px solid #ccc;text-align:center;"
                           "font-size:12px;font-weight:bold;'>%s</td>" % hhmm(tot[f]) for f, _n in COD_EXTRAS)
