@@ -53,7 +53,7 @@ class HrAttendance(models.Model):
         string="HEA",
         compute="_get_limit_extras_hours",
         store=True,
-        help="Horas extras aprobadas"
+        help="Horas extras calculadas segun lo marcado (pendientes de aprobacion)"
     )
 
     # Campo para horas descontadas por llegadas tarde o salidas tempranas, considerando los descansos del calendario
@@ -584,25 +584,20 @@ class HrAttendance(models.Model):
 
             if extra_hours > 0:
                 extra_hours_rounded = self._round_to_quarter_hour(extra_hours)
-                rec.approved_overtime = round(min(extra_hours_rounded, limite), 2)
+                # SIN TOPE: se calculan las horas extra realmente marcadas.
+                # La aprobacion se hace despues, con el flujo de aprobacion de Odoo
+                # (Por aprobar / Aprobada / Rechazada) sobre el registro de asistencia.
+                rec.approved_overtime = round(extra_hours_rounded, 2)
 
     def _get_limit_extras_hours_max(self, employee, date):
         """
-        Retorna el límite máximo de horas extras permitidas.
+        OBSOLETO. Antes consultaba el cupo pre-aprobado en hr.overtime.line.
+        Ese modelo ya no se usa: ahora las horas extra se calculan segun lo
+        realmente marcado y se aprueban despues en el registro de asistencia.
+        Se conserva por compatibilidad y no impone tope.
         """
-        if not employee or not date:
-            return 0.0
+        return float('inf')
 
-        overtime_line = self.env['hr.overtime.line'].search([
-            ('employee_id', '=', employee.id),
-            ('date', '=', date),
-            ('company_id', '=', employee.company_id.id),
-        ], limit=1)
-
-        if overtime_line:
-            return overtime_line.approved_hours
-
-        return 0.0
 
     @api.depends('check_in', 'check_out', 'expected_check_in', 'expected_check_out', 'approved_overtime')
     def _compute_work_hours_breakdown(self):
