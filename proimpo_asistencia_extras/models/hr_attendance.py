@@ -21,6 +21,33 @@ COD_EXTRAS = [
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
+    pa_para_aprobar_por_mi = fields.Boolean(
+        compute='_compute_pa_para_aprobar_por_mi',
+        search='_search_pa_para_aprobar_por_mi',
+        help="Tecnico: filtra las asistencias que le corresponde aprobar al usuario actual "
+             "(su gerencia y areas debajo). RRHH/admin ven todas.")
+
+    def _compute_pa_para_aprobar_por_mi(self):
+        for r in self:
+            r.pa_para_aprobar_por_mi = False
+
+    @api.model
+    def _search_pa_para_aprobar_por_mi(self, operator, value):
+        user = self.env.user
+        # RRHH / administradores ven todo
+        if user.has_group('base.group_system') or \
+           user.has_group('proimpo_asistencia_extras.group_asistencia_ver_todo'):
+            return []
+        emp = user.employee_id
+        if not emp:
+            return [('id', '=', 0)]
+        # Departamentos que gestiona el usuario (es su gerente) + areas debajo
+        gestiona = self.env['hr.department'].search([('manager_id', '=', emp.id)])
+        if not gestiona:
+            return [('id', '=', 0)]
+        deptos = self.env['hr.department'].search([('id', 'child_of', gestiona.ids)])
+        return [('employee_id.department_id', 'in', deptos.ids)]
+
     def _extras_total(self):
         """Suma de todas las horas extra/recargos del registro."""
         self.ensure_one()
