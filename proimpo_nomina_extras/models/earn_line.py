@@ -12,10 +12,10 @@ class EarnLine(models.Model):
         'daily_overtime': 1.25,                          # HED  Hora extra diurna
         'overtime_night_hours': 1.75,                    # HEN  Hora extra nocturna
         'hours_night_surcharge': 0.35,                   # HRN  Recargo nocturno
-        'sunday_holiday_daily_overtime': 2.00,           # HEDDF
-        'daily_surcharge_hours_sundays_holidays': 0.75,  # HRDDF
-        'sunday_night_overtime_holidays': 2.50,          # HENDF
-        'sunday_holidays_night_surcharge_hours': 1.10,   # HRNDF
+        'sunday_holiday_daily_overtime': 2.15,           # HEDDF  (antes 2.00)
+        'daily_surcharge_hours_sundays_holidays': 0.90,  # HRDDF  (antes 0.75)
+        'sunday_night_overtime_holidays': 2.65,          # HENDF  (antes 2.50)
+        'sunday_holidays_night_surcharge_hours': 1.25,   # HRNDF  (antes 1.10)
     }
 
     @api.onchange('rule_input_id')
