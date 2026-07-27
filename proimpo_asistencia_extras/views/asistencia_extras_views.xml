@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Accion a la que apunta el boton del correo: asistencias con horas extra por aprobar -->
+    <record id="action_extras_por_aprobar" model="ir.actions.act_window">
+        <field name="name">Horas extra por aprobar</field>
+        <field name="res_model">hr.attendance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('pa_para_aprobar_por_mi','=',True),('overtime_status','=','to_approve'),'|','|','|','|','|','|',('hed','&gt;',0),('hen','&gt;',0),('hrn','&gt;',0),('heddf','&gt;',0),('hrddf','&gt;',0),('hendf','&gt;',0),('hrndf','&gt;',0)]</field>
+        <field name="context">{'search_default_group_employee': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay horas extra pendientes de aprobación</p>
+            <p>Aquí aparecen los registros de asistencia con horas extra que están por aprobar.</p>
+        </field>
+    </record>
+</odoo>
