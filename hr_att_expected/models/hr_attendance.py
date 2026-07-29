@@ -14,6 +14,10 @@ class HrAttendance(models.Model):
     # Si el empleado llega dentro de este margen, no se considera llegada tarde
     TOLERANCE_MINUTES = 15
 
+    # Politica PROIMPO: el tiempo extra solo se paga si la salida tardia supera
+    # este minimo. Menos de 30 minutos despues de la salida NO genera horas extra.
+    OVERTIME_MIN_MINUTES = 30
+
     #Se definen los campos para almacenar la información de horarios esperados, estado de llegada tarde/salida temprana, uso de planificación y desglose de horas trabajadas. Todos los campos relacionados con tiempos esperados se calculan en base al turno planificado o al horario del calendario del empleado.
     expected_check_in = fields.Datetime(
         string="Entrada esperada",
@@ -440,6 +444,13 @@ class HrAttendance(models.Model):
             }
         }
 
+    def _round_to_minute(self, hours):
+        """Redondea al minuto mas cercano, SIN redondear al cuarto de hora.
+        Politica PROIMPO: si trabajo 37 minutos, se pagan 37 (no 45)."""
+        if hours <= 0:
+            return 0.0
+        return round(hours * 60.0) / 60.0
+
     def _round_to_quarter_hour(self, hours):
         """
         Redondea horas al intervalo de 15 minutos según regla personalizada.
@@ -575,13 +586,14 @@ class HrAttendance(models.Model):
             # Entrada anticipada: NO genera tiempo extra. Se toma la hora de entrada
             # ESTIMADA como piso; marcar antes del horario no se paga como extra.
 
-            # Salida tardía
+            # Salida tardía: politica PROIMPO — solo genera extra si supera 30 minutos
             if rec.expected_check_out and rec.check_out > rec.expected_check_out:
                 late_exit = (rec.check_out - rec.expected_check_out).total_seconds() / 3600
-                extra_hours += late_exit
+                if late_exit * 60.0 > self.OVERTIME_MIN_MINUTES:
+                    extra_hours += late_exit
 
             if extra_hours > 0:
-                extra_hours_rounded = self._round_to_quarter_hour(extra_hours)
+                extra_hours_rounded = self._round_to_minute(extra_hours)
                 # SIN TOPE: se calculan las horas extra realmente marcadas.
                 # La aprobacion se hace despues, con el flujo de aprobacion de Odoo
                 # (Por aprobar / Aprobada / Rechazada) sobre el registro de asistencia.
@@ -720,7 +732,7 @@ class HrAttendance(models.Model):
             # Calcular horas extras directamente - el método _round_to_quarter_hour
             # maneja automáticamente valores cercanos a horas completas
             early_hours = (rec.expected_check_in - adjusted_check_in).total_seconds() / 3600
-            early_hours_rounded = self._round_to_quarter_hour(early_hours)
+            early_hours_rounded = self._round_to_minute(early_hours)
             early_approved = min(early_hours_rounded, total_extra_available - extra_consumed)
 
             if early_approved > 0:
@@ -730,7 +742,7 @@ class HrAttendance(models.Model):
 
                 # Calcular horas extras de entrada anticipada
                 extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                    approved_early_start_local, expected_check_in_local
+                    approved_early_start_local, expected_check_in_local, apply_rounding=False
                 )
 
                 _logger.info("Entrada anticipada: adjusted_check_in=%s, expected_check_in=%s, early_hours=%.6f, early_approved=%.2f, extra_diurna=%.2f, extra_nocturna=%.2f",
@@ -750,7 +762,7 @@ class HrAttendance(models.Model):
             # Calcular horas extras directamente - el método _round_to_quarter_hour
             # maneja automáticamente valores cercanos a horas completas
             late_hours = (adjusted_check_out - rec.expected_check_out).total_seconds() / 3600
-            late_hours_rounded = self._round_to_quarter_hour(late_hours)
+            late_hours_rounded = self._round_to_minute(late_hours)
             late_hours_remaining = total_extra_available - extra_consumed
             late_approved = min(late_hours_rounded, late_hours_remaining)
 
@@ -763,7 +775,7 @@ class HrAttendance(models.Model):
 
                 # Calcular horas extras de salida tardía
                 extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                    expected_check_out_local, approved_late_end_local
+                    expected_check_out_local, approved_late_end_local, apply_rounding=False
                 )
 
                 _logger.info("Salida tardía: adjusted_check_out=%s, expected_check_out=%s, late_hours=%.6f, late_approved=%.2f, extra_diurna=%.2f, extra_nocturna=%.2f, is_holiday=%s",

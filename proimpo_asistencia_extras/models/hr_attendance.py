@@ -7,6 +7,10 @@ from odoo import models, api, fields
 _logger = logging.getLogger(__name__)
 
 # Campos de horas extra del modulo hr_att_expected
+# Horas extra REALES (requieren aprobacion del gerente). Los recargos (HRN, HRDDF,
+# HRNDF) son automaticos y NO requieren aprobacion.
+COD_EXTRA_APROB = ['hed', 'hen', 'heddf', 'hendf']
+
 COD_EXTRAS = [
     ('hed', 'Extra diurna'),
     ('hen', 'Extra nocturna'),
@@ -53,6 +57,27 @@ class HrAttendance(models.Model):
         self.ensure_one()
         return sum((getattr(self, f, 0.0) or 0.0) for f, _n in COD_EXTRAS)
 
+    def _extras_reales(self):
+        """Suma de horas extra REALES (HED, HEN, HEDDF, HENDF) que requieren aprobacion."""
+        self.ensure_one()
+        return sum((getattr(self, f, 0.0) or 0.0) for f in COD_EXTRA_APROB)
+
+    @api.model
+    def _extras_autoaprobar_sin_extra(self, dia):
+        """Aprueba automaticamente los registros del dia sin horas extra reales
+        (solo recargos o nada); esos no requieren aprobacion del gerente."""
+        if 'overtime_status' not in self._fields:
+            return 0
+        from datetime import datetime, time
+        ini = datetime.combine(dia, time.min)
+        fin = datetime.combine(dia, time.max)
+        regs = self.search([('check_in', '>=', ini), ('check_in', '<=', fin),
+                            ('overtime_status', '=', 'to_approve')])
+        sin_extra = regs.filtered(lambda r: r._extras_reales() <= 0)
+        if sin_extra:
+            sin_extra.write({'overtime_status': 'approved'})
+        return len(sin_extra)
+
     @api.model
     def _extras_destinatarios(self):
         """Correos destinatarios del reporte (parametro del sistema, separados por coma)."""
@@ -71,7 +96,7 @@ class HrAttendance(models.Model):
             dom.append(('overtime_status', '=', 'to_approve'))
         # Incluye tambien a los temporales: su aprobacion tambien aplica.
         regs = self.search(dom, order='employee_id, check_in')
-        return regs.filtered(lambda r: r._extras_total() > 0)
+        return regs.filtered(lambda r: r._extras_reales() > 0)
 
     @api.model
     @api.model
@@ -165,6 +190,8 @@ class HrAttendance(models.Model):
         A cada GERENTE DE AREA le llegan solo las de su gerencia; Nomina/RRHH
         recibe el consolidado de todos."""
         dia = fields.Date.context_today(self) - timedelta(days=1)
+        # Aprobar automaticamente los registros sin horas extra reales (solo recargos o nada)
+        self._extras_autoaprobar_sin_extra(dia)
         regs = self._extras_buscar_pendientes(dia)
         if not regs:
             _logger.info("PROIMPO extras: sin horas extra por aprobar del %s.", dia)
