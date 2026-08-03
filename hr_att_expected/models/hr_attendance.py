@@ -247,9 +247,20 @@ class HrAttendance(models.Model):
                     rec.reason = 'inconsistent_check_in'
 
             if not rec.expected_check_in:
-                    # Si no se pudo determinar una hora de entrada esperada, marcar para revisión
-                    rec.state = 'pending'
-                    rec.reason = 'inconsistent_expected_check_in'
+                    # No hay horario esperado para ese dia. Distinguir:
+                    #  - Dia realmente NO programado (sin turno en Planning y sin
+                    #    calendario fijo, o calendario flexible): es trabajo fuera
+                    #    de horario -> se paga como EXTRA y se aprueba por el flujo
+                    #    de horas extra. NO es una inconsistencia: queda 'valid'.
+                    #  - Si existieran intervalos de turno pero no se pudo calcular
+                    #    la hora esperada, si es una anomalia -> pendiente.
+                    intervalos_dia = self._get_work_intervals(rec.employee_id, att_date, tz)
+                    if intervalos_dia:
+                        rec.state = 'pending'
+                        rec.reason = 'inconsistent_expected_check_in'
+                    else:
+                        rec.state = 'valid'
+                        rec.reason = False
 
             # PASO FINAL: si la desviacion del horario esta cubierta por una
             # AUSENCIA APROBADA (permiso por el modulo de ausencias), la asistencia
@@ -321,6 +332,26 @@ class HrAttendance(models.Model):
                           employee.id, date, e)
             return False
 
+    def _calendar_sin_horario_fijo(self, calendar, attendance_intervals):
+        """True si el calendario NO define un horario fijo real para ese dia:
+        - calendario marcado como flexible / totalmente flexible, o
+        - el/los intervalos del dia cubren practicamente 24h (00:00-24:00).
+        En esos casos la programacion real la da Planning; el calendario no debe
+        usarse como turno (evita 'turnos' de dia completo en dias no programados)."""
+        if getattr(calendar, 'flexible_hours', False):
+            return True
+        if not attendance_intervals:
+            return True
+        try:
+            min_from = min(a.hour_from for a in attendance_intervals)
+            max_to = max(a.hour_to for a in attendance_intervals)
+        except ValueError:
+            return True
+        # Dia completo: entra ~00:00 y sale ~24:00
+        if min_from <= 0.01 and max_to >= 23.99:
+            return True
+        return False
+
     def _get_times_from_calendar(self, calendar, att_date, tz):
         """
         Obtiene las horas esperadas desde el resource.calendar.
@@ -331,7 +362,7 @@ class HrAttendance(models.Model):
             lambda a: int(a.dayofweek) == weekday
         ).sorted(lambda a: a.hour_from)
 
-        if not attendance_intervals:
+        if self._calendar_sin_horario_fijo(calendar, attendance_intervals):
             return False, False
 
         first_interval = attendance_intervals[0]
@@ -417,7 +448,7 @@ class HrAttendance(models.Model):
             lambda a: int(a.dayofweek) == weekday
         ).sorted(lambda a: a.hour_from)
 
-        if not attendance_intervals:
+        if self._calendar_sin_horario_fijo(calendar, attendance_intervals):
             return []
 
         work_intervals = []

@@ -1,6 +1,6 @@
 {
     "name": "HR Attendance Expected Times",
-    "version": "1.6",
+    "version": "1.7",
     "license": "LGPL-3",
     "depends": ["hr_attendance", "hr", "hr_holidays"],
     "author": "Proimpo SAS",
