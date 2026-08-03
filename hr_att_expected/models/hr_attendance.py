@@ -14,6 +14,17 @@ class HrAttendance(models.Model):
     # Si el empleado llega dentro de este margen, no se considera llegada tarde
     TOLERANCE_MINUTES = 15
 
+    # Politica PROIMPO: el tiempo extra solo se paga si la salida tardia supera
+    # este minimo. Menos de 30 minutos despues de la salida NO genera horas extra.
+    OVERTIME_MIN_MINUTES = 30
+
+    # Tope legal (Art. 22 Ley 50/1990) de horas extra en un dia NO programado.
+    # Cuando un empleado trabaja un dia que no esta en su turno/calendario
+    # (ej. sabado para turnos 2/3), TODO el tiempo trabajado es extra, pero se
+    # liquida como maximo 2 horas. La distincion la hace el calendario de cada
+    # empleado: turno 1 con sabado en su horario = ordinario; sin sabado = extra.
+    MAX_EXTRA_UNSCHEDULED_DAY = 2.0
+
     #Se definen los campos para almacenar la información de horarios esperados, estado de llegada tarde/salida temprana, uso de planificación y desglose de horas trabajadas. Todos los campos relacionados con tiempos esperados se calculan en base al turno planificado o al horario del calendario del empleado.
     expected_check_in = fields.Datetime(
         string="Entrada esperada",
@@ -440,6 +451,13 @@ class HrAttendance(models.Model):
             }
         }
 
+    def _round_to_minute(self, hours):
+        """Redondea al minuto mas cercano, SIN redondear al cuarto de hora.
+        Politica PROIMPO: si trabajo 37 minutos, se pagan 37 (no 45)."""
+        if hours <= 0:
+            return 0.0
+        return round(hours * 60.0) / 60.0
+
     def _round_to_quarter_hour(self, hours):
         """
         Redondea horas al intervalo de 15 minutos según regla personalizada.
@@ -566,25 +584,38 @@ class HrAttendance(models.Model):
             check_in_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
             turno_date = check_in_local.date()
 
-            # Consultar el cupo aprobado para este empleado y fecha
-            limite = self._get_limit_extras_hours_max(rec.employee_id, turno_date)
+            # Intervalos programados de ESE dia (planning o calendario del empleado).
+            # Si no hay, el empleado NO estaba programado ese dia.
+            work_intervals = self._get_work_intervals(rec.employee_id, turno_date, tz)
 
             # Calcular horas extras totales
             extra_hours = 0.0
+            dia_no_programado = not work_intervals
 
-            # Entrada anticipada: NO genera tiempo extra. Se toma la hora de entrada
-            # ESTIMADA como piso; marcar antes del horario no se paga como extra.
+            if dia_no_programado:
+                # DIA NO PROGRAMADO (ej. sabado para turnos 2/3, o cualquier turno
+                # segun su calendario): TODO el tiempo trabajado es extra.
+                # Se respeta el minimo de 30 min y el tope legal de 2 horas.
+                worked = (rec.check_out - rec.check_in).total_seconds() / 3600
+                if worked * 60.0 > self.OVERTIME_MIN_MINUTES:
+                    extra_hours = worked
+            else:
+                # Entrada anticipada: NO genera tiempo extra. Se toma la hora de
+                # entrada ESTIMADA como piso; marcar antes no se paga como extra.
 
-            # Salida tardía
-            if rec.expected_check_out and rec.check_out > rec.expected_check_out:
-                late_exit = (rec.check_out - rec.expected_check_out).total_seconds() / 3600
-                extra_hours += late_exit
+                # Salida tardía: politica PROIMPO — solo genera extra si supera 30 min
+                if rec.expected_check_out and rec.check_out > rec.expected_check_out:
+                    late_exit = (rec.check_out - rec.expected_check_out).total_seconds() / 3600
+                    if late_exit * 60.0 > self.OVERTIME_MIN_MINUTES:
+                        extra_hours += late_exit
 
             if extra_hours > 0:
-                extra_hours_rounded = self._round_to_quarter_hour(extra_hours)
-                # SIN TOPE: se calculan las horas extra realmente marcadas.
-                # La aprobacion se hace despues, con el flujo de aprobacion de Odoo
-                # (Por aprobar / Aprobada / Rechazada) sobre el registro de asistencia.
+                extra_hours_rounded = self._round_to_minute(extra_hours)
+                if dia_no_programado:
+                    # Tope legal de 2 horas SOLO para el dia no programado.
+                    extra_hours_rounded = min(extra_hours_rounded, self.MAX_EXTRA_UNSCHEDULED_DAY)
+                # La aprobacion se hace despues con el flujo de Odoo
+                # (Por aprobar / Aprobada / Rechazada) sobre el registro.
                 rec.approved_overtime = round(extra_hours_rounded, 2)
 
     def _get_limit_extras_hours_max(self, employee, date):
@@ -630,6 +661,24 @@ class HrAttendance(models.Model):
             work_intervals = self._get_work_intervals(rec.employee_id, att_date, tz)
 
             if not work_intervals:
+                # DIA NO PROGRAMADO: no hay jornada ordinaria. Si trabajo, TODO es
+                # tiempo extra (ya topado a 2h en approved_overtime). Se clasifica
+                # diurna/nocturna y, si el dia es domingo/festivo, como extra DF.
+                if rec.approved_overtime > 0:
+                    extra_end = rec.check_in + timedelta(hours=rec.approved_overtime)
+                    if extra_end > rec.check_out:
+                        extra_end = rec.check_out
+                    extra_start_local = pytz.UTC.localize(rec.check_in).astimezone(tz)
+                    extra_end_local = pytz.UTC.localize(extra_end).astimezone(tz)
+                    extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
+                        extra_start_local, extra_end_local, apply_rounding=False
+                    )
+                    if is_holiday:
+                        rec.heddf += extra_diurna
+                        rec.hendf += extra_nocturna
+                    else:
+                        rec.hed += extra_diurna
+                        rec.hen += extra_nocturna
                 continue
 
             # PASO 1: Ajustar check_in y check_out aplicando el margen de tolerancia
@@ -720,7 +769,7 @@ class HrAttendance(models.Model):
             # Calcular horas extras directamente - el método _round_to_quarter_hour
             # maneja automáticamente valores cercanos a horas completas
             early_hours = (rec.expected_check_in - adjusted_check_in).total_seconds() / 3600
-            early_hours_rounded = self._round_to_quarter_hour(early_hours)
+            early_hours_rounded = self._round_to_minute(early_hours)
             early_approved = min(early_hours_rounded, total_extra_available - extra_consumed)
 
             if early_approved > 0:
@@ -730,7 +779,7 @@ class HrAttendance(models.Model):
 
                 # Calcular horas extras de entrada anticipada
                 extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                    approved_early_start_local, expected_check_in_local
+                    approved_early_start_local, expected_check_in_local, apply_rounding=False
                 )
 
                 _logger.info("Entrada anticipada: adjusted_check_in=%s, expected_check_in=%s, early_hours=%.6f, early_approved=%.2f, extra_diurna=%.2f, extra_nocturna=%.2f",
@@ -750,7 +799,7 @@ class HrAttendance(models.Model):
             # Calcular horas extras directamente - el método _round_to_quarter_hour
             # maneja automáticamente valores cercanos a horas completas
             late_hours = (adjusted_check_out - rec.expected_check_out).total_seconds() / 3600
-            late_hours_rounded = self._round_to_quarter_hour(late_hours)
+            late_hours_rounded = self._round_to_minute(late_hours)
             late_hours_remaining = total_extra_available - extra_consumed
             late_approved = min(late_hours_rounded, late_hours_remaining)
 
@@ -763,7 +812,7 @@ class HrAttendance(models.Model):
 
                 # Calcular horas extras de salida tardía
                 extra_diurna, extra_nocturna = self._calculate_hours_by_shift(
-                    expected_check_out_local, approved_late_end_local
+                    expected_check_out_local, approved_late_end_local, apply_rounding=False
                 )
 
                 _logger.info("Salida tardía: adjusted_check_out=%s, expected_check_out=%s, late_hours=%.6f, late_approved=%.2f, extra_diurna=%.2f, extra_nocturna=%.2f, is_holiday=%s",
