@@ -1,7 +1,7 @@
 import string
 
 from odoo import models, fields, api
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import pytz
 import logging
 import math
@@ -146,6 +146,7 @@ class HrAttendance(models.Model):
         [
         ('pending', 'Pendiente'),
         ('valid', 'Valida'),
+        ('valid_leave', 'Valida con ausencia'),
     ], string="Estado", default='pending', tracking=True)
 
     """
@@ -249,6 +250,42 @@ class HrAttendance(models.Model):
                     # Si no se pudo determinar una hora de entrada esperada, marcar para revisión
                     rec.state = 'pending'
                     rec.reason = 'inconsistent_expected_check_in'
+
+            # PASO FINAL: si la desviacion del horario esta cubierta por una
+            # AUSENCIA APROBADA (permiso por el modulo de ausencias), la asistencia
+            # es VALIDA CON AUSENCIA y no debe quedar pendiente.
+            tiene_ausencia = self._tiene_ausencia_aprobada(rec.employee_id, att_date, tz)
+            if tiene_ausencia:
+                if rec.state == 'pending':
+                    # Solo se justifica la ENTRADA inconsistente (llego mas tarde/temprano
+                    # por el permiso). Falta de salida o duracion sospechosa siguen
+                    # pendientes: son problemas de datos, no de permiso.
+                    if rec.reason == 'inconsistent_check_in':
+                        rec.state = 'valid_leave'
+                        rec.reason = False
+                elif rec.is_late or rec.left_early:
+                    # Estaba valida pero con llegada tarde / salida temprana:
+                    # con permiso aprobado se marca como valida con ausencia.
+                    rec.state = 'valid_leave'
+
+    def _tiene_ausencia_aprobada(self, employee, att_date, tz):
+        """Devuelve True si el empleado tiene una ausencia/permiso APROBADO
+        (hr.leave en estado 'validate') que se solapa con la fecha de la marcacion.
+        Sirve para justificar entradas/salidas fuera del horario esperado."""
+        if not employee or 'hr.leave' not in self.env:
+            return False
+        # Ventana del dia local convertida a UTC (hr.leave guarda datetimes en UTC)
+        local_start = tz.localize(datetime.combine(att_date, time(0, 0, 0)))
+        local_end = tz.localize(datetime.combine(att_date, time(23, 59, 59)))
+        utc_start = local_start.astimezone(pytz.UTC).replace(tzinfo=None)
+        utc_end = local_end.astimezone(pytz.UTC).replace(tzinfo=None)
+        leave = self.env['hr.leave'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('state', '=', 'validate'),
+            ('date_from', '<=', utc_end),
+            ('date_to', '>=', utc_start),
+        ], limit=1)
+        return bool(leave)
 
     def _get_planning_slot(self, employee, date, tz):
         """
