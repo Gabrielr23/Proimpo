@@ -458,3 +458,4 @@ class ResPartner(models.Model):
 
             if partner.name.upper() == 'CONSUMIDOR FINAL':
                 self._get_dian_acquirer_and_replace(partner)
+        return partners
