@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_contract_view_form_pila" model="ir.ui.view">
+        <field name="name">hr.contract.form.pila</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="PILA / Seguridad Social">
+                    <group>
+                        <group string="Entidades (afiliaciones)">
+                            <field name="pila_eps_code"/>
+                            <field name="pila_afp_code"/>
+                            <field name="pila_arl_code"/>
+                            <field name="pila_ccf_code"/>
+                            <field name="pila_municipio_code"/>
+                        </group>
+                        <group string="Cotizante">
+                            <field name="type_worker_id"/>
+                            <field name="subtype_worker_id"/>
+                            <field name="high_risk_pension"/>
+                            <field name="pila_pensionado"/>
+                            <field name="pila_etapa_aprendiz"/>
+                            <field name="pila_fecha_productiva"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

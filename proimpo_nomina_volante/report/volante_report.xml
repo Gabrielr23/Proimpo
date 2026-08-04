@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_volante" model="report.paperformat">
+        <field name="name">Volante compacto</field>
+        <field name="format">Letter</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">8</field>
+        <field name="margin_bottom">8</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_volante" model="ir.actions.report">
+        <field name="name">Volante de pago</field>
+        <field name="model">hr.payslip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">proimpo_nomina_volante.report_volante_document</field>
+        <field name="report_file">proimpo_nomina_volante.report_volante_document</field>
+        <field name="paperformat_id" ref="paperformat_volante"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_volante_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="devs" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'earn' and l.total != 0)"/>
+                <t t-set="deds" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'deduction' and l.total != 0)"/>
+                <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
+                <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
+                <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
+
+                    <!-- Encabezado -->
+                    <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #1F4E79;">
+                        <tr>
+                            <td style="vertical-align:middle; width:55%;">
+                                <span style="font-size:15px; font-weight:bold; color:#1F4E79;" t-field="o.company_id.name"/><br/>
+                                <span>NIT: <span t-field="o.company_id.vat"/></span>
+                            </td>
+                            <td style="text-align:right; vertical-align:middle;">
+                                <span style="font-size:12px; font-weight:bold;">COMPROBANTE DE PAGO</span><br/>
+                                <span t-field="o.struct_id.name"/><br/>
+                                <span>Documento: <span t-field="o.number"/></span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Datos del empleado -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:4px; font-size:10px;">
+                        <tr>
+                            <td style="padding:1px 4px;"><b>Empleado:</b> <span t-field="o.employee_id.name"/></td>
+                            <td style="padding:1px 4px;"><b>Documento:</b> <span t-field="o.employee_id.identification_id"/></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:1px 4px;"><b>Cargo:</b> <span t-field="o.employee_id.job_id.name"/></td>
+                            <td style="padding:1px 4px;"><b>Centro de costo:</b> <span t-field="o.employee_id.department_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:1px 4px;"><b>Período:</b> <span t-field="o.date_from"/> al <span t-field="o.date_to"/></td>
+                            <td style="padding:1px 4px;"><b>Contrato:</b> <span t-field="o.contract_id.type_contract_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:1px 4px;"><b>Banco:</b> <span t-field="o.employee_id.bank_account_id.bank_id.name"/></td>
+                            <td style="padding:1px 4px;"><b>Cuenta:</b> <span t-field="o.employee_id.bank_account_id.acc_number"/></td>
+                        </tr>
+                    </table>
+
+                    <!-- Conceptos -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:6px; font-size:10px;">
+                        <thead>
+                            <tr style="background:#1F4E79; color:#fff;">
+                                <th style="padding:2px 4px; text-align:left; width:8%;">Cód.</th>
+                                <th style="padding:2px 4px; text-align:left; width:46%;">Concepto</th>
+                                <th style="padding:2px 4px; text-align:right; width:12%;">Cant.</th>
+                                <th style="padding:2px 4px; text-align:right; width:17%;">Devengado</th>
+                                <th style="padding:2px 4px; text-align:right; width:17%;">Deducción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="devs" t-as="l">
+                                <tr style="border-bottom:1px solid #e5e5e5;">
+                                    <td style="padding:1px 4px;"><span t-field="l.salary_rule_id.code"/></td>
+                                    <td style="padding:1px 4px;"><span t-field="l.name"/></td>
+                                    <td style="padding:1px 4px; text-align:right;"><t t-if="l.quantity and l.quantity != 1"><span t-esc="'%.2f' % l.quantity"/></t></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(l.total)"/></td>
+                                    <td style="padding:1px 4px;"></td>
+                                </tr>
+                            </t>
+                            <t t-foreach="deds" t-as="l">
+                                <tr style="border-bottom:1px solid #e5e5e5;">
+                                    <td style="padding:1px 4px;"><span t-field="l.salary_rule_id.code"/></td>
+                                    <td style="padding:1px 4px;"><span t-field="l.name"/></td>
+                                    <td style="padding:1px 4px;"></td>
+                                    <td style="padding:1px 4px;"></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(-l.total)"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#DDEBF7; font-weight:bold;">
+                                <td colspan="3" style="padding:3px 4px; text-align:right;">TOTALES</td>
+                                <td style="padding:3px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(tot_dev)"/></td>
+                                <td style="padding:3px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(-tot_ded)"/></td>
+                            </tr>
+                            <tr style="background:#1F4E79; color:#fff; font-weight:bold;">
+                                <td colspan="4" style="padding:4px; text-align:right; font-size:11px;">NETO A PAGAR</td>
+                                <td style="padding:4px; text-align:right; font-size:11px;"><span t-esc="'{:,.0f}'.format(tot_dev + tot_ded)"/></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <p style="margin-top:10px; font-size:8px; color:#888;">
+                        Documento informativo. No constituye desprendible de pago legal salvo indicación de la empresa.
+                    </p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

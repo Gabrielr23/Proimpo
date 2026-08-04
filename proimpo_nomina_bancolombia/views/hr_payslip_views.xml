@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Acción en la lista de recibos (selección manual) -->
+    <record id="action_server_bancolombia" model="ir.actions.server">
+        <field name="name">Generar archivo Bancolombia</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_generar_bancolombia()</field>
+    </record>
+
+    <!-- Acción en el lote de nómina (todos los recibos del lote) -->
+    <record id="action_server_bancolombia_run" model="ir.actions.server">
+        <field name="name">Generar archivo Bancolombia</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip_run"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip_run"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_generar_bancolombia()</field>
+    </record>
+</odoo>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="param_aprendiz_struct" model="ir.config_parameter">
+            <field name="key">proimpo.aprendiz_struct</field>
+            <field name="value">Aprendiz Lectiva</field>
+        </record>
+    </data>
+</odoo>
