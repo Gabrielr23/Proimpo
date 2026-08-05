@@ -17,7 +17,7 @@
     # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Manufacturing/Manufacturing',
-    'version': '0.1',
+    'version': '19.0.1.0.0',
 
     # any module necessary for this one to work correctly
     'depends': ['mrp'],

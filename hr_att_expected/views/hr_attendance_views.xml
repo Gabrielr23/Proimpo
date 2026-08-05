@@ -119,7 +119,7 @@ if records:
                 <!-- Campos de búsqueda -->
                 <field name="expected_check_in"/>
                 <field name="expected_check_out"/>
-                
+
                 <!-- Filtros con campos booleanos -->
                 <filter string="Llegó tarde" name="filter_late"
                         domain="[('is_late', '=', True)]"/>
@@ -127,16 +127,12 @@ if records:
                         domain="[('left_early', '=', True)]"/>
                 <filter string="A tiempo" name="filter_on_time"
                         domain="[('is_late', '=', False), ('left_early', '=', False)]"/>
-                
-                <separator/>
-                
+
                 <!-- Agrupar por -->
-                <group expand="0" string="Agrupar por">
-                    <filter string="Puntualidad entrada" name="group_by_late"
-                            context="{'group_by': 'is_late'}"/>
-                    <filter string="Puntualidad salida" name="group_by_early"
-                            context="{'group_by': 'left_early'}"/>
-                </group>
+                <filter string="Puntualidad entrada" name="group_by_late"
+                        context="{'group_by': 'is_late'}"/>
+                <filter string="Puntualidad salida" name="group_by_early"
+                        context="{'group_by': 'left_early'}"/>
             </search>
         </field>
     </record>

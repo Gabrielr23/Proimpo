@@ -3,7 +3,6 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-import odoo.addons.decimal_precision as dp
 
 
 class PickingType(models.Model):
