@@ -6,18 +6,31 @@ from datetime import date, timedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
-# Factor de recargo por codigo de hora extra (valor_hora * factor).
-# Igual criterio que proimpo_nomina_extras.
-FACTOR_HORA = {
-    'HED': 1.25,    # Hora extra diurna
-    'HEN': 1.75,    # Hora extra nocturna
-    'HRN': 0.35,    # Recargo nocturno
-    'HEDDF': 2.00,  # Hora extra diurna dom/festiva
-    'HRDDF': 0.75,  # Recargo diurno dom/festivo
-    'HENDF': 2.50,  # Hora extra nocturna dom/festiva
-    'HRNDF': 1.10,  # Recargo nocturno dom/festivo
+# Recargo dominical/festivo vigente segun la fecha (reforma laboral Ley 2466/2025):
+# 75% (hasta jun-2025) -> 80% (jul-2025) -> 90% (jul-2026) -> 100% (jul-2027).
+def recargo_dominical_pct(fecha):
+    if fecha >= date(2027, 7, 1):
+        return 1.00
+    if fecha >= date(2026, 7, 1):
+        return 0.90
+    if fecha >= date(2025, 7, 1):
+        return 0.80
+    return 0.75
+
+
+# Parte FIJA del factor (sin dominical). A los codigos dom/festivo se les suma el
+# recargo dominical vigente segun la fecha del recibo.
+BASE_FIJA = {
+    'HED': 1.25,    # 1 + 0.25 extra diurna
+    'HEN': 1.75,    # 1 + 0.75 extra nocturna
+    'HRN': 0.35,    # 0.35 recargo nocturno
+    'HEDDF': 1.25,  # 1 + 0.25 + dominical
+    'HRDDF': 0.00,  #           dominical
+    'HENDF': 1.75,  # 1 + 0.75 + dominical
+    'HRNDF': 0.35,  # 0.35 +     dominical
 }
-CODIGOS_EXTRA = list(FACTOR_HORA.keys())
+LLEVA_DOMINICAL = {'HEDDF', 'HRDDF', 'HENDF', 'HRNDF'}
+CODIGOS_EXTRA = list(BASE_FIJA.keys())
 # Novedades que se cargan en VALOR (pesos), no en horas
 CODIGOS_VALOR = ['COM', 'BON', 'BONNS']
 TODOS_CODIGOS = CODIGOS_EXTRA + CODIGOS_VALOR
@@ -45,10 +58,20 @@ class CargarNovedades(models.TransientModel):
         fecha = slip.date_to or date.today()
         return 220.0 if fecha < date(2026, 7, 15) else 210.0
 
+    def _factor_hora(self, slip, codigo):
+        """Factor (valor_hora x factor) segun codigo y fecha del recibo."""
+        base = BASE_FIJA.get(codigo)
+        if base is None:
+            return 0.0
+        fecha = slip.date_to or date.today()
+        if codigo in LLEVA_DOMINICAL:
+            return round(base + recargo_dominical_pct(fecha), 4)
+        return base
+
     def _valor_hora(self, slip, codigo):
         """Valor por hora del concepto = wage / divisor * factor."""
         wage = slip.contract_id.wage or 0.0
-        factor = FACTOR_HORA.get(codigo, 0.0)
+        factor = self._factor_hora(slip, codigo)
         div = self._divisor_hora(slip)
         return round(wage / div * factor, 2) if (wage and div and factor) else 0.0
 

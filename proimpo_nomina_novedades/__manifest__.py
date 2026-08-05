@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'PROIMPO Nómina - Cargue masivo de novedades',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'Sube un Excel de novedades (horas extra, comisiones, bonificaciones) a un lote de nómina',
     'description': """
 Asistente para cargar novedades de forma masiva a un lote de nómina.
