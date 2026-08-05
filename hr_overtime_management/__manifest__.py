@@ -1,6 +1,6 @@
 {
     "name": "HR Overtime Management",
-    "version": "19.0.1.0.0",
+    "version": "18.0.1.0.0",
     "summary": "Gestión de cupos diarios de horas extras",
     "description": "Permite registrar cupos diarios de horas extras por empleado.",
     "category": "Human Resources",

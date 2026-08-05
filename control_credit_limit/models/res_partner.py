@@ -16,6 +16,7 @@ class CreditPartner(models.Model):
 
 	def search_over_limit(self, operation, operand):
 		_logger.debug(' \n\n \t Having a shitty time here  \n\n\n'+str(self.display_name)+'\n\n\n')
+		acc_type='receivable'
 		   #if operator not in ('<', '=', '>', '>=', '<='):
 			#return []
 		#if type(operand) not in (float, int):
@@ -23,7 +24,7 @@ class CreditPartner(models.Model):
 		#sign = 1
 		#if account_type == 'payable':
 			#sign = -1
-		self.env.cr.execute('''
+		res = self._cr.execute('''
 			SELECT partner.id, SUM(aml.amount_residual),my_credit_limit
 			FROM res_partner partner
 			LEFT JOIN account_move_line aml ON aml.partner_id = partner.id
@@ -32,7 +33,7 @@ class CreditPartner(models.Model):
 			  AND NOT acc.deprecated
 			GROUP BY partner.id
 			HAVING  COALESCE(SUM(aml.amount_residual), 0) > partner.my_credit_limit ''' )
-		res = self.env.cr.fetchall()
+		res = self._cr.fetchall()
 		dd=[]
 		for row in res:
 					_logger.debug(' \n\n \t '+str(row))
@@ -44,6 +45,7 @@ class CreditPartner(models.Model):
 		return [('id' ,  'in' , dd)]
 
 	@api.depends('credit','debit', 'my_credit_limit')
+	@api.model
 	def compute_over_limit(self):
 		_logger.debug(' \n\n \t Calling Over Limit \n\n\n')
 		for item in self:			
@@ -52,6 +54,7 @@ class CreditPartner(models.Model):
 	
 
 	@api.depends('credit','debit', 'my_credit_limit')
+	@api.model
 	def compute_my_credit_is_over(self):
 		_logger.debug(' \n\n \t CHECKING OVER LIMIT FOR CUSTOMER \n\n\n')
 #		self.ensure_one();

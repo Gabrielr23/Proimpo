@@ -3,6 +3,7 @@
     <record model="ir.ui.view" id="my_credit_limit_wizard">
         <field name="name">Solicitud de aprobación</field>
         <field name="model">sale.control.limit.wizard</field>
+        <field name="type">form</field> 
         <field name="arch" type="xml">
           <form>
             <span>El cliente presenta un crédito excedido o con factura vencida. Esta orden de venta requiere una aprobación previa o aumentar su cupo de crédito</span>

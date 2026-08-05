@@ -1,6 +1,6 @@
 {
     'name': 'Asistencia Biométrica',
-    'version': '19.0.1.0.0',
+    'version': '18.0.1.0.0',
     'category': 'Human Resources',
     'summary': 'Integración de dispositivos biométricos con asistencia de empleados',
     'description': """
