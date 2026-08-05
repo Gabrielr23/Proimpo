@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_reporte_extras_diario" model="ir.cron">
+        <field name="name">PROIMPO: Reporte diario de horas extra por aprobar</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_reporte_extras_diario()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+        <!-- 14:00 UTC = 9:00 a.m. hora Colombia -->
+        <field name="nextcall" eval="(DateTime.now().replace(hour=14, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <!-- Destinatarios del reporte (separados por coma). Ajustar en Ajustes > Tecnico > Parametros -->
+    <record id="param_destinatarios_extras" model="ir.config_parameter">
+        <field name="key">proimpo_asistencia.destinatarios</field>
+        <field name="value"></field>
+    </record>
+</odoo>

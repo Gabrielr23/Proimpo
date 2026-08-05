@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Columna "Estado DIAN" en la vista lista de facturas de proveedor -->
+    <record id="view_in_invoice_tree_l10n_co_edi_batch" model="ir.ui.view">
+        <field name="name">account.move.tree.l10n_co_edi_batch</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_in_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="l10n_co_edi_dian_state"
+                       optional="show"
+                       widget="badge"
+                       decoration-success="l10n_co_edi_dian_state == 'sent'"
+                       decoration-warning="l10n_co_edi_dian_state == 'pending'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Filtros de búsqueda en la lista de facturas de proveedor -->
+    <record id="view_account_bill_filter_l10n_co_edi_batch" model="ir.ui.view">
+        <field name="name">account.move.bill.search.l10n_co_edi_batch</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_bill_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="dian_pending"
+                        string="Pendientes DIAN"
+                        domain="[('state', '=', 'posted'), ('l10n_co_edi_cufe_cude', 'in', [False, ''])]"/>
+                <filter name="dian_sent"
+                        string="Aceptados DIAN"
+                        domain="[('l10n_co_edi_cufe_cude', 'not in', [False, ''])]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

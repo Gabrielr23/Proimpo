@@ -1,9 +1,9 @@
 {
     "name": "HR Attendance Expected Times",
-    "version": "1.0",
+    "version": "1.7",
     "license": "LGPL-3",
-    "depends": ["hr_attendance", "hr"],
-    "author": "Tu Nombre",
+    "depends": ["hr_attendance", "hr", "hr_holidays"],
+    "author": "Proimpo SAS",
     "category": "Human Resources",
     "description": """
         Añade campos de entrada y salida esperada según el horario del empleado.
@@ -14,6 +14,9 @@
         - Detecta automáticamente llegadas tarde y salidas tempranas
         - Maneja horarios con descansos y turnos nocturnos
         - Compatible con horarios flexibles
+        - Dia no programado (fuera del calendario) se paga como extra (tope 2h)
+        - Marca 'Valida con ausencia' si hay un permiso aprobado que justifica
+          la llegada tarde / salida temprana (integracion con hr_holidays)
     """,
     "data": [
         "views/hr_attendance_views.xml",
