@@ -58,13 +58,21 @@ class HrEmployeeLoan(models.Model):
             if loan.installment_amount <= 0:
                 raise ValidationError(_('El valor de la cuota debe ser mayor que cero.'))
 
-    def get_installment_for_date(self, date_to):
+    def get_installment_for_date(self, date_to, payslip=None):
         """Cuota a descontar para un recibo cuyo período termina en date_to.
-        Considera estado, saldo y frecuencia. Devuelve 0 si no aplica."""
+        Considera estado, saldo y frecuencia. Devuelve 0 si no aplica.
+
+        Es idempotente: el saldo se calcula SIN contar la cuota ya registrada por
+        ESTE mismo recibo, para que el valor no cambie si el recibo se recalcula
+        o se confirma (evita que la última cuota desaparezca al recalcular)."""
         self.ensure_one()
-        if self.state != 'open':
+        if self.state not in ('open', 'done'):
             return 0.0
-        cuota = min(self.installment_amount, self.amount_residual)
+        pagado_otros = sum(
+            l.amount for l in self.line_ids
+            if not (payslip and l.payslip_id and l.payslip_id.id == payslip.id))
+        residual = self.amount_total - pagado_otros
+        cuota = min(self.installment_amount, residual)
         if cuota <= 0:
             return 0.0
         if self.frequency == 'mensual' and date_to:
