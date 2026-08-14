@@ -12,7 +12,7 @@ FORMULA_SAL = (
     ")"
 )
 # La contrapartida no salarial = -exceso (referencia el total ya calculado)
-FORMULA_NS = "result = - rules['RECLAS1393SAL'].total"
+FORMULA_NS = "result = - RECLAS1393SAL"
 
 # Regla IBC original (sin ajuste 1393: la reclasificacion ya lleva el exceso a DEVSAL)
 FORMULA_IBC = (

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'PROIMPO Nómina - Des-salarización (Ley 1393)',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Reclasifica en la 2Q el exceso no salarial (>40%) a salarial, para IBC + prestaciones + aportes',
     'description': """
 Automatiza la des-salarización (método recomendado por asesoría jurídica): en la
