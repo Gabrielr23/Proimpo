@@ -39,6 +39,8 @@ class HrPayslip(models.Model):
     # Valores reales del período (para que la 2Q sume el mes)
     rtf_periodo_salarial = fields.Monetary(string="Base salarial del período")
     rtf_periodo_nosal = fields.Monetary(string="Bonos no salariales del período")
+    rtf_ytd_exento25 = fields.Monetary(string="Acum. 25% exento del año (tope 790 UVT)")
+    rtf_ytd_deducciones = fields.Monetary(string="Acum. deducciones+exentas del año (tope 1.340 UVT)")
 
     # ------------------------------------------------------------------
     # Utilidades
@@ -62,6 +64,29 @@ class HrPayslip(models.Model):
             ('state', 'in', ('done', 'paid')),
             ('id', '!=', self.id),
         ], order='date_from desc', limit=1)
+
+    def _rtf_ytd(self, campo):
+        """Acumulado del campo de depuracion en los MESES anteriores del año (para el
+        control anual de topes: 790 UVT del 25% exento y 1.340 UVT del total). De cada
+        mes anterior toma el valor real (ultimo recibo del mes, es decir la 2Q)."""
+        self.ensure_one()
+        if not self.date_from:
+            return 0.0
+        anio_ini = self.date_from.replace(month=1, day=1)
+        mes_ini = self.date_from.replace(day=1)
+        prev = self.env['hr.payslip'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('id', '!=', self.id),
+            ('date_from', '>=', anio_ini),
+            ('date_from', '<', mes_ini),
+        ])
+        por_mes = {}
+        for pr in prev:
+            k = pr.date_from.month
+            cur = por_mes.get(k)
+            if cur is None or (pr.date_from, pr.id) > (cur.date_from, cur.id):
+                por_mes[k] = pr
+        return sum((pr[campo] or 0.0) for pr in por_mes.values())
 
     @staticmethod
     def _proimpo_tabla_383(base_uvt):
@@ -167,8 +192,11 @@ class HrPayslip(models.Model):
                     and contract.date_end.month == self.date_from.month):
                 d = contract.date_end.day
                 seg = 0.0 if d <= 15 else contract.wage / 30.0 * min(d - 15, 15)
+            # Salario y comisiones (recurrentes) se proyectan al mes (x2 la quincena).
             salarial_proy = (basico + seg) + devsal * 2.0
-            bonos_proy = bonos_periodo * 2.0
+            # Bonificaciones NO salariales: NO se proyectan. Por el OTROSI se pagan
+            # una sola vez (1Q), asi que se gravan tal como se reciben, sin x2.
+            bonos_proy = bonos_periodo
             ingreso = salarial_proy + bonos_proy
             base_ibc = _base_1393(salarial_proy, bonos_proy)
             incr_salud, incr_pension = _aportes(base_ibc)
@@ -212,12 +240,25 @@ class HrPayslip(models.Model):
         # === 4. RENTAS EXENTAS ===
         exentas = min(afc + vol, ingresos_brutos * 0.30, 3800 * uvt / 12.0)
         gravable = subtotal_3 - exentas
-        exento_25 = min(gravable * 0.25, 790 * uvt / 12.0)
+        # 25% exento (Art. 206-10). El tope de 790 UVT es ANUAL (Ley 2277) y se
+        # controla al totalizar el ano; en la retencion mensual no se prorratea.
+        # El 40% (paso 5) ya limita el total de exentas + deducciones del mes.
+        exento_25 = gravable * 0.25
+        # Tope ANUAL acumulado de 790 UVT (Ley 2277): se concede el 25% hasta agotar
+        # 790 UVT sumando lo ya concedido en meses anteriores del año (tu fila 44).
+        ytd_25 = self._rtf_ytd('rtf_4_25exento')
+        exento_25 = min(exento_25, max(790.0 * uvt - ytd_25, 0.0))
         subtotal_4 = gravable - exento_25
         # === 5. EXCEDENTE (límite 40%, Art. 336) ===
         total_deducciones = total_deducibles + exentas + exento_25
-        limite_40 = min(ingreso_neto * 0.40, 1340 * uvt / 12.0)
-        excedente = max(total_deducciones - limite_40, 0.0)
+        # Limite del 40% (Art. 388). Las 1.340 UVT son tope ANUAL (Art. 336,
+        # Ley 2277), se controlan al totalizar el ano, no mes a mes.
+        limite_40 = ingreso_neto * 0.40
+        # Tope ANUAL acumulado de 1.340 UVT sobre deducciones + rentas exentas.
+        ytd_total = self._rtf_ytd('rtf_5_deducciones')
+        tope_1340 = max(1340.0 * uvt - ytd_total, 0.0)
+        limite_efectivo = min(limite_40, tope_1340)
+        excedente = max(total_deducciones - limite_efectivo, 0.0)
         base = subtotal_4 + excedente
         # === 6. RETENCIÓN (tabla Art. 383) ===
         base_uvt = base / uvt if uvt else 0.0
@@ -253,5 +294,7 @@ class HrPayslip(models.Model):
             'rtf_6_valor': valor,
             'rtf_periodo_salarial': salarial_periodo,
             'rtf_periodo_nosal': bonos_periodo,
+            'rtf_ytd_exento25': ytd_25 + exento_25,
+            'rtf_ytd_deducciones': ytd_total + total_deducciones,
         })
         return valor
