@@ -6,6 +6,36 @@ from odoo import models, _
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
+    _TIPO_COD = {'libranza': 'LIBR', 'prestamo': 'PREST', 'otro': 'OTRO'}
+
+    def _volante_prestamos(self):
+        """Detalle de cuotas de prestamo/libranza del recibo, para desglosar en el
+        volante. Usa las cuotas registradas (loan.line); si el recibo aun no las tiene
+        (borrador), las calcula en vivo desde los prestamos activos del empleado."""
+        self.ensure_one()
+        if 'hr.employee.loan.line' not in self.env:
+            return []
+        res = []
+
+        def add(loan, amount):
+            res.append({
+                'code': self._TIPO_COD.get(loan.loan_type, 'DESC'),
+                'name': loan.name or 'Descuento',
+                'amount': amount,
+            })
+
+        lines = self.env['hr.employee.loan.line'].search([('payslip_id', '=', self.id)])
+        if lines:
+            for l in lines.sorted(lambda x: (x.loan_id.loan_type or '', x.loan_id.name or '')):
+                add(l.loan_id, l.amount)
+        else:
+            activos = self.employee_id.loan_ids.filtered(lambda x: x.state == 'open')
+            for loan in activos.sorted(lambda x: (x.loan_type or '', x.name or '')):
+                cuota = loan.get_installment_for_date(self.date_to)
+                if cuota and cuota > 0:
+                    add(loan, cuota)
+        return res
+
     def _volante_email(self):
         self.ensure_one()
         emp = self.employee_id
