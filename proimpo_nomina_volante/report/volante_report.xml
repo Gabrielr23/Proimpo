@@ -87,7 +87,7 @@
                                 <tr style="border-bottom:1px solid #e5e5e5;">
                                     <td style="padding:1px 4px;"><span t-esc="l['code']"/></td>
                                     <td style="padding:1px 4px;"><span t-esc="l['name']"/></td>
-                                    <td style="padding:1px 4px; text-align:right;"><t t-if="l['qty'] and l['qty'] != 1"><span t-esc="'%.2f' % l['qty']"/></t></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="l['qty_txt']"/></td>
                                     <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(l['amount'])"/></td>
                                     <td style="padding:1px 4px;"></td>
                                 </tr>
