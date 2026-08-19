@@ -90,3 +90,27 @@ class HrPayslip(models.Model):
             if slip1:
                 ya_1q = slip1._am_line_total(code_1q)
         return max(aporte_mes - ya_1q, 0.0)
+
+    # ------------------------------------------------------------------
+    # Auxilio de transporte: se retira si básico + comisiones del MES > 2 SMMLV
+    # ------------------------------------------------------------------
+    def _proimpo_transporte_ajuste(self, trans_quincena, sal_quincena):
+        """Ajuste del auxilio de transporte. En la 2Q, si el ingreso salarial del
+        MES (básico + comisiones = BASIC + DEVSAL, 1Q + 2Q) supera 2 SMMLV, retira
+        el auxilio de todo el mes (clawback: -2Q y -1Q). En la 1Q no ajusta.
+        Devuelve el ajuste (0 o negativo)."""
+        self.ensure_one()
+        smmlv = self.contract_id.company_id.smmlv_value or 0.0
+        if not self._am_es_2q() or not smmlv:
+            return 0.0
+        slip1 = self._am_slip_1q()
+        sal_1q = 0.0
+        trans_1q = 0.0
+        if slip1:
+            sal_1q = sum(l.total for l in slip1.line_ids
+                         if l.category_id and l.category_id.code in ('BASIC', 'DEVSAL'))
+            trans_1q = slip1._am_line_total('TRANS')
+        sal_mes = (sal_quincena or 0.0) + sal_1q
+        if sal_mes > 2.0 * smmlv:
+            return - ((trans_quincena or 0.0) + trans_1q)
+        return 0.0
