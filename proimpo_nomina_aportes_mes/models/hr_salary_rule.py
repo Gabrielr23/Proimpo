@@ -23,8 +23,9 @@ FORMULAS = {
 
 # Fórmula de la regla de ajuste del auxilio de transporte (umbral mensual)
 TRANSAJU_FORMULA = (
+    "trans_q = TRANS if 'TRANS' in locals() else 0.0\n"
     "result = payslip._proimpo_transporte_ajuste("
-    "TRANS, categories.get('BASIC', 0) + categories.get('DEVSAL', 0))"
+    "trans_q, categories.get('BASIC', 0) + categories.get('DEVSAL', 0))"
 )
 
 
