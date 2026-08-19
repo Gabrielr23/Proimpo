@@ -30,12 +30,12 @@ class HrPayslipRun(models.Model):
     def action_reporte_columnar(self):
         """Excel columnar con TODOS los conceptos (devengados, deducciones,
         aportes patronales y provisiones), un empleado por fila."""
-        self.ensure_one()
         if xlsxwriter is None:
             raise UserError(_("Falta la librería xlsxwriter en el servidor."))
-        slips = self.slip_ids
+        # Acepta uno o varios lotes: combina los recibos de todos los seleccionados
+        slips = self.mapped('slip_ids')
         if not slips:
-            raise UserError(_("El lote no tiene recibos."))
+            raise UserError(_("Los lotes seleccionados no tienen recibos."))
 
         reglas = {}
         for s in slips:
@@ -65,8 +65,13 @@ class HrPayslipRun(models.Model):
         f_tot = wb.add_format({'border': 1, 'num_format': '#,##0', 'bold': True, 'bg_color': '#DDEBF7'})
         f_totlbl = wb.add_format({'border': 1, 'bold': True, 'bg_color': '#DDEBF7'})
 
-        ws.write(0, 0, "%s — Reporte columnar de nómina" % (self.company_id.name or ''), f_title)
-        ws.write(1, 0, "Lote: %s   Período: %s a %s" % (self.name or '', self.date_start, self.date_end), f_sub)
+        empresa = (self[:1].company_id.name or '')
+        lotes_txt = ", ".join(self.mapped('name'))
+        fechas = [d for d in self.mapped('date_start') if d] + [d for d in self.mapped('date_end') if d]
+        per_ini = min(self.mapped('date_start')) if self.mapped('date_start') else ''
+        per_fin = max(self.mapped('date_end')) if self.mapped('date_end') else ''
+        ws.write(0, 0, "%s — Reporte columnar de nómina" % empresa, f_title)
+        ws.write(1, 0, "Lote(s): %s   Período: %s a %s" % (lotes_txt, per_ini, per_fin), f_sub)
 
         # Fila 2: bandas de sección; Fila 3: encabezados de columna
         fijas = ['Cédula', 'Empleado', 'Cargo', 'C. Costo']
@@ -145,7 +150,7 @@ class HrPayslipRun(models.Model):
         ws.set_column(4, ncols - 1, 13)
         wb.close(); output.seek(0)
         att = self.env['ir.attachment'].create({
-            'name': 'Nomina_columnar_%s.xlsx' % (self.name or self.id),
+            'name': 'Nomina_columnar_%s.xlsx' % ("_".join(self.mapped('name')) or self.ids and str(self.ids[0]) or 'lote'),
             'type': 'binary',
             'datas': base64.b64encode(output.read()),
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
