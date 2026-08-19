@@ -6,7 +6,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.3.1',
     'depends': ['l10n_co_hr_payroll_enterprise', 'mail'],
     'data': [
         'report/volante_report.xml',

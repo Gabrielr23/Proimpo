@@ -93,22 +93,36 @@ class HrPayslip(models.Model):
         filas = []
         devs = self.line_ids.filtered(
             lambda l: l.salary_rule_id.type_concept == 'earn' and l.total != 0)
+        bonns_hecho = False
         for l in devs.sorted(lambda x: x.salary_rule_id.sequence):
             code = l.salary_rule_id.code
+
+            # BONNS: agrupar TODAS sus líneas y desglosar por descripción (earn.line.name)
+            if code in DESGLOSAR:
+                if bonns_hecho:
+                    continue
+                bonns_hecho = True
+                bonns_lines = devs.filtered(lambda x: x.salary_rule_id.code in DESGLOSAR)
+                total_bonns = sum(bonns_lines.mapped('total'))
+                earns = self.earn_ids.filtered(
+                    lambda e: e.code in DESGLOSAR and e.total)
+                suma = sum(earns.mapped('total'))
+                if earns and abs(suma - total_bonns) < 1.0:
+                    for e in earns.sorted(lambda x: x.sequence):
+                        filas.append({'code': e.code or code, 'name': e.name or l.name,
+                                      'qty_txt': '', 'amount': e.total})
+                else:
+                    for bl in bonns_lines.sorted(lambda x: x.salary_rule_id.sequence):
+                        filas.append({'code': bl.salary_rule_id.code, 'name': bl.name,
+                                      'qty_txt': '', 'amount': bl.total})
+                continue
+
             if code == 'BASIC':
                 qty = max(dias_base - dias_ausencia, 0.0)
             else:
                 qty = cantidad(code)
-
-            earns_total = self.earn_ids.filtered(lambda e: e.code == code and e.total)
-            suma = sum(earns_total.mapped('total'))
-            if code in DESGLOSAR and len(earns_total) > 1 and abs(suma - l.total) < 1.0:
-                for e in earns_total.sorted(lambda x: x.sequence):
-                    filas.append({'code': code, 'name': e.name or l.name,
-                                  'qty_txt': '', 'amount': e.total})
-            else:
-                filas.append({'code': code, 'name': l.name,
-                              'qty_txt': self._fmt_cant(qty), 'amount': l.total})
+            filas.append({'code': code, 'name': l.name,
+                          'qty_txt': self._fmt_cant(qty), 'amount': l.total})
         return filas
 
     def _volante_email(self):
