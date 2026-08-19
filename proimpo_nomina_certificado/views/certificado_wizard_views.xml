@@ -17,12 +17,17 @@
                 </group>
                 <p class="text-muted">
                     Consolida los pagos del ano por empleado en las casillas del formato 220.
-                    Deja "Empleados" vacio para generar a todos los que tuvieron nomina en el ano.
+                    Escribe uno o varios empleados en "Empleados" para generar solo esos; deja vacio
+                    para procesar a todos los que tuvieron nomina en el ano.
+                    El boton "Generar PDF" es para uno o pocos empleados (hasta 30). Para el cierre
+                    anual de todos, usa "ZIP (un PDF por empleado)", que no agota la memoria del servidor.
                     Las casillas se toman del campo "Casilla Certificado 220" de cada regla salarial.
                 </p>
                 <footer>
                     <button name="action_generar_pdf" type="object"
                             string="Generar PDF (formato 220)" class="btn-primary"/>
+                    <button name="action_generar_zip" type="object"
+                            string="ZIP (un PDF por empleado)" class="btn-secondary"/>
                     <button name="action_generar_excel" type="object"
                             string="Excel de control" class="btn-secondary"/>
                     <button string="Cancelar" class="btn-secondary" special="cancel"/>
