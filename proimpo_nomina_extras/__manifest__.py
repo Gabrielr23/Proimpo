@@ -12,8 +12,9 @@ Recargo dominical/festivo date-aware: 75%/80%/90%/100% (Ley 2466/2025).
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'depends': ['l10n_co_hr_payroll_enterprise'],
+    'data': ['views/earn_line_views.xml'],
     'installable': True,
     'application': False,
 }
