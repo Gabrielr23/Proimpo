@@ -36,6 +36,29 @@ class HrPayslip(models.Model):
                     add(loan, cuota)
         return res
 
+    def _volante_devengados(self):
+        """Filas de devengados para el volante. Los conceptos con varias entradas
+        (p. ej. BONNS: Aux. Transporte y Aux. Alimentación) se desglosan por su
+        descripción (earn.line.name). Solo se desglosa si las earn.lines suman el
+        total de la línea, para no descuadrar los totales."""
+        self.ensure_one()
+        DESGLOSAR = {'BONNS'}
+        filas = []
+        devs = self.line_ids.filtered(
+            lambda l: l.salary_rule_id.type_concept == 'earn' and l.total != 0)
+        for l in devs.sorted(lambda x: x.salary_rule_id.sequence):
+            code = l.salary_rule_id.code
+            earns = self.earn_ids.filtered(lambda e: e.code == code and e.total)
+            suma = sum(earns.mapped('total'))
+            if code in DESGLOSAR and len(earns) > 1 and abs(suma - l.total) < 1.0:
+                for e in earns.sorted(lambda x: x.sequence):
+                    filas.append({'code': code, 'name': e.name or l.name,
+                                  'qty': 0, 'amount': e.total})
+            else:
+                filas.append({'code': code, 'name': l.name,
+                              'qty': l.quantity, 'amount': l.total})
+        return filas
+
     def _volante_email(self):
         self.ensure_one()
         emp = self.employee_id
