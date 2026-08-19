@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "PROIMPO - Certificado de ingresos y retenciones (F220)",
+    'name': "PROIMPO - Certificado de ingresos y retenciones (F220).",
     'summary': "Genera el Certificado de Ingresos y Retenciones (formato 220 DIAN) por empleado y ano",
     'description': "Consolida los pagos del ano por empleado y los mapea a las casillas del "
                    "formato 220 de la DIAN. Genera PDF individual por empleado y Excel de control. "
