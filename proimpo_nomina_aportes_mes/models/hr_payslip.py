@@ -22,7 +22,8 @@ class HrPayslip(models.Model):
             ('id', '!=', self.id),
             ('date_from', '>=', self.date_from.replace(day=1)),
             ('date_from', '<=', self.date_from.replace(day=15)),
-        ], order='id desc', limit=1)
+            ('state', 'not in', ('draft', 'cancel')),
+        ], order='date_from desc, id desc', limit=1)
 
     def _am_line_total(self, code):
         """Total de una regla (por código) en este recibo ya calculado."""
