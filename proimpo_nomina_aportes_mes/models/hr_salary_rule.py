@@ -51,6 +51,7 @@ class HrSalaryRule(models.Model):
                 'sequence': (trans.sequence or 100) + 1,
                 'struct_id': trans.struct_id.id,
                 'category_id': (cat_auxt.id or trans.category_id.id),
+                'type_concept': trans.type_concept or 'earn',
                 'condition_select': 'none',
                 'amount_select': 'code',
                 'amount_python_compute': TRANSAJU_FORMULA,

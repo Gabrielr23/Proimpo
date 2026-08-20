@@ -43,7 +43,7 @@ if slips:
                             </tr>
                             <tr>
                                 <td><strong>Período:</strong> <span t-field="o.date_from"/> a <span t-field="o.date_to"/></td>
-                                <td><strong>Proyectada:</strong> <t t-if="o.rtf_proyectada">SÍ (1Q)</t><t t-else="">NO (2Q real)</t></td>
+                                <td><strong>Base:</strong> <t t-if="o.rtf_proyectada">1Q acumulada (parcial del mes)</t><t t-else="">2Q — mes reconciliado</t></td>
                             </tr>
                         </table>
 

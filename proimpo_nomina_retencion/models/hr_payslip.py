@@ -169,7 +169,9 @@ class HrPayslip(models.Model):
         dias_pag = (basico / dia_val) if dia_val else 0.0
         rod = self._proimpo_cfield(contract, 'x_studio_auxilio_de_rodamiento') / 30.0 * dias_pag
         salarial_periodo = basico + devsal
-        bonos_periodo = max(devnosal - rod, 0.0)
+        # Nota: NO se pone piso en 0. En la 2Q el 'Mayor valor pagado bonificación'
+        # (des-salarización) llega negativo dentro de DEVNOSAL y debe restar del mes.
+        bonos_periodo = devnosal - rod
 
         def _aportes(base_ibc):
             b = min(base_ibc, cap) if base_ibc > 0 else 0.0
@@ -186,19 +188,11 @@ class HrPayslip(models.Model):
         es_1q = self.date_from and self.date_from.day <= 15
 
         if es_1q:
-            # Proyección: básico real de la 1Q + segunda quincena completa
-            seg = contract.wage / 2.0
-            if (contract.date_end and contract.date_end.year == self.date_from.year
-                    and contract.date_end.month == self.date_from.month):
-                d = contract.date_end.day
-                seg = 0.0 if d <= 15 else contract.wage / 30.0 * min(d - 15, 15)
-            # Salario y comisiones (recurrentes) se proyectan al mes (x2 la quincena).
-            salarial_proy = (basico + seg) + devsal * 2.0
-            # Bonificaciones NO salariales: NO se proyectan. Por el OTROSI se pagan
-            # una sola vez (1Q), asi que se gravan tal como se reciben, sin x2.
-            bonos_proy = bonos_periodo
-            ingreso = salarial_proy + bonos_proy
-            base_ibc = _base_1393(salarial_proy, bonos_proy)
+            # 1Q ACUMULADO (no proyección): se grava la 1Q real tal como se paga.
+            # La retención del mes se completa en la 2Q, que recalcula sobre el mes
+            # (1Q + 2Q ya des-salarizado) y descuenta lo retenido en la 1Q.
+            ingreso = salarial_periodo + bonos_periodo
+            base_ibc = _base_1393(salarial_periodo, bonos_periodo)
             incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = 0.0
             proyectada = True
