@@ -23,6 +23,11 @@ FORMULAS = {
 }
 
 # Fórmula de la regla de ajuste del auxilio de transporte (umbral mensual)
+# Condiciones que deben forzarse (el umbral se evalua sobre el MES en el helper, no por quincena)
+CONDICIONES = {
+    'FSP': 'result = not contract.pila_pensionado',
+}
+
 TRANSAJU_FORMULA = (
     "result = payslip._proimpo_transporte_ajuste("
     "categories.get('AUXT', 0), "
@@ -44,7 +49,10 @@ class HrSalaryRule(models.Model):
         for code, formula in FORMULAS.items():
             reglas = self.search([('code', '=', code)])
             vals = {'amount_select': 'code', 'amount_python_compute': formula}
-            if code in SIN_CONDICION:
+            if code in CONDICIONES:
+                vals['condition_select'] = 'python'
+                vals['condition_python'] = CONDICIONES[code]
+            elif code in SIN_CONDICION:
                 vals['condition_select'] = 'none'
             for r in reglas:
                 r.write(vals)
