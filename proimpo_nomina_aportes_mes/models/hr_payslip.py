@@ -17,13 +17,20 @@ class HrPayslip(models.Model):
         self.ensure_one()
         if not self.date_from:
             return self.browse()
-        return self.env['hr.payslip'].search([
+        cands = self.env['hr.payslip'].search([
             ('employee_id', '=', self.employee_id.id),
             ('id', '!=', self.id),
             ('date_from', '>=', self.date_from.replace(day=1)),
             ('date_from', '<=', self.date_from.replace(day=15)),
-            ('state', 'not in', ('draft', 'cancel')),
-        ], order='date_from desc, id desc', limit=1)
+            ('state', '!=', 'cancel'),
+        ])
+        if not cands:
+            return self.browse()
+        # Prefiere: (1) estado mas avanzado, (2) que ya este calculado (tiene lineas),
+        # (3) el mas reciente. Asi evita los borradores viejos/vacios pero usa el 1Q
+        # aunque quede en borrador, siempre que este calculado.
+        rank = {'paid': 3, 'done': 3, 'verify': 2, 'draft': 1}
+        return max(cands, key=lambda s: (rank.get(s.state, 0), 1 if s.line_ids else 0, s.id))
 
     def _am_line_total(self, code):
         """Total de una regla (por código) en este recibo ya calculado."""
