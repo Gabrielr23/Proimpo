@@ -34,17 +34,16 @@
                 <t t-set="devrows" t-value="o._volante_devengados()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
+                <t t-call="web.external_layout">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
 
                     <!-- Encabezado -->
                     <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #1F4E79;">
                         <tr>
                             <td style="vertical-align:middle; width:55%;">
-                                <span style="font-size:15px; font-weight:bold; color:#1F4E79;" t-field="o.company_id.name"/><br/>
-                                <span>NIT: <span t-field="o.company_id.vat"/></span>
+                                <span style="font-size:13px; font-weight:bold; color:#1F4E79;">COMPROBANTE DE PAGO</span>
                             </td>
                             <td style="text-align:right; vertical-align:middle;">
-                                <span style="font-size:12px; font-weight:bold;">COMPROBANTE DE PAGO</span><br/>
                                 <span t-field="o.struct_id.name"/><br/>
                                 <span>Documento: <span t-field="o.number"/></span>
                             </td>
@@ -129,6 +128,7 @@
                         Documento informativo. No constituye desprendible de pago legal salvo indicación de la empresa.
                     </p>
                 </div>
+                </t>
             </t>
         </t>
     </template>

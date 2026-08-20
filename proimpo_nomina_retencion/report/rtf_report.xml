@@ -20,6 +20,8 @@
         <field name="state">code</field>
         <field name="code">
 slips = records.mapped('slip_ids')
+if len(slips) > 40:
+    raise UserError("Seleccionaste %s recibos. El consolidado con muchos empleados puede agotar la memoria; genera la auditoria por empleado (o por menos recibos)." % len(slips))
 if slips:
     action = env.ref('proimpo_nomina_retencion.action_report_rtf').report_action(slips)
         </field>
@@ -28,11 +30,8 @@ if slips:
     <template id="report_rtf_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <div class="page">
-                        <div style="border-bottom:2px solid #1F4E79; margin-bottom:6px; padding-bottom:2px;">
-                            <span style="font-size:13px; font-weight:bold; color:#1F4E79;" t-field="o.company_id.name"/>
-                            <span style="font-size:11px;"> · NIT <span t-field="o.company_id.vat"/></span>
-                        </div>
+                <t t-call="web.external_layout">
+                    <div class="page">
                         <h3 class="text-center mb-0">Auditoría de Retención en la Fuente</h3>
                         <p class="text-center text-muted" style="font-size:11px;">Procedimiento 1 - Art. 383, 387, 336 E.T.</p>
 
@@ -103,7 +102,8 @@ if slips:
                             </tbody>
                         </table>
                         <p style="font-size:10px;" class="text-muted">UVT vigente: <span t-field="o.company_id.uvt_value" t-options='{"widget":"monetary","display_currency":o.currency_id}'/>. Documento informativo de la depuración de retención en la fuente.</p>
-                </div>
+                    </div>
+                </t>
             </t>
         </t>
     </template>

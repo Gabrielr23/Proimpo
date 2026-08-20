@@ -164,14 +164,10 @@ class HrPayslip(models.Model):
         devnosal = devnosal or 0.0
         cap = 25.0 * smmlv
 
-        # Separar el rodamiento (auxilio, se excluye) de las bonificaciones no salariales
-        dia_val = contract.wage / 30.0
-        dias_pag = (basico / dia_val) if dia_val else 0.0
-        rod = self._proimpo_cfield(contract, 'x_studio_auxilio_de_rodamiento') / 30.0 * dias_pag
         salarial_periodo = basico + devsal
-        # Nota: NO se pone piso en 0. En la 2Q el 'Mayor valor pagado bonificación'
-        # (des-salarización) llega negativo dentro de DEVNOSAL y debe restar del mes.
-        bonos_periodo = devnosal - rod
+        # El auxilio de rodamiento SÍ es ingreso gravable para retención: queda dentro
+        # de DEVNOSAL y NO se excluye. (Antes se restaba como viático.)
+        bonos_periodo = devnosal
 
         def _aportes(base_ibc):
             b = min(base_ibc, cap) if base_ibc > 0 else 0.0
