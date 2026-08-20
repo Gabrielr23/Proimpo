@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Libera el campo Cantidad de las lineas de devengado para horas extra/recargos.
+         Queda readonly solo para ausencias (vacaciones/licencias/incapacidades), donde
+         la cantidad se calcula por el rango de fechas. -->
+    <record id="hr_payslip_form_extras_quantity" model="ir.ui.view">
+        <field name="name">hr.payslip.form.extras.quantity</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id"
+               ref="l10n_co_hr_payroll_enterprise.hr_payslip_view_form_l10n_co_hr_payroll"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='earn_ids']//list//field[@name='quantity']"
+                   position="attributes">
+                <attribute name="readonly">category in (
+                    'vacation_common',
+                    'licensings_maternity_or_paternity_leaves',
+                    'licensings_permit_or_paid_licenses',
+                    'licensings_suspension_or_unpaid_leaves',
+                    'incapacities_common', 'incapacities_professional',
+                    'incapacities_working', 'legal_strikes')</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

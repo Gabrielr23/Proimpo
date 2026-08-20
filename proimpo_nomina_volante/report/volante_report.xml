@@ -29,6 +29,9 @@
             <t t-foreach="docs" t-as="o">
                 <t t-set="devs" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'earn' and l.total != 0)"/>
                 <t t-set="deds" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'deduction' and l.total != 0)"/>
+                <t t-set="deds_norm" t-value="deds.filtered(lambda l: l.salary_rule_id.code not in ('PREST', 'LIBR'))"/>
+                <t t-set="prestamos" t-value="o._volante_prestamos()"/>
+                <t t-set="devrows" t-value="o._volante_devengados()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
@@ -80,22 +83,32 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="devs" t-as="l">
+                            <t t-foreach="devrows" t-as="l">
                                 <tr style="border-bottom:1px solid #e5e5e5;">
-                                    <td style="padding:1px 4px;"><span t-field="l.salary_rule_id.code"/></td>
-                                    <td style="padding:1px 4px;"><span t-field="l.name"/></td>
-                                    <td style="padding:1px 4px; text-align:right;"><t t-if="l.quantity and l.quantity != 1"><span t-esc="'%.2f' % l.quantity"/></t></td>
-                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(l.total)"/></td>
+                                    <td style="padding:1px 4px;"><span t-esc="l['code']"/></td>
+                                    <td style="padding:1px 4px;"><span t-esc="l['name']"/></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="l['qty_txt']"/></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(l['amount'])"/></td>
                                     <td style="padding:1px 4px;"></td>
                                 </tr>
                             </t>
-                            <t t-foreach="deds" t-as="l">
+                            <t t-foreach="deds_norm" t-as="l">
                                 <tr style="border-bottom:1px solid #e5e5e5;">
                                     <td style="padding:1px 4px;"><span t-field="l.salary_rule_id.code"/></td>
                                     <td style="padding:1px 4px;"><span t-field="l.name"/></td>
                                     <td style="padding:1px 4px;"></td>
                                     <td style="padding:1px 4px;"></td>
                                     <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(-l.total)"/></td>
+                                </tr>
+                            </t>
+                            <!-- Detalle por prestamo/libranza (desglose que ve el empleado) -->
+                            <t t-foreach="prestamos" t-as="p">
+                                <tr style="border-bottom:1px solid #e5e5e5;">
+                                    <td style="padding:1px 4px;"><span t-esc="p['code']"/></td>
+                                    <td style="padding:1px 4px;"><span t-esc="p['name']"/></td>
+                                    <td style="padding:1px 4px;"></td>
+                                    <td style="padding:1px 4px;"></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(p['amount'])"/></td>
                                 </tr>
                             </t>
                         </tbody>
