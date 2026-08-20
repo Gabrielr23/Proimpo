@@ -71,9 +71,8 @@ class HrSalaryRule(models.Model):
                 return '45'          # bonif. no salarial, mayores/menores no salariales
             if code.startswith('INC'):
                 return '45'          # incapacidades -> otros pagos
-            if code == 'TRANS':
-                return '45'          # auxilio de transporte -> otros pagos
-            return '36'              # basico, horas extra, recargos, bonif. salarial, licencias
+            # TRANS (auxilio de transporte) cae en 36 (salarios), como en PROIMPO.
+            return '36'              # basico, horas extra, recargos, transporte, licencias
 
         return False
 
