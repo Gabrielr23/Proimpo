@@ -61,7 +61,7 @@ class HrPayslip(models.Model):
             ('employee_id', '=', self.employee_id.id),
             ('date_from', '>=', primero),
             ('date_from', '<', self.date_from),
-            ('state', 'in', ('done', 'paid')),
+            ('state', 'not in', ('draft', 'cancel')),
             ('id', '!=', self.id),
         ], order='date_from desc', limit=1)
 

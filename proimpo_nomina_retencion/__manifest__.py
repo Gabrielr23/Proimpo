@@ -18,7 +18,7 @@ Incluye un reporte PDF de auditoría por recibo.
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '18.0.1.4.0',
+    'version': '18.0.1.5.1',
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': [
         'report/rtf_report.xml',
