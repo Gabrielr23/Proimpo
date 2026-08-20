@@ -10,7 +10,7 @@ class ResBankParameter(models.Model):
     bank_id = fields.Many2one('res.bank', 'Banco', required=True, store=True, ondelete='cascade')
     name = fields.Char('Atributo', required=True)
     data_type = fields.Selection(string='Tipo de Campo', required=True, selection=[('N','Numerico'),('A','Alfanumerico')], default='Numerico')
-    size = fields.Integer(string='Tamaño',size=3, default=1)
+    size = fields.Integer(string='Tamaño', default=1)
     value = fields.Char(string='Valor', size=10)
     
 
