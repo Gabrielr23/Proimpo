@@ -28,9 +28,9 @@ _PILA_NOV_POS = {
     'VAC': (149, 'X', 'psac'),   # vacaciones
     'LR':  (149, 'L', 'psc'),    # licencia remunerada (incluye dia de la familia)
     'IGE': (147, 'X', 'ps'),     # incapacidad general
-    'IRL': (147, 'X', 'ps'),     # incapacidad riesgos laborales (posicion a validar)
+    'IRL': (153, '2', 'ps'),     # incapacidad riesgos laborales: pos 153='2' (validado vs julio)
     'LMA': (148, 'X', 'psc'),    # licencia de maternidad
-    'SLN': (146, 'X', ''),       # suspension / licencia no remunerada (sin cotizacion)
+    'SLN': (146, 'X', 'p'),      # suspension / lic. no remunerada: cotiza SOLO pension (validado vs junio)
 }
 
 
