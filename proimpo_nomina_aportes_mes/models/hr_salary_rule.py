@@ -17,6 +17,7 @@ FORMULAS = {
         "+ categories.get('AUXT', 0)"
     ),
     'FSP': "result = payslip._proimpo_fsp(IBC)",
+    'APSALUD': "result = payslip._proimpo_parafiscal(IBC, 0.085, 'APSALUD')",
     'APSENA': "result = payslip._proimpo_parafiscal(IBC, 0.02, 'APSENA')",
     'APICBF': "result = payslip._proimpo_parafiscal(IBC, 0.03, 'APICBF')",
 }
@@ -37,10 +38,16 @@ class HrSalaryRule(models.Model):
         """Deja IBC, BASE_PREST, FSP, SENA e ICBF con la fórmula correcta de la última
         versión. Se llama al instalar y con la acción 'Re-aplicar reglas PROIMPO'."""
         tocadas = 0
+        # Parafiscales con exoneración: la decide el helper mensual (>=10 SMMLV del mes),
+        # así que la regla debe calcularse SIEMPRE (sin condición sobre el básico).
+        SIN_CONDICION = {'APSALUD', 'APSENA', 'APICBF'}
         for code, formula in FORMULAS.items():
             reglas = self.search([('code', '=', code)])
+            vals = {'amount_select': 'code', 'amount_python_compute': formula}
+            if code in SIN_CONDICION:
+                vals['condition_select'] = 'none'
             for r in reglas:
-                r.write({'amount_select': 'code', 'amount_python_compute': formula})
+                r.write(vals)
                 tocadas += 1
         # --- Auxilio de transporte: crear/actualizar TRANSAJU junto a cada TRANS ---
         cat_auxt = self.env['hr.salary.rule.category'].search([('code', '=', 'AUXT')], limit=1)
@@ -71,7 +78,7 @@ class HrSalaryRule(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': _('Re-aplicar reglas PROIMPO'),
-                'message': _('Se actualizaron %s regla(s): IBC, base prestaciones, FSP, SENA, ICBF y auxilio de transporte.') % tocadas,
+                'message': _('Se actualizaron %s regla(s): IBC, base prestaciones, FSP, salud empleador, SENA, ICBF y auxilio de transporte.') % tocadas,
                 'type': 'success',
                 'sticky': False,
             },
