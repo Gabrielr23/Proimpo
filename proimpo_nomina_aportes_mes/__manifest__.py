@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'PROIMPO Nómina - Aportes con umbral mensual',
-    'version': '18.0.1.1.2',
+    'version': '18.0.1.1.9',
     'summary': 'FSP (tramo), SENA, ICBF y exoneración evaluados sobre el IBC del MES (reconciliado en la 2Q)',
     'description': """
 Los aportes con UMBRAL o TRAMO no son lineales: al partir el mes en dos quincenas,

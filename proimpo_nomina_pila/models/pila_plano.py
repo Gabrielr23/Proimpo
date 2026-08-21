@@ -21,6 +21,18 @@ ARL_MAP = {
     '5': (0.02436, '5', '3'),   # 05 Centro 2.436 alto
 }
 
+# Novedad PILA -> (posicion 1-indexed, caracter, subsistemas que cotizan)
+#   subsistemas: p=pension  s=salud  a=arl  c=caja   (parafiscales siguen la regla alto ingreso 'f')
+# Validado byte a byte contra archivo real de CGUNO (PPI...02).
+_PILA_NOV_POS = {
+    'VAC': (149, 'X', 'psac'),   # vacaciones
+    'LR':  (149, 'L', 'psc'),    # licencia remunerada (incluye dia de la familia)
+    'IGE': (147, 'X', 'ps'),     # incapacidad general
+    'IRL': (153, '2', 'ps'),     # incapacidad riesgos laborales: pos 153='2' (validado vs julio)
+    'LMA': (148, 'X', 'psc'),    # licencia de maternidad
+    'SLN': (146, 'X', 'p'),      # suspension / lic. no remunerada: cotiza SOLO pension (validado vs junio)
+}
+
 
 def _put(buf, start, ln, val, pad='0', right=True):
     """Coloca val en buf en posicion 1-indexed start, longitud ln."""
@@ -75,15 +87,17 @@ def _es_empleado_propio(emp):
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
-    def _pila_reg02(self, seq, d):
-        """Construye un registro tipo 02 (693) para un empleado consolidado (mes)."""
+    def _pila_reg02(self, seq, d, dias=None, ibc=None, nov=None, sub='psacf',
+                    ing=False, ret=False):
+        """Construye un registro tipo 02 (693). Si se pasa un segmento (dias/ibc/nov/sub)
+        genera la linea de esa novedad; si no, la linea consolidada del empleado."""
         e = d['emp']
         ct = d['contract']
         company = ct.company_id or self.env.company
         smmlv = company.smmlv_value or 1750905.0
 
-        ibc = int(round(d['ibc']))
-        dias = min(int(round(d['dias'])), 30)
+        ibc = int(round(d['ibc'] if ibc is None else ibc))
+        dias = min(int(round(d['dias'] if dias is None else dias)), 30)
         wage = ct.wage or 0.0
         lectiva = ct.pila_etapa_aprendiz == 'lectiva'
         pensionado = bool(ct.pila_pensionado)
@@ -116,12 +130,19 @@ class HrPayslip(models.Model):
         _put(buf, 87, 20, no1, right=False, pad=' ')
         _put(buf, 107, 30, no2, right=False, pad=' ')
 
-        # --- Novedades (linea base) ---
-        _put(buf, 137, 2, '', right=False, pad=' ')
-        _put(buf, 143, 1, ' ', right=False, pad=' ')
-        # X: cotizante con ingreso variable (IBC supera el salario base del periodo)
-        variable = d.get('devsal', 0.0) > 0 or ibc > int(round(wage / 30.0 * dias))
-        _put(buf, 145, 5, 'X    ' if variable else '     ', right=False, pad=' ')
+        # --- Novedades ---
+        if ing:
+            _put(buf, 137, 1, 'X', right=False, pad=' ')
+        if ret:
+            _put(buf, 138, 1, 'X', right=False, pad=' ')
+        if nov:
+            npos, nchar = nov
+            _put(buf, npos, 1, nchar, right=False, pad=' ')
+        else:
+            # Linea base/consolidada: marca de cotizante con IBC variable
+            variable = d.get('devsal', 0.0) > 0 or ibc > int(round(wage / 30.0 * dias))
+            if variable:
+                _put(buf, 145, 1, 'X', right=False, pad=' ')
 
         # --- Entidades ---
         _put(buf, 154, 6, (ct.pila_afp_code or '').strip(), right=False, pad=' ')
@@ -142,35 +163,37 @@ class HrPayslip(models.Model):
             _put(buf, st, 9, ibc)
 
         # --- Pension ---
-        if pensionado or lectiva:
-            _put(buf, 240, 2, '00')
-            _put(buf, 247, 5, 0)
-        else:
+        if 'p' in sub and not (pensionado or lectiva):
             _put(buf, 240, 2, '16')
             _put(buf, 247, 5, _ap(ibc * 0.16))
+        else:
+            _put(buf, 240, 2, '00')
+            _put(buf, 247, 5, 0)
 
         # --- Salud ---
-        rate_s = 0.125 if alto_ingreso else 0.04
-        _put(buf, 310, 3, '%03d' % int(round(rate_s * 1000)))
-        _put(buf, 317, 5, _ap(ibc * rate_s))
+        if 's' in sub:
+            rate_s = 0.125 if alto_ingreso else 0.04
+            _put(buf, 310, 3, '%03d' % int(round(rate_s * 1000)))
+            _put(buf, 317, 5, _ap(ibc * rate_s))
 
         # --- ARL ---
         tarifa, c398, c513 = ARL_MAP.get(ct.pila_arl_class or '5', ARL_MAP['5'])
-        _put(buf, 384, 4, '%04d' % int(round(tarifa * 100000)))
-        _put(buf, 398, 1, c398)
-        _put(buf, 513, 1, c513)
-        _put(buf, 402, 4, _ap(ibc * tarifa))
+        if 'a' in sub:
+            _put(buf, 384, 4, '%04d' % int(round(tarifa * 100000)))
+            _put(buf, 398, 1, c398)
+            _put(buf, 513, 1, c513)
+            _put(buf, 402, 4, _ap(ibc * tarifa))
 
         # --- Caja de compensacion ---
-        if ccf and not lectiva:
+        if 'c' in sub and ccf and not lectiva:
             _put(buf, 411, 1, '4')
             _put(buf, 417, 5, _ap(ibc * 0.04))
         else:
             _put(buf, 411, 1, '0')
             _put(buf, 417, 5, 0)
 
-        # --- SENA / ICBF (exonerados < 10 SMMLV; aplican si alto ingreso) ---
-        if alto_ingreso and not lectiva:
+        # --- SENA / ICBF (solo linea base con alto ingreso) ---
+        if 'f' in sub and alto_ingreso and not lectiva:
             _put(buf, 427, 1, '2')
             _put(buf, 434, 4, _ap(ibc * 0.02))
             _put(buf, 443, 1, '3')
@@ -191,49 +214,89 @@ class HrPayslip(models.Model):
         return ''.join(buf)
 
     def _pila_generar_plano(self, mes_ini):
-        """Consolida el mes por empleado y devuelve el contenido del archivo PILA."""
+        """Consolida el mes por empleado y genera el archivo PILA con multilinea:
+        una linea base trabajada + un renglon por cada novedad (VAC, LR, IGE, IRL,
+        LMA, SLN), con sus dias, IBC y subsistemas que cotizan."""
+        import calendar as _cal
         company = self[0].company_id or self.env.company
+        y, m = mes_ini.year, mes_ini.month
+        last = fields.Date.to_date('%04d-%02d-%02d' % (y, m, _cal.monthrange(y, m)[1]))
+
         emp = {}
         for s in self:
             e = s.employee_id
             d = emp.setdefault(e.id, {
-                'emp': e, 'contract': s.contract_id, 'ibc': 0.0, 'dias': 0.0, 'devsal': 0.0,
+                'emp': e, 'contract': s.contract_id, 'ibc': 0.0, 'dias': 0.0,
+                'devsal': 0.0, 'slip': s,
             })
             d['ibc'] += s._pila_line('IBC') + s._pila_line('IBCAPR')
             d['dias'] += s._dias_cotizados_pila()
-            d['devsal'] += sum(s.line_ids.filtered(lambda l: l.category_id.code == 'DEVSAL').mapped('total'))
+            d['devsal'] += sum(s.line_ids.filtered(
+                lambda l: l.category_id.code == 'DEVSAL').mapped('total'))
             if s.contract_id:
                 d['contract'] = s.contract_id
 
-        # --- Registros tipo 02 ---
         regs = []
         seq = 0
-        tot_cotiz = 0
         for eid in sorted(emp, key=lambda k: (emp[k]['emp'].name or '')):
-            seq += 1
-            r = self._pila_reg02(seq, emp[eid])
-            regs.append(r)
-            for st, ln in ((247, 5), (317, 5), (402, 4), (417, 5),
-                           (434, 4), (449, 5)):
-                tot_cotiz += int(r[st - 1:st - 1 + ln] or '0') * 100
+            d = emp[eid]
+            ct = d['contract']
+            total_ibc = int(round(d['ibc']))
+            # Novedad de ingreso / retiro en el mes
+            ing = bool(ct and ct.date_start and ct.date_start.year == y and ct.date_start.month == m)
+            ret = bool(ct and ct.date_end and ct.date_end.year == y and ct.date_end.month == m)
+
+            # Segmentacion de dias por novedad
+            seg = d['slip']._pila_segmentos(d['emp'], ct, mes_ini, last)
+            novs = [(k, int(round(seg.get(k, 0)))) for k in
+                    ('SLN', 'IGE', 'IRL', 'LMA', 'VAC', 'LR') if int(round(seg.get(k, 0))) > 0]
+
+            if not novs:
+                # Sin novedades: una sola linea consolidada
+                seq += 1
+                regs.append(self._pila_reg02(seq, d, ing=ing, ret=ret))
+                continue
+
+            # Con novedades: IBC del salario base prorrateado por dia
+            variable = max(d.get('devsal', 0.0), 0.0)
+            salario_mes = max(total_ibc - variable, 0.0)
+            base_dia = salario_mes / 30.0
+            usados_dias = 0
+            usados_ibc = 0
+            for k, dd in novs:
+                pos, char, sub = _PILA_NOV_POS[k]
+                seg_ibc = int(round(base_dia * dd))
+                usados_dias += dd
+                usados_ibc += seg_ibc
+                seq += 1
+                regs.append(self._pila_reg02(seq, d, dias=dd, ibc=seg_ibc,
+                                             nov=(pos, char), sub=sub))
+            # Linea base trabajada: dias e IBC restantes (absorbe la parte variable)
+            work_dias = max(30 - usados_dias, 0)
+            work_ibc = max(total_ibc - usados_ibc, 0)
+            if work_dias > 0 or work_ibc > 0:
+                seq += 1
+                regs.append(self._pila_reg02(seq, d, dias=work_dias, ibc=work_ibc,
+                                             sub='psacf', ing=ing, ret=ret))
 
         n_cot = len(emp)
-        y, m = mes_ini.year, mes_ini.month
         per_cot = '%04d-%02d' % (y, m)
         my = m + 1; yy = y
         if my > 12:
             my = 1; yy += 1
         per_pago = '%04d-%02d' % (yy, my)
 
-        # --- Encabezado tipo 01 ---
+        tot_cotiz = 0
+        for r in regs:
+            for st, ln in ((247, 5), (317, 5), (402, 4), (417, 5), (434, 4), (449, 5)):
+                tot_cotiz += int(r[st - 1:st - 1 + ln] or '0') * 100
+
         hb = list(HDR)
         _put(hb, 305, 7, per_cot, right=False, pad=' ')
         _put(hb, 312, 7, per_pago, right=False, pad=' ')
         _put(hb, 339, 5, n_cot)
-        # nombre y NIT ya vienen de la empresa emisora en la plantilla (PROIMPO)
         header = ''.join(hb)
 
-        # --- Control tipo 06 ---
         tb = list(TRL)
         _put(tb, 20, 12, tot_cotiz)
         trailer = ''.join(tb)

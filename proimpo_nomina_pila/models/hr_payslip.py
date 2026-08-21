@@ -82,7 +82,7 @@ class HrPayslip(models.Model):
                 'emp': e, 'contract': s.contract_id,
                 'ibc': 0.0, 'pension': 0.0, 'salud': 0.0, 'arl': 0.0, 'ccf': 0.0,
                 'sena': 0.0, 'icbf': 0.0, 'fsp': 0.0,
-                'dias': 0.0,
+                'dias': 0.0, 'devsal': 0.0,
             })
             d['ibc'] += s._pila_line('IBC') + s._pila_line('IBCAPR')
             d['pension'] += abs(s._pila_line('PENS')) + s._pila_line('APPENS')
@@ -93,6 +93,8 @@ class HrPayslip(models.Model):
             d['icbf'] += s._pila_line('APICBF')
             d['fsp'] += abs(s._pila_line('FSP'))
             d['dias'] += s._dias_cotizados_pila()
+            d['devsal'] += sum(s.line_ids.filtered(
+                lambda l: l.category_id.code == 'DEVSAL').mapped('total'))
 
         output = io.BytesIO()
         wb = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -160,6 +162,44 @@ class HrPayslip(models.Model):
                 rr += 1
             ws2.set_column(0, 0, 13); ws2.set_column(1, 1, 30); ws2.set_column(2, 9, 11)
             ws2.freeze_panes(3, 2)
+
+            # --- Hoja de vista previa de la multilinea (lo que saldra en el .txt) ---
+            ws3 = wb.add_worksheet('Multilinea (preview)')
+            NOV_ORDER = ['SLN', 'IGE', 'IRL', 'LMA', 'VAC', 'LR']
+            NOV_LBL = {'SLN': 'Suspension/Lic.no rem.', 'IGE': 'Incapacidad general',
+                       'IRL': 'Incapacidad riesgos', 'LMA': 'Licencia maternidad',
+                       'VAC': 'Vacaciones', 'LR': 'Licencia remunerada'}
+            ws3.write(0, 0, 'Vista previa multilinea PILA (base trabajada + un renglon por novedad)', f_t)
+            cols3 = ['Cedula', 'Empleado', 'Renglon', 'Dias', 'IBC']
+            for c, h in enumerate(cols3):
+                ws3.write(2, c, h, f_h)
+            r3 = 3
+            for dd in sorted(emp.values(), key=lambda x: (x['emp'].name or '')):
+                ee = dd['emp']; cc = dd['contract']
+                seg = self._pila_segmentos(ee, cc, first, last)
+                total_ibc = int(round(dd['ibc']))
+                novs = [(k, int(round(seg.get(k, 0)))) for k in NOV_ORDER
+                        if int(round(seg.get(k, 0))) > 0]
+                filas = []
+                if not novs:
+                    filas.append(('Trabajado', int(round(dd['dias'])), total_ibc))
+                else:
+                    variable = max(dd.get('devsal', 0.0), 0.0)
+                    base_dia = max(total_ibc - variable, 0.0) / 30.0
+                    ud = ui = 0
+                    for k, nd in novs:
+                        si = int(round(base_dia * nd))
+                        filas.append((NOV_LBL[k], nd, si)); ud += nd; ui += si
+                    filas.insert(0, ('Trabajado', max(30 - ud, 0), max(total_ibc - ui, 0)))
+                for lbl, nd, si in filas:
+                    ws3.write(r3, 0, ee.identification_id or '', f_x)
+                    ws3.write(r3, 1, ee.name or '', f_x)
+                    ws3.write(r3, 2, lbl, f_x)
+                    ws3.write(r3, 3, nd, f_n)
+                    ws3.write(r3, 4, si, f_n)
+                    r3 += 1
+            ws3.set_column(0, 0, 13); ws3.set_column(1, 1, 30); ws3.set_column(2, 2, 24)
+            ws3.set_column(3, 4, 12); ws3.freeze_panes(3, 2)
 
         wb.close(); output.seek(0)
         att = self.env['ir.attachment'].create({

@@ -5,11 +5,11 @@
         <field name="name">Volante compacto</field>
         <field name="format">Letter</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">8</field>
+        <field name="margin_top">30</field>
         <field name="margin_bottom">8</field>
         <field name="margin_left">8</field>
         <field name="margin_right">8</field>
-        <field name="header_spacing">0</field>
+        <field name="header_spacing">4</field>
         <field name="dpi">90</field>
     </record>
 
@@ -34,22 +34,14 @@
                 <t t-set="devrows" t-value="o._volante_devengados()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
+                <t t-call="web.external_layout">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
 
-                    <!-- Encabezado -->
-                    <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #1F4E79;">
-                        <tr>
-                            <td style="vertical-align:middle; width:55%;">
-                                <span style="font-size:15px; font-weight:bold; color:#1F4E79;" t-field="o.company_id.name"/><br/>
-                                <span>NIT: <span t-field="o.company_id.vat"/></span>
-                            </td>
-                            <td style="text-align:right; vertical-align:middle;">
-                                <span style="font-size:12px; font-weight:bold;">COMPROBANTE DE PAGO</span><br/>
-                                <span t-field="o.struct_id.name"/><br/>
-                                <span>Documento: <span t-field="o.number"/></span>
-                            </td>
-                        </tr>
-                    </table>
+                    <!-- Título compacto (el membrete de la empresa lo pone el layout estándar) -->
+                    <div style="text-align:center; border-bottom:2px solid #1F4E79; padding-bottom:2px; margin-bottom:2px;">
+                        <span style="font-size:13px; font-weight:bold; color:#1F4E79;">COMPROBANTE DE PAGO</span>
+                        <span style="font-size:10px; color:#555;"> — <span t-field="o.struct_id.name"/> · Documento <span t-field="o.number"/></span>
+                    </div>
 
                     <!-- Datos del empleado -->
                     <table style="width:100%; border-collapse:collapse; margin-top:4px; font-size:10px;">
@@ -129,6 +121,7 @@
                         Documento informativo. No constituye desprendible de pago legal salvo indicación de la empresa.
                     </p>
                 </div>
+                </t>
             </t>
         </t>
     </template>
