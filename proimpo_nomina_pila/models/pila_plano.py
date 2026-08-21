@@ -101,7 +101,8 @@ class HrPayslip(models.Model):
         wage = ct.wage or 0.0
         lectiva = ct.pila_etapa_aprendiz == 'lectiva'
         pensionado = bool(ct.pila_pensionado)
-        alto_ingreso = wage >= 10 * smmlv
+        # Exoneracion Art. 114-1 sobre el IBC del MES (como el recibo y CGUNO), no el basico
+        alto_ingreso = (d.get('ibc') or 0.0) >= 10 * smmlv
 
         buf = list(BASE02)
 
@@ -149,7 +150,7 @@ class HrPayslip(models.Model):
             # Linea base/consolidada: marca de cotizante con IBC variable.
             # No aplica a aprendices (tipo cotizante 19): el operador rechaza VST.
             variable = d.get('devsal', 0.0) > 0 or ibc > int(round(wage / 30.0 * dias))
-            if variable and not lectiva:
+            if variable and tcot != '19':
                 _put(buf, 145, 1, 'X', right=False, pad=' ')
 
         # --- Entidades ---
