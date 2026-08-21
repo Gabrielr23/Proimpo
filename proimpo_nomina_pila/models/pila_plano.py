@@ -101,9 +101,14 @@ class HrPayslip(models.Model):
         wage = ct.wage or 0.0
         lectiva = ct.pila_etapa_aprendiz == 'lectiva'
         pensionado = bool(ct.pila_pensionado)
-        alto_ingreso = wage >= 10 * smmlv
+        # Exoneracion Art. 114-1 sobre el IBC del MES (como el recibo y CGUNO), no el basico
+        alto_ingreso = (d.get('ibc') or 0.0) >= 10 * smmlv
 
         buf = list(BASE02)
+
+        # Zona de novedades (137-149): el operador exige ESPACIO cuando no hay novedad
+        # (no '0'). Se limpia aqui y luego se ponen los flags que correspondan.
+        _put(buf, 137, 13, '', right=False, pad=' ')
 
         # --- Identificacion ---
         _put(buf, 3, 5, seq)
@@ -123,7 +128,10 @@ class HrPayslip(models.Model):
         _put(buf, 28, 2, subt)
 
         # --- Municipio y nombres ---
-        _put(buf, 32, 5, (ct.pila_municipio_code or '').strip())
+        muni = (ct.pila_municipio_code or '').strip()
+        if len(muni) > 5:            # DANE debe ser 5 (depto 2 + municipio 3)
+            muni = muni[:2] + muni[-3:]
+        _put(buf, 32, 5, muni)
         ap1, ap2, no1, no2 = _split_nombre(e.name)
         _put(buf, 37, 20, ap1, right=False, pad=' ')
         _put(buf, 57, 30, ap2, right=False, pad=' ')
@@ -139,9 +147,10 @@ class HrPayslip(models.Model):
             npos, nchar = nov
             _put(buf, npos, 1, nchar, right=False, pad=' ')
         else:
-            # Linea base/consolidada: marca de cotizante con IBC variable
+            # Linea base/consolidada: marca de cotizante con IBC variable.
+            # No aplica a aprendices (tipo cotizante 19): el operador rechaza VST.
             variable = d.get('devsal', 0.0) > 0 or ibc > int(round(wage / 30.0 * dias))
-            if variable:
+            if variable and tcot != '19':
                 _put(buf, 145, 1, 'X', right=False, pad=' ')
 
         # --- Entidades ---
@@ -198,6 +207,7 @@ class HrPayslip(models.Model):
             _put(buf, 434, 4, _ap(ibc * 0.02))
             _put(buf, 443, 1, '3')
             _put(buf, 449, 5, _ap(ibc * 0.03))
+            _put(buf, 665, 9, ibc)   # IBC otros parafiscales (no puede ser 0 con SENA/ICBF)
         else:
             _put(buf, 427, 1, '0')
             _put(buf, 434, 4, 0)
@@ -207,7 +217,9 @@ class HrPayslip(models.Model):
         # --- Campos de control ---
         _put(buf, 506, 1, 'S', right=False)
         _put(buf, 515, 110, '', right=False, pad=' ')
-        _put(buf, 666, 11, int(round(dias * 22.0 / 3.0)))
+        # Campo pos 674-676 (dentro de 666-676): dias x 7 en la linea base; 0 en segmentos
+        # de novedad. (Validado byte a byte contra CGUNO real: 30d->210, 27d->189.)
+        _put(buf, 666, 11, 0 if nov else int(round(dias * 7.0)))
         centro = (ct.pila_centro_trabajo or company.pila_centro_trabajo_def or '').strip()
         _put(buf, 687, 7, centro, right=False, pad=' ')
 
