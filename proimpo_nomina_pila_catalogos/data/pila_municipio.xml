@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <record id="mun_76001" model="pila.municipio"><field name="code">76001</field><field name="name">CALI</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76892" model="pila.municipio"><field name="code">76892</field><field name="name">YUMBO</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76520" model="pila.municipio"><field name="code">76520</field><field name="name">PALMIRA</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76109" model="pila.municipio"><field name="code">76109</field><field name="name">BUENAVENTURA</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76834" model="pila.municipio"><field name="code">76834</field><field name="name">TULUÁ</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76364" model="pila.municipio"><field name="code">76364</field><field name="name">JAMUNDÍ</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76122" model="pila.municipio"><field name="code">76122</field><field name="name">CANDELARIA</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_76147" model="pila.municipio"><field name="code">76147</field><field name="name">CARTAGO</field><field name="depto">VALLE DEL CAUCA</field></record>
+  <record id="mun_11001" model="pila.municipio"><field name="code">11001</field><field name="name">BOGOTÁ D.C.</field><field name="depto">BOGOTÁ</field></record>
+  <record id="mun_05001" model="pila.municipio"><field name="code">05001</field><field name="name">MEDELLÍN</field><field name="depto">ANTIOQUIA</field></record>
+  <record id="mun_68001" model="pila.municipio"><field name="code">68001</field><field name="name">BUCARAMANGA</field><field name="depto">SANTANDER</field></record>
+  <record id="mun_13001" model="pila.municipio"><field name="code">13001</field><field name="name">CARTAGENA</field><field name="depto">BOLÍVAR</field></record>
+  <record id="mun_08001" model="pila.municipio"><field name="code">08001</field><field name="name">BARRANQUILLA</field><field name="depto">ATLÁNTICO</field></record>
+  <record id="mun_66001" model="pila.municipio"><field name="code">66001</field><field name="name">PEREIRA</field><field name="depto">RISARALDA</field></record>
+  <record id="mun_52001" model="pila.municipio"><field name="code">52001</field><field name="name">PASTO</field><field name="depto">NARIÑO</field></record>
+  <record id="mun_19001" model="pila.municipio"><field name="code">19001</field><field name="name">POPAYÁN</field><field name="depto">CAUCA</field></record>
+</odoo>

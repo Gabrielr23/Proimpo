@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Desplegables en la pestaña PILA del contrato -->
+    <record id="hr_contract_view_form_pila_catalogos" model="ir.ui.view">
+        <field name="name">hr.contract.form.pila.catalogos</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="proimpo_nomina_pila.hr_contract_view_form_pila"/>
+        <field name="arch" type="xml">
+            <field name="pila_eps_code" position="before"><field name="pila_eps_id"/></field>
+            <field name="pila_eps_code" position="attributes">
+                <attribute name="readonly">1</attribute><attribute name="string">EPS (código)</attribute>
+            </field>
+            <field name="pila_afp_code" position="before"><field name="pila_afp_id"/></field>
+            <field name="pila_afp_code" position="attributes">
+                <attribute name="readonly">1</attribute><attribute name="string">AFP (código)</attribute>
+            </field>
+            <field name="pila_arl_code" position="before"><field name="pila_arl_id"/></field>
+            <field name="pila_arl_code" position="attributes">
+                <attribute name="readonly">1</attribute><attribute name="string">ARL (código)</attribute>
+            </field>
+            <field name="pila_arl_code" position="after"><field name="pila_arl_clase_id"/></field>
+            <field name="pila_ccf_code" position="before"><field name="pila_ccf_id"/></field>
+            <field name="pila_ccf_code" position="attributes">
+                <attribute name="readonly">1</attribute><attribute name="string">Caja (código)</attribute>
+            </field>
+            <field name="pila_municipio_code" position="before"><field name="pila_municipio_id"/></field>
+            <field name="pila_municipio_code" position="attributes">
+                <attribute name="readonly">1</attribute><attribute name="string">Municipio (código)</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Gestión de catálogos -->
+    <record id="view_pila_entidad_list" model="ir.ui.view">
+        <field name="name">pila.entidad.list</field>
+        <field name="model">pila.entidad</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="tipo"/><field name="code"/><field name="name"/><field name="nit"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_pila_entidad" model="ir.actions.act_window">
+        <field name="name">Entidades PILA (EPS/AFP/ARL/Caja)</field>
+        <field name="res_model">pila.entidad</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_pila_municipio_list" model="ir.ui.view">
+        <field name="name">pila.municipio.list</field>
+        <field name="model">pila.municipio</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="code"/><field name="name"/><field name="depto"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_pila_municipio" model="ir.actions.act_window">
+        <field name="name">Municipios PILA (DANE)</field>
+        <field name="res_model">pila.municipio</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_pila_catalogos" name="Catálogos PILA"
+              parent="hr_payroll.menu_hr_payroll_configuration" sequence="90"/>
+    <menuitem id="menu_pila_entidad" name="Entidades (EPS/AFP/ARL/Caja)"
+              parent="menu_pila_catalogos" action="action_pila_entidad" sequence="10"/>
+    <menuitem id="menu_pila_municipio" name="Municipios (DANE)"
+              parent="menu_pila_catalogos" action="action_pila_municipio" sequence="20"/>
+</odoo>
