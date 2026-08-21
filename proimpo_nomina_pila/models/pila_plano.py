@@ -217,7 +217,9 @@ class HrPayslip(models.Model):
         # --- Campos de control ---
         _put(buf, 506, 1, 'S', right=False)
         _put(buf, 515, 110, '', right=False, pad=' ')
-        _put(buf, 666, 11, int(round(dias * 22.0 / 3.0)))
+        # Campo pos 674-676 (dentro de 666-676): dias x 7 en la linea base; 0 en segmentos
+        # de novedad. (Validado byte a byte contra CGUNO real: 30d->210, 27d->189.)
+        _put(buf, 666, 11, 0 if nov else int(round(dias * 7.0)))
         centro = (ct.pila_centro_trabajo or company.pila_centro_trabajo_def or '').strip()
         _put(buf, 687, 7, centro, right=False, pad=' ')
 
