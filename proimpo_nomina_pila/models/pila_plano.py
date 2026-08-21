@@ -105,6 +105,10 @@ class HrPayslip(models.Model):
 
         buf = list(BASE02)
 
+        # Zona de novedades (137-149): el operador exige ESPACIO cuando no hay novedad
+        # (no '0'). Se limpia aqui y luego se ponen los flags que correspondan.
+        _put(buf, 137, 13, '', right=False, pad=' ')
+
         # --- Identificacion ---
         _put(buf, 3, 5, seq)
         tipodoc = (getattr(e, 'l10n_latam_document_type_id', False) and
@@ -123,7 +127,10 @@ class HrPayslip(models.Model):
         _put(buf, 28, 2, subt)
 
         # --- Municipio y nombres ---
-        _put(buf, 32, 5, (ct.pila_municipio_code or '').strip())
+        muni = (ct.pila_municipio_code or '').strip()
+        if len(muni) > 5:            # DANE debe ser 5 (depto 2 + municipio 3)
+            muni = muni[:2] + muni[-3:]
+        _put(buf, 32, 5, muni)
         ap1, ap2, no1, no2 = _split_nombre(e.name)
         _put(buf, 37, 20, ap1, right=False, pad=' ')
         _put(buf, 57, 30, ap2, right=False, pad=' ')
