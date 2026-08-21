@@ -62,7 +62,7 @@
     </record>
 
     <menuitem id="menu_pila_catalogos" name="Catálogos PILA"
-              parent="hr_payroll.menu_hr_payroll_configuration" sequence="90"/>
+              parent="hr_payroll.menu_hr_payroll_payslips" sequence="90"/>
     <menuitem id="menu_pila_entidad" name="Entidades (EPS/AFP/ARL/Caja)"
               parent="menu_pila_catalogos" action="action_pila_entidad" sequence="10"/>
     <menuitem id="menu_pila_municipio" name="Municipios (DANE)"
