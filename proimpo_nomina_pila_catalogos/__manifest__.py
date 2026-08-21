@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'PROIMPO Nómina - Catálogos PILA (desplegables)',
+    'name': 'PROIMPO Nómina - Catálogos PILA (desplegables).',
     'version': '18.0.1.0.0',
     'summary': 'Listas desplegables (nombre + código) para EPS, AFP, ARL, Caja, municipio y clase de riesgo. Rellenan el código que ya usa el plano.',
     'author': 'PROIMPO SAS',
