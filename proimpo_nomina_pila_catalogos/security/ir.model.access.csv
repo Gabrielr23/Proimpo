@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pila_entidad_user,pila.entidad user,model_pila_entidad,base.group_user,1,0,0,0
+access_pila_entidad_hr,pila.entidad hr,model_pila_entidad,hr.group_hr_manager,1,1,1,1
+access_pila_municipio_user,pila.municipio user,model_pila_municipio,base.group_user,1,0,0,0
+access_pila_municipio_hr,pila.municipio hr,model_pila_municipio,hr.group_hr_manager,1,1,1,1
+access_pila_arl_clase_user,pila.arl.clase user,model_pila_arl_clase,base.group_user,1,0,0,0
+access_pila_arl_clase_hr,pila.arl.clase hr,model_pila_arl_clase,hr.group_hr_manager,1,1,1,1
