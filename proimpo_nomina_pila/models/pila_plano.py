@@ -146,9 +146,10 @@ class HrPayslip(models.Model):
             npos, nchar = nov
             _put(buf, npos, 1, nchar, right=False, pad=' ')
         else:
-            # Linea base/consolidada: marca de cotizante con IBC variable
+            # Linea base/consolidada: marca de cotizante con IBC variable.
+            # No aplica a aprendices (tipo cotizante 19): el operador rechaza VST.
             variable = d.get('devsal', 0.0) > 0 or ibc > int(round(wage / 30.0 * dias))
-            if variable:
+            if variable and not lectiva:
                 _put(buf, 145, 1, 'X', right=False, pad=' ')
 
         # --- Entidades ---
@@ -205,6 +206,7 @@ class HrPayslip(models.Model):
             _put(buf, 434, 4, _ap(ibc * 0.02))
             _put(buf, 443, 1, '3')
             _put(buf, 449, 5, _ap(ibc * 0.03))
+            _put(buf, 665, 9, ibc)   # IBC otros parafiscales (no puede ser 0 con SENA/ICBF)
         else:
             _put(buf, 427, 1, '0')
             _put(buf, 434, 4, 0)
