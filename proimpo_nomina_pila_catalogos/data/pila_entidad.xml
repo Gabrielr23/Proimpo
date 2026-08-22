@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <record id="ent_arl_14_11" model="pila.entidad">
+    <field name="tipo">arl</field>
+    <field name="code">14-11</field>
+    <field name="name">ARL SURA</field>
+    <field name="nit">890903790</field>
+  </record>
+  <record id="ent_afp_230301" model="pila.entidad">
+    <field name="tipo">afp</field>
+    <field name="code">230301</field>
+    <field name="name">PORVENIR</field>
+    <field name="nit">800224808</field>
+  </record>
+  <record id="ent_afp_230201" model="pila.entidad">
+    <field name="tipo">afp</field>
+    <field name="code">230201</field>
+    <field name="name">PROTECCIÓN</field>
+    <field name="nit">800229739</field>
+  </record>
+  <record id="ent_afp_25_14" model="pila.entidad">
+    <field name="tipo">afp</field>
+    <field name="code">25-14</field>
+    <field name="name">COLPENSIONES</field>
+    <field name="nit">900336004</field>
+  </record>
+  <record id="ent_afp_230901" model="pila.entidad">
+    <field name="tipo">afp</field>
+    <field name="code">230901</field>
+    <field name="name">SKANDIA</field>
+    <field name="nit">800253055</field>
+  </record>
+  <record id="ent_afp_231001" model="pila.entidad">
+    <field name="tipo">afp</field>
+    <field name="code">231001</field>
+    <field name="name">COLFONDOS</field>
+    <field name="nit">800227940</field>
+  </record>
+  <record id="ent_ccf_CCF57" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF57</field>
+    <field name="name">COMFANDI</field>
+    <field name="nit">890303208</field>
+  </record>
+  <record id="ent_ccf_CCF24" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF24</field>
+    <field name="name">COMPENSAR</field>
+    <field name="nit">860066942</field>
+  </record>
+  <record id="ent_ccf_CCF04" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF04</field>
+    <field name="name">COMFAMA</field>
+    <field name="nit">890900841</field>
+  </record>
+  <record id="ent_ccf_CCF40" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF40</field>
+    <field name="name">COMFENALCO SANTANDER</field>
+    <field name="nit">890201578</field>
+  </record>
+  <record id="ent_ccf_CCF07" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF07</field>
+    <field name="name">COMFAMILIAR ATLÁNTICO</field>
+    <field name="nit">890101994</field>
+  </record>
+  <record id="ent_ccf_CCF09" model="pila.entidad">
+    <field name="tipo">ccf</field>
+    <field name="code">CCF09</field>
+    <field name="name">COMFAMILIAR CARTAGENA</field>
+    <field name="nit">890480110</field>
+  </record>
+  <record id="ent_eps_EPS002" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS002</field>
+    <field name="name">SALUD TOTAL</field>
+    <field name="nit">800130907</field>
+  </record>
+  <record id="ent_eps_EPS005" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS005</field>
+    <field name="name">SANITAS</field>
+    <field name="nit">800251440</field>
+  </record>
+  <record id="ent_eps_EPS010" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS010</field>
+    <field name="name">EPS SURA</field>
+    <field name="nit">800088702</field>
+  </record>
+  <record id="ent_eps_EPS012" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS012</field>
+    <field name="name">COMFENALCO VALLE</field>
+    <field name="nit">890303093</field>
+  </record>
+  <record id="ent_eps_EPS037" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS037</field>
+    <field name="name">NUEVA EPS</field>
+    <field name="nit">900156264</field>
+  </record>
+  <record id="ent_eps_EPS041" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS041</field>
+    <field name="name">NUEVA EPS MOVILIDAD</field>
+    <field name="nit">900156264</field>
+  </record>
+  <record id="ent_eps_EPS017" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS017</field>
+    <field name="name">FAMISANAR</field>
+    <field name="nit">830003564</field>
+  </record>
+  <record id="ent_eps_EPS042" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS042</field>
+    <field name="name">COOSALUD</field>
+    <field name="nit">900226715</field>
+  </record>
+  <record id="ent_eps_ESSC24" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">ESSC24</field>
+    <field name="name">COOSALUD MOVILIDAD</field>
+    <field name="nit">900226715</field>
+  </record>
+  <record id="ent_eps_EPS018" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">EPS018</field>
+    <field name="name">S.O.S.</field>
+    <field name="nit">805001157</field>
+  </record>
+  <record id="ent_eps_ESSC18" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">ESSC18</field>
+    <field name="name">EMSSANAR</field>
+    <field name="nit">901021565</field>
+  </record>
+  <record id="ent_eps_ESSC62" model="pila.entidad">
+    <field name="tipo">eps</field>
+    <field name="code">ESSC62</field>
+    <field name="name">ASMET SALUD</field>
+    <field name="nit">900935126</field>
+  </record>
+</odoo>

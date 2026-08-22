@@ -5,7 +5,8 @@
         <field name="model">hr.leave.type</field>
         <field name="inherit_id" ref="hr_holidays.edit_holiday_status_form"/>
         <field name="arch" type="xml">
-            <field name="name" position="after">
+            <!-- Tras 'Aprobacion' (campo del formulario base, siempre visible) -->
+            <field name="leave_validation_type" position="after">
                 <field name="pila_novedad"/>
             </field>
         </field>

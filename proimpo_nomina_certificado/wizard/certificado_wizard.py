@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import base64
+import zipfile
 from datetime import date
 from odoo import models, fields, _
 from odoo.exceptions import UserError
@@ -59,14 +60,47 @@ class CertificadoIngresosWizard(models.TransientModel):
             ('date_from', '>=', ini), ('date_to', '<=', fin)] + _dom_empresa_propia(self.env))
         return slips.mapped('employee_id')
 
+    _MAX_PDF = 30  # tope para el PDF combinado (mas alla wkhtmltopdf se queda sin memoria: error -9)
+
     def action_generar_pdf(self):
         emps = self._empleados()
         if not emps:
             raise UserError(_("No hay empleados con nomina en el ano %s.") % self.anio)
+        if len(emps) > self._MAX_PDF:
+            raise UserError(_(
+                "Seleccionaste %s empleados. El PDF combinado puede agotar la memoria del "
+                "servidor (error -9 de wkhtmltopdf). Usa el boton 'ZIP (un PDF por empleado)' "
+                "para generarlos todos, o selecciona hasta %s empleados.")
+                % (len(emps), self._MAX_PDF))
         data = {'anio': self.anio, 'smmlv': self.smmlv, 'aux': self.aux_transporte,
                 'emp_ids': emps.ids}
         return self.env.ref('proimpo_nomina_certificado.action_report_cert220').with_context(
             discard_logo_check=True).report_action(emps.ids, data=data)
+
+    def action_generar_zip(self):
+        """Genera un PDF por empleado (renderizado por separado, sin agotar memoria) y los
+        entrega en un ZIP. Ideal para el cierre anual de todos los empleados."""
+        emps = self._empleados()
+        if not emps:
+            raise UserError(_("No hay empleados con nomina en el ano %s.") % self.anio)
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for e in sorted(emps, key=lambda x: x.name or ''):
+                data = {'anio': self.anio, 'smmlv': self.smmlv, 'aux': self.aux_transporte,
+                        'emp_ids': [e.id]}
+                pdf, _ct = self.env['ir.actions.report'].with_context(
+                    discard_logo_check=True)._render_qweb_pdf(
+                    'proimpo_nomina_certificado.cert220_document', [e.id], data=data)
+                fname = 'Certificado220_%s_%s.pdf' % (
+                    self.anio, (e.identification_id or e.name or str(e.id)))
+                zf.writestr(fname, pdf)
+        buf.seek(0)
+        att = self.env['ir.attachment'].create({
+            'name': 'Certificados220_%s.zip' % self.anio, 'type': 'binary',
+            'datas': base64.b64encode(buf.read()),
+            'mimetype': 'application/zip'})
+        return {'type': 'ir.actions.act_url',
+                'url': '/web/content/%s?download=true' % att.id, 'target': 'self'}
 
     def action_generar_excel(self):
         if xlsxwriter is None:

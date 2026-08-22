@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_reaplicar_reglas" model="ir.actions.server">
+        <field name="name">Re-aplicar reglas PROIMPO</field>
+        <field name="model_id" ref="hr_payroll.model_hr_salary_rule"/>
+        <field name="binding_model_id" ref="hr_payroll.model_hr_salary_rule"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = env['hr.salary.rule'].proimpo_reaplicar_reglas()</field>
+    </record>
+</odoo>

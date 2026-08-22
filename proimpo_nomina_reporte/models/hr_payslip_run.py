@@ -3,6 +3,28 @@ import io
 import base64
 from odoo import models, _
 from odoo.exceptions import UserError
+import calendar
+
+# Categorías earn (Jorels) con cantidad en DÍAS y en HORAS
+_CAT_DIAS = {
+    'vacation_common', 'licensings_maternity_or_paternity_leaves',
+    'licensings_permit_or_paid_licenses', 'licensings_suspension_or_unpaid_leaves',
+    'incapacities_common', 'incapacities_professional', 'incapacities_working', 'legal_strikes',
+}
+_CAT_HORAS = {
+    'daily_overtime', 'overtime_night_hours', 'hours_night_surcharge',
+    'sunday_holiday_daily_overtime', 'daily_surcharge_hours_sundays_holidays',
+    'sunday_night_overtime_holidays', 'sunday_holidays_night_surcharge_hours',
+}
+
+
+def _dias360(d1, d2):
+    if not d1 or not d2 or d2 < d1:
+        return 0
+    a1 = min(d1.day, 30)
+    ult = calendar.monthrange(d2.year, d2.month)[1]
+    a2 = 30 if d2.day == ult else min(d2.day, 30)
+    return (d2.year - d1.year) * 360 + (d2.month - d1.month) * 30 + (a2 - a1) + 1
 
 try:
     import xlsxwriter
@@ -27,15 +49,28 @@ class HrPayslipRun(models.Model):
             return 'pro'
         return None
 
+    def _rc_slip_qty(self, slip, code):
+        """Cantidad de un devengado en un recibo: horas (extras) o días (salario,
+        vacaciones, licencias). Devuelve None si el concepto no tiene cantidad."""
+        earns = slip.earn_ids.filtered(
+            lambda e: e.code == code and e.category in (_CAT_DIAS | _CAT_HORAS))
+        if earns:
+            return sum(earns.mapped('quantity'))
+        if code == 'BASIC':
+            dias = _dias360(slip.date_from, slip.date_to)
+            aus = sum(e.quantity for e in slip.earn_ids if e.category in _CAT_DIAS)
+            return max(dias - aus, 0.0)
+        return None
+
     def action_reporte_columnar(self):
         """Excel columnar con TODOS los conceptos (devengados, deducciones,
         aportes patronales y provisiones), un empleado por fila."""
-        self.ensure_one()
         if xlsxwriter is None:
             raise UserError(_("Falta la librería xlsxwriter en el servidor."))
-        slips = self.slip_ids
+        # Acepta uno o varios lotes: combina los recibos de todos los seleccionados
+        slips = self.mapped('slip_ids')
         if not slips:
-            raise UserError(_("El lote no tiene recibos."))
+            raise UserError(_("Los lotes seleccionados no tienen recibos."))
 
         reglas = {}
         for s in slips:
@@ -48,6 +83,13 @@ class HrPayslipRun(models.Model):
         ded = sorted([c for c, v in reglas.items() if v['g'] == 'ded'], key=lambda c: reglas[c]['seq'])
         apo = sorted([c for c, v in reglas.items() if v['g'] == 'apo'], key=lambda c: reglas[c]['seq'])
         pro = sorted([c for c, v in reglas.items() if v['g'] == 'pro'], key=lambda c: reglas[c]['seq'])
+        # Devengados que llevan columna de cantidad (horas/días)
+        dev_qty_codes = set()
+        for code in dev:
+            for s0 in slips:
+                if self._rc_slip_qty(s0, code) is not None:
+                    dev_qty_codes.add(code)
+                    break
 
         output = io.BytesIO()
         wb = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -62,11 +104,17 @@ class HrPayslipRun(models.Model):
                                'border': 1, 'align': 'center'})
         f_txt = wb.add_format({'border': 1, 'font_size': 9})
         f_num = wb.add_format({'border': 1, 'num_format': '#,##0', 'font_size': 9})
+        f_qty = wb.add_format({'border': 1, 'num_format': '#,##0.##', 'font_size': 9, 'italic': True, 'bg_color': '#F7F7F7'})
         f_tot = wb.add_format({'border': 1, 'num_format': '#,##0', 'bold': True, 'bg_color': '#DDEBF7'})
         f_totlbl = wb.add_format({'border': 1, 'bold': True, 'bg_color': '#DDEBF7'})
 
-        ws.write(0, 0, "%s — Reporte columnar de nómina" % (self.company_id.name or ''), f_title)
-        ws.write(1, 0, "Lote: %s   Período: %s a %s" % (self.name or '', self.date_start, self.date_end), f_sub)
+        empresa = (self[:1].company_id.name or '')
+        lotes_txt = ", ".join(self.mapped('name'))
+        fechas = [d for d in self.mapped('date_start') if d] + [d for d in self.mapped('date_end') if d]
+        per_ini = min(self.mapped('date_start')) if self.mapped('date_start') else ''
+        per_fin = max(self.mapped('date_end')) if self.mapped('date_end') else ''
+        ws.write(0, 0, "%s — Reporte columnar de nómina" % empresa, f_title)
+        ws.write(1, 0, "Lote(s): %s   Período: %s a %s" % (lotes_txt, per_ini, per_fin), f_sub)
 
         # Fila 2: bandas de sección; Fila 3: encabezados de columna
         fijas = ['Cédula', 'Empleado', 'Cargo', 'C. Costo']
@@ -84,8 +132,12 @@ class HrPayslipRun(models.Model):
                     ws.write(2, ini, texto, f_sec)
 
         dev_start = col
+        dev_valcol = {}
+        dev_qtycol = {}
         for c in dev:
-            ws.write(3, col, reglas[c]['name'], f_hdr); col += 1
+            if c in dev_qty_codes:
+                ws.write(3, col, 'Cant. ' + reglas[c]['name'], f_hdr); dev_qtycol[c] = col; col += 1
+            ws.write(3, col, reglas[c]['name'], f_hdr); dev_valcol[c] = col; col += 1
         banda(dev_start, col, 'DEVENGADOS')
         col_totdev = col; ws.write(3, col, 'TOTAL DEVENGADO', f_hdr); ws.write(2, col, '', f_sec); col += 1
         ded_start = col
@@ -116,9 +168,12 @@ class HrPayslipRun(models.Model):
             ws.write(r, 2, emp.job_id.name or '', f_txt)
             ws.write(r, 3, emp.department_id.name or '', f_txt)
             tot_dev = 0.0
-            c = dev_start
             for code in dev:
-                v = val(s, code); ws.write(r, c, v, f_num); totales[c] += v; tot_dev += v; c += 1
+                if code in dev_qty_codes:
+                    q = self._rc_slip_qty(s, code) or 0.0
+                    ws.write(r, dev_qtycol[code], q, f_qty); totales[dev_qtycol[code]] += q
+                v = val(s, code); ws.write(r, dev_valcol[code], v, f_num)
+                totales[dev_valcol[code]] += v; tot_dev += v
             ws.write(r, col_totdev, tot_dev, f_num); totales[col_totdev] += tot_dev
             tot_ded = 0.0
             c = ded_start
@@ -145,7 +200,7 @@ class HrPayslipRun(models.Model):
         ws.set_column(4, ncols - 1, 13)
         wb.close(); output.seek(0)
         att = self.env['ir.attachment'].create({
-            'name': 'Nomina_columnar_%s.xlsx' % (self.name or self.id),
+            'name': 'Nomina_columnar_%s.xlsx' % ("_".join(self.mapped('name')) or self.ids and str(self.ids[0]) or 'lote'),
             'type': 'binary',
             'datas': base64.b64encode(output.read()),
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

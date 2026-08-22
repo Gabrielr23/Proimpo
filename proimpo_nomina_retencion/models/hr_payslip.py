@@ -39,6 +39,8 @@ class HrPayslip(models.Model):
     # Valores reales del período (para que la 2Q sume el mes)
     rtf_periodo_salarial = fields.Monetary(string="Base salarial del período")
     rtf_periodo_nosal = fields.Monetary(string="Bonos no salariales del período")
+    rtf_ytd_exento25 = fields.Monetary(string="Acum. 25% exento del año (tope 790 UVT)")
+    rtf_ytd_deducciones = fields.Monetary(string="Acum. deducciones+exentas del año (tope 1.340 UVT)")
 
     # ------------------------------------------------------------------
     # Utilidades
@@ -59,9 +61,32 @@ class HrPayslip(models.Model):
             ('employee_id', '=', self.employee_id.id),
             ('date_from', '>=', primero),
             ('date_from', '<', self.date_from),
-            ('state', 'in', ('done', 'paid')),
+            ('state', 'not in', ('draft', 'cancel')),
             ('id', '!=', self.id),
         ], order='date_from desc', limit=1)
+
+    def _rtf_ytd(self, campo):
+        """Acumulado del campo de depuracion en los MESES anteriores del año (para el
+        control anual de topes: 790 UVT del 25% exento y 1.340 UVT del total). De cada
+        mes anterior toma el valor real (ultimo recibo del mes, es decir la 2Q)."""
+        self.ensure_one()
+        if not self.date_from:
+            return 0.0
+        anio_ini = self.date_from.replace(month=1, day=1)
+        mes_ini = self.date_from.replace(day=1)
+        prev = self.env['hr.payslip'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('id', '!=', self.id),
+            ('date_from', '>=', anio_ini),
+            ('date_from', '<', mes_ini),
+        ])
+        por_mes = {}
+        for pr in prev:
+            k = pr.date_from.month
+            cur = por_mes.get(k)
+            if cur is None or (pr.date_from, pr.id) > (cur.date_from, cur.id):
+                por_mes[k] = pr
+        return sum((pr[campo] or 0.0) for pr in por_mes.values())
 
     @staticmethod
     def _proimpo_tabla_383(base_uvt):
@@ -139,12 +164,10 @@ class HrPayslip(models.Model):
         devnosal = devnosal or 0.0
         cap = 25.0 * smmlv
 
-        # Separar el rodamiento (auxilio, se excluye) de las bonificaciones no salariales
-        dia_val = contract.wage / 30.0
-        dias_pag = (basico / dia_val) if dia_val else 0.0
-        rod = self._proimpo_cfield(contract, 'x_studio_auxilio_de_rodamiento') / 30.0 * dias_pag
         salarial_periodo = basico + devsal
-        bonos_periodo = max(devnosal - rod, 0.0)
+        # El auxilio de rodamiento SÍ es ingreso gravable para retención: queda dentro
+        # de DEVNOSAL y NO se excluye. (Antes se restaba como viático.)
+        bonos_periodo = devnosal
 
         def _aportes(base_ibc):
             b = min(base_ibc, cap) if base_ibc > 0 else 0.0
@@ -161,16 +184,11 @@ class HrPayslip(models.Model):
         es_1q = self.date_from and self.date_from.day <= 15
 
         if es_1q:
-            # Proyección: básico real de la 1Q + segunda quincena completa
-            seg = contract.wage / 2.0
-            if (contract.date_end and contract.date_end.year == self.date_from.year
-                    and contract.date_end.month == self.date_from.month):
-                d = contract.date_end.day
-                seg = 0.0 if d <= 15 else contract.wage / 30.0 * min(d - 15, 15)
-            salarial_proy = (basico + seg) + devsal * 2.0
-            bonos_proy = bonos_periodo * 2.0
-            ingreso = salarial_proy + bonos_proy
-            base_ibc = _base_1393(salarial_proy, bonos_proy)
+            # 1Q ACUMULADO (no proyección): se grava la 1Q real tal como se paga.
+            # La retención del mes se completa en la 2Q, que recalcula sobre el mes
+            # (1Q + 2Q ya des-salarizado) y descuenta lo retenido en la 1Q.
+            ingreso = salarial_periodo + bonos_periodo
+            base_ibc = _base_1393(salarial_periodo, bonos_periodo)
             incr_salud, incr_pension = _aportes(base_ibc)
             ya_retenido = 0.0
             proyectada = True
@@ -212,12 +230,25 @@ class HrPayslip(models.Model):
         # === 4. RENTAS EXENTAS ===
         exentas = min(afc + vol, ingresos_brutos * 0.30, 3800 * uvt / 12.0)
         gravable = subtotal_3 - exentas
-        exento_25 = min(gravable * 0.25, 790 * uvt / 12.0)
+        # 25% exento (Art. 206-10). El tope de 790 UVT es ANUAL (Ley 2277) y se
+        # controla al totalizar el ano; en la retencion mensual no se prorratea.
+        # El 40% (paso 5) ya limita el total de exentas + deducciones del mes.
+        exento_25 = gravable * 0.25
+        # Tope ANUAL acumulado de 790 UVT (Ley 2277): se concede el 25% hasta agotar
+        # 790 UVT sumando lo ya concedido en meses anteriores del año (tu fila 44).
+        ytd_25 = self._rtf_ytd('rtf_4_25exento')
+        exento_25 = min(exento_25, max(790.0 * uvt - ytd_25, 0.0))
         subtotal_4 = gravable - exento_25
         # === 5. EXCEDENTE (límite 40%, Art. 336) ===
         total_deducciones = total_deducibles + exentas + exento_25
-        limite_40 = min(ingreso_neto * 0.40, 1340 * uvt / 12.0)
-        excedente = max(total_deducciones - limite_40, 0.0)
+        # Limite del 40% (Art. 388). Las 1.340 UVT son tope ANUAL (Art. 336,
+        # Ley 2277), se controlan al totalizar el ano, no mes a mes.
+        limite_40 = ingreso_neto * 0.40
+        # Tope ANUAL acumulado de 1.340 UVT sobre deducciones + rentas exentas.
+        ytd_total = self._rtf_ytd('rtf_5_deducciones')
+        tope_1340 = max(1340.0 * uvt - ytd_total, 0.0)
+        limite_efectivo = min(limite_40, tope_1340)
+        excedente = max(total_deducciones - limite_efectivo, 0.0)
         base = subtotal_4 + excedente
         # === 6. RETENCIÓN (tabla Art. 383) ===
         base_uvt = base / uvt if uvt else 0.0
@@ -253,5 +284,7 @@ class HrPayslip(models.Model):
             'rtf_6_valor': valor,
             'rtf_periodo_salarial': salarial_periodo,
             'rtf_periodo_nosal': bonos_periodo,
+            'rtf_ytd_exento25': ytd_25 + exento_25,
+            'rtf_ytd_deducciones': ytd_total + total_deducciones,
         })
         return valor

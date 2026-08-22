@@ -17,7 +17,7 @@ class HrPayslip(models.Model):
             for loan in loans:
                 if loan.line_ids.filtered(lambda l: l.payslip_id.id == slip.id):
                     continue
-                cuota = loan.get_installment_for_date(slip.date_to)
+                cuota = loan.get_installment_for_date(slip.date_to, slip)
                 if cuota <= 0:
                     continue
                 LoanLine.create({
