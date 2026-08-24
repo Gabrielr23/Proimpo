@@ -155,6 +155,22 @@ class HrPayslip(models.Model):
         return {'ap1': ape[0] if ape else '', 'ap2': ' '.join(ape[1:]) if len(ape) > 1 else '',
                 'no1': nom[0] if nom else '', 'no2': ' '.join(nom[1:]) if len(nom) > 1 else ''}.get(parte, '')
 
+    @staticmethod
+    def _ne_dv(nit):
+        """Dígito de verificación del NIT (algoritmo DIAN)."""
+        pesos = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71]
+        n = ''.join(ch for ch in str(nit or '') if ch.isdigit())
+        if not n:
+            return '0'
+        s = sum(int(d) * pesos[i] for i, d in enumerate(reversed(n)))
+        r = s % 11
+        return str(r if r < 2 else 11 - r)
+
+    def _ne_qr_url(self, cune):
+        base = ('https://catalogo-vpfe-hab.dian.gov.co' if self.company_id.l10n_co_dian_test_environment
+                else 'https://catalogo-vpfe.dian.gov.co')
+        return '%s/document/searchqr?documentkey=%s' % (base, cune)
+
     # ------------------------------------------------------------------
     # CUNE (SHA-384) — Anexo Técnico Nómina Electrónica
     # ------------------------------------------------------------------
@@ -170,23 +186,28 @@ class HrPayslip(models.Model):
             tipo=datos['tipo_documento'], pin=software_pin, amb=amb)
         return sha384(cadena.encode()).hexdigest()
 
-    def action_ne_generar(self):
-        """Genera el XML y el CUNE (iteración 1: contenido; firma/envío en el siguiente paso)."""
-        for slip in self:
-            datos = slip._ne_datos()
-            slip.ne_cune = slip._ne_cune(datos)
-            slip.ne_xml = slip._ne_build_xml(datos, slip.ne_cune)
-            slip.ne_state = 'generated'
-        return True
+    def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
+        """Arma el XML NominaIndividual.
 
-    def _ne_build_xml(self, datos, cune):
-        """Arma el XML NominaIndividual (base, iteración 1)."""
+        La firma XAdES (ext:UBLExtensions) se inserta aparte en hr_payslip_ne_dian.py.
+        El esquema de elementos se afina de forma iterativa contra el validador DIAN
+        (mismo enfoque que usamos con la PILA)."""
         from lxml import etree
         NS = "dian:gov:co:facturaelectronica:NominaIndividual"
-        root = etree.Element('{%s}NominaIndividual' % NS, nsmap={None: NS})
+        nsmap = {
+            None: NS,
+            'ext': "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
+            'ds': "http://www.w3.org/2000/09/xmldsig#",
+            'xades': "http://uri.etsi.org/01903/v1.3.2#",
+        }
+        root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
+        nit = datos['empleador']['nit']
+        dv = self._ne_dv(nit)
 
-        def sub(parent, tag, **attrs):
-            el = etree.SubElement(parent, tag)
+        def sub(parent, tag, _text=None, **attrs):
+            el = etree.SubElement(parent, '{%s}%s' % (NS, tag))
+            if _text is not None:
+                el.text = str(_text)
             for k, v in attrs.items():
                 el.set(k, str(v))
             return el
@@ -195,10 +216,18 @@ class HrPayslip(models.Model):
             FechaLiquidacionInicio=str(datos['periodo']['inicio'] or ''),
             FechaLiquidacionFin=str(datos['periodo']['fin'] or ''))
         sub(root, 'NumeroSecuenciaXML', Numero=datos['numero'])
+        sub(root, 'LugarGeneracion', Pais='CO', DepartamentoEstado='',
+            MunicipioCiudad=datos['empleador']['municipio'], Idioma='es')
+        # Proveedor tecnológico = la propia empresa (software propio)
+        if op_mode is not None:
+            sub(root, 'ProveedorXML', NIT=nit, DV=dv, SoftwareID=op_mode.dian_software_id or '',
+                SoftwareSC=software_sc or '')
+        sub(root, 'CodigoQR', _text=self._ne_qr_url(cune))
         sub(root, 'InformacionGeneral', Version='V1.0: Documento Soporte de Pago de Nómina Electrónica',
-            TipoXML=datos['tipo_documento'], CUNE=cune, Ambiente=('2' if self.company_id.l10n_co_dian_test_environment else '1'),
-            PeriodoNomina='5', TipoMoneda='COP')
-        emp = sub(root, 'Empleador', NIT=datos['empleador']['nit'], RazonSocial=datos['empleador']['razon_social'],
+            TipoXML=datos['tipo_documento'], CUNE=cune, EncripCUNE='CUNE-SHA384',
+            Ambiente=('2' if self.company_id.l10n_co_dian_test_environment else '1'),
+            PeriodoNomina='5', TipoMoneda='COP', FechaGen=str(datos['periodo']['fin'] or ''))
+        emp = sub(root, 'Empleador', NIT=nit, DV=dv, RazonSocial=datos['empleador']['razon_social'],
                   Pais=datos['empleador']['pais'])
         tr = sub(root, 'Trabajador', TipoTrabajador=datos['trabajador']['tipo_trabajador'],
                  TipoDocumento=datos['trabajador']['tipo_doc'], NumeroDocumento=datos['trabajador']['numero_doc'],
@@ -206,13 +235,13 @@ class HrPayslip(models.Model):
                  PrimerNombre=datos['trabajador']['primer_nombre'], OtrosNombres=datos['trabajador']['otros_nombres'],
                  Sueldo='%.2f' % datos['trabajador']['salario'], SalarioIntegral=datos['trabajador']['sueldo_integral'])
         # Devengados
-        dev = etree.SubElement(root, 'Devengados')
+        dev = sub(root, 'Devengados')
         for grupo, items in datos['devengados'].items():
             for it in items:
                 sub(dev, 'Devengado', Concepto=it['concepto'], Grupo=grupo,
                     Cantidad='%.2f' % it['cantidad'], Pago='%.2f' % it['valor'])
         # Deducciones
-        ded = etree.SubElement(root, 'Deducciones')
+        ded = sub(root, 'Deducciones')
         for grupo, items in datos['deducciones'].items():
             for it in items:
                 sub(ded, 'Deduccion', Concepto=it['concepto'], Grupo=grupo, Valor='%.2f' % it['valor'])
