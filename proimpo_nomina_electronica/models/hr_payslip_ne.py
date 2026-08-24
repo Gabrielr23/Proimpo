@@ -105,12 +105,13 @@ class HrPayslip(models.Model):
         deducciones = self._ne_group_deduction()
         dev_total = sum(sum(i['valor'] for i in v) for v in devengados.values())
         ded_total = sum(sum(i['valor'] for i in v) for v in deducciones.values())
+        nit, dv = self._ne_nit_dv(company)
         return {
             'tipo_documento': '102',                       # NominaIndividual
             'periodo': {'inicio': self.date_from, 'fin': self.date_to},
             'numero': self.number or '',
             'empleador': {
-                'nit': (company.vat or '').replace('-', ''),
+                'nit': nit, 'dv': dv,
                 'razon_social': company.name,
                 'pais': 'CO', 'municipio': company.city or '',
             },
@@ -154,6 +155,24 @@ class HrPayslip(models.Model):
         ape = ape.split(); nom = nom.split()
         return {'ap1': ape[0] if ape else '', 'ap2': ' '.join(ape[1:]) if len(ape) > 1 else '',
                 'no1': nom[0] if nom else '', 'no2': ' '.join(nom[1:]) if len(nom) > 1 else ''}.get(parte, '')
+
+    def _ne_nit_dv(self, company):
+        """Devuelve (NIT sin DV, DV) del empleador, reutilizando los helpers del
+        motor nativo l10n_co para garantizar que el NIT NO lleve el dígito de
+        verificación pegado (causa típica del rechazo 'no corresponde al participante')."""
+        partner = company.partner_id
+        try:
+            nit = partner._get_vat_without_verification_code()
+            dv = partner._get_vat_verification_code()
+            if nit:
+                return ''.join(c for c in nit if c.isdigit()), dv
+        except Exception:
+            pass
+        raw = ''.join(c for c in (company.vat or '') if c.isdigit())
+        # Si el vat trae DV pegado (10 dígitos para NIT de 9), se separa el último.
+        if len(raw) == 10:
+            return raw[:9], raw[9]
+        return raw, self._ne_dv(raw)
 
     @staticmethod
     def _ne_dv(nit):
@@ -202,7 +221,7 @@ class HrPayslip(models.Model):
         }
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         nit = datos['empleador']['nit']
-        dv = self._ne_dv(nit)
+        dv = datos['empleador'].get('dv') or self._ne_dv(nit)
 
         def sub(parent, tag, _text=None, **attrs):
             el = etree.SubElement(parent, '{%s}%s' % (NS, tag))
