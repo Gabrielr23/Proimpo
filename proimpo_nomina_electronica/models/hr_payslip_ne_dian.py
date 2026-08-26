@@ -137,6 +137,17 @@ class HrPayslip(models.Model):
         )
         return b64encode(sha256(canonical).digest()).decode('ascii')
 
+    @staticmethod
+    def _ne_node_digest(node):
+        """Digest SHA-256 de un nodo XML usando Canonical XML 1.0 inclusiva."""
+        canonical = etree.tostring(
+            node,
+            method='c14n',
+            exclusive=False,
+            with_comments=False,
+        )
+        return b64encode(sha256(canonical).digest()).decode('ascii')
+
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
         del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
@@ -170,17 +181,16 @@ class HrPayslip(models.Model):
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo (con transform exc-c14n -> excluye xs)
+        # Ref 1: KeyInfo. El ejemplo oficial de Nómina no incluye Transforms
+        # en esta referencia; por tanto, el procesamiento por defecto de XMLDSig
+        # usa Canonical XML 1.0 (omits comments).
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
-        tr1 = _E(r1, '{%s}Transforms' % NS_DS)
-        _E(tr1, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties (con transform exc-c14n -> excluye xs)
+        # Ref 2: SignedProperties. Igual: sin Transforms, conforme al ejemplo
+        # oficial de Nómina Electrónica.
         r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id,
                 Type='http://uri.etsi.org/01903#SignedProperties')
-        tr2 = _E(r2, '{%s}Transforms' % NS_DS)
-        _E(tr2, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
@@ -226,13 +236,23 @@ class HrPayslip(models.Model):
         # Insertar al inicio y firmar reutilizando los helpers nativos
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
-        xml_utils._reference_digests(si)
-
-        # Ref 0 (URI=""): recalcular explícitamente sobre el documento
-        # completo sin ds:Signature. Este es el punto crítico del ZE02.
+        # DIAN Nómina: calcular explícitamente los tres DigestValue.
+        # Ref 0: documento completo sin ds:Signature.
         r0.find('{%s}DigestValue' % NS_DS).text = self._ne_reference0_digest(root)
 
-        # Con los tres digests definidos, firmar SignedInfo con RSA-SHA256.
+        # Ref 1: KeyInfo, sin Transforms -> Canonical XML 1.0 inclusiva.
+        r1_target = root.xpath('//*[@Id=$id]', id=keyinfo_id)
+        if not r1_target:
+            raise UserError(_('No se encontró KeyInfo para calcular su DigestValue.'))
+        r1.find('{%s}DigestValue' % NS_DS).text = self._ne_node_digest(r1_target[0])
+
+        # Ref 2: SignedProperties, sin Transforms -> Canonical XML 1.0 inclusiva.
+        r2_target = root.xpath('//*[@Id=$id]', id=signprops_id)
+        if not r2_target:
+            raise UserError(_('No se encontró SignedProperties para calcular su DigestValue.'))
+        r2.find('{%s}DigestValue' % NS_DS).text = self._ne_node_digest(r2_target[0])
+
+        # Con los tres digests definitivos, firmar SignedInfo con RSA-SHA256.
         xml_utils._fill_signature(sig, cert)
         return root
 
