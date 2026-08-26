@@ -141,14 +141,16 @@ class HrPayslip(models.Model):
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
-        # SignatureValue (se rellena luego)
-        _E(sig, '{%s}SignatureValue' % NS_DS, 'dummy', Id=doc_id + '-sigvalue')
+        # SignatureValue (se rellena luego) — SIN atributo Id (igual al patrón de oro)
+        _E(sig, '{%s}SignatureValue' % NS_DS, 'dummy')
 
         # KeyInfo (Id fijo 'KeyInfo')
         ki = _E(sig, '{%s}KeyInfo' % NS_DS)
         ki.set('Id', keyinfo_id)
         x509d = _E(ki, '{%s}X509Data' % NS_DS)
-        _E(x509d, '{%s}X509Certificate' % NS_DS, cert._get_der_certificate_bytes().decode())
+        # Certificado en UNA sola línea (sin saltos base64), como lo exige la DIAN
+        _E(x509d, '{%s}X509Certificate' % NS_DS,
+           ''.join(cert._get_der_certificate_bytes().decode().split()))
 
         # Object / QualifyingProperties / SignedProperties (Id fijo 'SignedPropertiesId')
         obj = _E(sig, '{%s}Object' % NS_DS)
@@ -183,6 +185,11 @@ class HrPayslip(models.Model):
         xml_utils._remove_tail_and_text_in_hierarchy(root)
         xml_utils._reference_digests(si)
         xml_utils._fill_signature(sig, cert)
+        # SignatureValue en UNA sola línea (Odoo la genera con saltos cada 76 chars,
+        # y el validador de la DIAN la rechaza -> ZE02). No afecta la firma (no se digesta).
+        sv = sig.find('{%s}SignatureValue' % NS_DS)
+        if sv is not None and sv.text:
+            sv.text = ''.join(sv.text.split())
         return root
 
     def _ne_xml_firmado(self):
