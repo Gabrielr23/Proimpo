@@ -314,6 +314,10 @@ class HrPayslip(models.Model):
             xml_bytes, cune, datos = slip._ne_xml_firmado()
             slip.ne_cune = cune
             slip.ne_xml = xml_bytes.decode('utf-8', errors='replace')
+            _logger.info(
+                "DIAN SendTestSetAsync - payslip %s - XML EXACTO que se firma y envía (base64, decodificar antes de validar):\n%s",
+                slip.number or slip.id, b64encode(xml_bytes).decode(),
+            )
 
             # Modo demo: no envía, solo marca generado
             if slip.company_id.l10n_co_dian_demo_mode:
