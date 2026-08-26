@@ -17,6 +17,7 @@ from base64 import b64encode
 from hashlib import sha384
 
 from lxml import etree
+from pytz import timezone
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -88,11 +89,16 @@ class HrPayslip(models.Model):
 
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
-        del documento y la rellena (digests + valor) con los helpers nativos."""
+        del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
+        canonicalización exclusiva (exc-c14n), KeyInfo Id='KeyInfo',
+        SignedProperties Id='SignedPropertiesId', política https:// sin Description,
+        ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos."""
+        EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
+        SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
-        keyinfo_id = doc_id + "-keyinfo"
-        signprops_id = doc_id + "-signedprops"
-        signing_time = fields.datetime.now().isoformat(timespec='milliseconds')
+        keyinfo_id = "KeyInfo"
+        signprops_id = "SignedPropertiesId"
+        signing_time = fields.datetime.now(tz=timezone('America/Bogota')).isoformat(timespec='milliseconds')
 
         ubl = etree.Element('{%s}UBLExtensions' % NS_EXT)
         ext = _E(ubl, '{%s}UBLExtension' % NS_EXT)
@@ -100,38 +106,40 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo
+        # SignedInfo (canonicalización exclusiva)
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS,
-           Algorithm='http://www.w3.org/TR/2001/REC-xml-c14n-20010315')
-        _E(si, '{%s}SignatureMethod' % NS_DS,
-           Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXC)
+        _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
-        tr = _E(r0, '{%s}Transforms' % NS_DS)
-        _E(tr, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
-        _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmlenc#sha256')
+        tr0 = _E(r0, '{%s}Transforms' % NS_DS)
+        _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
+        _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo
-        r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
-        _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmlenc#sha256')
+        # Ref 1: KeyInfo (con transform exc-c14n)
+        r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id, Id=doc_id + '-ref1')
+        tr1 = _E(r1, '{%s}Transforms' % NS_DS)
+        _E(tr1, '{%s}Transform' % NS_DS, Algorithm=EXC)
+        _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties
-        r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id,
+        # Ref 2: SignedProperties (con transform exc-c14n)
+        r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id, Id=doc_id + '-ref2',
                 Type='http://uri.etsi.org/01903#SignedProperties')
-        _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmlenc#sha256')
+        tr2 = _E(r2, '{%s}Transforms' % NS_DS)
+        _E(tr2, '{%s}Transform' % NS_DS, Algorithm=EXC)
+        _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
         # SignatureValue (se rellena luego)
         _E(sig, '{%s}SignatureValue' % NS_DS, 'dummy', Id=doc_id + '-sigvalue')
 
-        # KeyInfo
+        # KeyInfo (Id fijo 'KeyInfo')
         ki = _E(sig, '{%s}KeyInfo' % NS_DS)
         ki.set('Id', keyinfo_id)
         x509d = _E(ki, '{%s}X509Data' % NS_DS)
         _E(x509d, '{%s}X509Certificate' % NS_DS, cert._get_der_certificate_bytes().decode())
 
-        # Object / QualifyingProperties / SignedProperties
+        # Object / QualifyingProperties / SignedProperties (Id fijo 'SignedPropertiesId')
         obj = _E(sig, '{%s}Object' % NS_DS)
         qp = _E(obj, '{%s}QualifyingProperties' % NS_XADES, Target='#' + doc_id)
         sp = _E(qp, '{%s}SignedProperties' % NS_XADES)
@@ -141,25 +149,23 @@ class HrPayslip(models.Model):
         scert = _E(ssp, '{%s}SigningCertificate' % NS_XADES)
         c = _E(scert, '{%s}Cert' % NS_XADES)
         cd = _E(c, '{%s}CertDigest' % NS_XADES)
-        _E(cd, '{%s}DigestMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmlenc#sha256')
+        _E(cd, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
         _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
-        # Política de firma
+        # Política de firma (https:// , sin Description — igual al patrón de oro)
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
         spid = _E(spi, '{%s}SignaturePolicyId' % NS_XADES)
         spolid = _E(spid, '{%s}SigPolicyId' % NS_XADES)
         _E(spolid, '{%s}Identifier' % NS_XADES, SIG_POLICY_URL)
-        _E(spolid, '{%s}Description' % NS_XADES,
-           'Política de firma para nómina electrónica de la República de Colombia.')
         sph = _E(spid, '{%s}SigPolicyHash' % NS_XADES)
-        _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmlenc#sha256')
+        _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(sph, '{%s}DigestValue' % NS_DS, SIG_POLICY_HASH)
         # Rol
         srole = _E(ssp, '{%s}SignerRole' % NS_XADES)
         cr = _E(srole, '{%s}ClaimedRoles' % NS_XADES)
-        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'supplier')
+        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'third party')
 
         # Insertar al inicio y firmar reutilizando los helpers nativos
         root.insert(0, ubl)
@@ -173,7 +179,7 @@ class HrPayslip(models.Model):
         self.ensure_one()
         op_mode = self._ne_operation_mode()
         datos = self._ne_datos()
-        num_ne = datos['numero']
+        num_ne = datos['secuencia']['numero']
         cune = self._ne_cune(datos, software_pin=op_mode.dian_software_security_code or '')
         ssc = self._ne_software_security_code(op_mode, num_ne)
         xml_str = self._ne_build_xml(datos, cune, op_mode=op_mode, software_sc=ssc)
@@ -217,7 +223,7 @@ class HrPayslip(models.Model):
             # Empaquetar el XML en ZIP (igual que factura)
             zbuf = io.BytesIO()
             with zipfile.ZipFile(zbuf, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.writestr('%s.xml' % (datos['numero'] or 'nomina'), xml_bytes)
+                zf.writestr('%s.xml' % (datos['secuencia']['numero'] or 'nomina'), xml_bytes)
             zipped = zbuf.getvalue()
 
             # Envío SOAP firmado al VPFE, servicio SendTestSetAsync con el TestSetID
