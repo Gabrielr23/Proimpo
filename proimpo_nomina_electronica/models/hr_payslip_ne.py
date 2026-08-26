@@ -454,8 +454,7 @@ class HrPayslip(models.Model):
         # Otros conceptos (horas extras y no mapeados)
         if g('otros'):
             oc = S(d, 'OtrosConceptos')
-            S(oc, 'OtroConcepto', ConceptoS='Otros devengados',
-              DescripcionConceptoS='Otros', PagoS=_money(g('otros')))
+            S(oc, 'OtroConcepto', DescripcionConcepto='Otros', ConceptoS=_money(g('otros')))
 
     def _ne_build_deducciones(self, S, root, datos):
         ded = datos['ded']
