@@ -14,8 +14,9 @@ con el certificado de la empresa, igual que hoy hace Odoo con la factura electr�
 import io
 import re
 import zipfile
+from copy import deepcopy
 from base64 import b64encode
-from hashlib import sha384
+from hashlib import sha256, sha384
 
 from lxml import etree
 from pytz import timezone
@@ -101,24 +102,48 @@ class HrPayslip(models.Model):
         parts = [('S=' + p[3:]) if p.startswith('ST=') else p for p in parts]
         return ', '.join(parts)
 
+    @staticmethod
+    def _ne_reference0_digest(root):
+        """Calcula el DigestValue de Reference URI="" (documento completo).
+
+        La referencia 0 usa únicamente la transformación XMLDSig
+        ``enveloped-signature``. Por tanto, antes de calcular SHA-256 se
+        debe retirar la firma ds:Signature del documento y canonizar el
+        nodo resultante con Canonical XML 1.0 (C14N inclusiva, sin comentarios).
+
+        Se calcula sobre una copia para no modificar el XML que finalmente
+        será firmado.
+        """
+        tmp = deepcopy(root)
+        ns = {'ds': NS_DS}
+        signature = tmp.find('.//ds:Signature', namespaces=ns)
+        if signature is None:
+            raise UserError(_(
+                'No se encontró ds:Signature para calcular el DigestValue de Reference URI="".'
+            ))
+
+        parent = signature.getparent()
+        if parent is None:
+            raise UserError(_(
+                'La firma ds:Signature no tiene un nodo padre válido para calcular Reference URI="".'
+            ))
+        parent.remove(signature)
+
+        canonical = etree.tostring(
+            tmp,
+            method='c14n',
+            exclusive=False,
+            with_comments=False,
+        )
+        return b64encode(sha256(canonical).digest()).decode('ascii')
+
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
         del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
-        canonicalización ESTÁNDAR (c14n, no exclusiva), KeyInfo Id='KeyInfo',
-        SignedProperties Id='SignedPropertiesId', política https:// sin Description,
-        ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos.
-
-        IMPORTANTE sobre canonicalización: `xml_utils._get_uri` decide si usar exc-c14n
-        mirando el <Transform> de CADA Reference, no el <CanonicalizationMethod> global.
-        La Reference 0 (documento completo) solo tiene el transform 'enveloped-signature',
-        así que SIEMPRE se digiere con c14n ESTÁNDAR (inclusivo), sin importar lo que se
-        declare en <CanonicalizationMethod>. Para evitar un documento con canonicalización
-        mezclada (ref0 en estándar, KeyInfo/SignedProperties en exclusiva) -y para igualar
-        el patrón que la comunidad confirma que la DIAN acepta- se declara c14n ESTÁNDAR
-        en los tres lugares: CanonicalizationMethod, transform de KeyInfo y transform de
-        SignedProperties.
-        """
-        STD_C14N = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
+        canonicalización exclusiva (exc-c14n), KeyInfo y SignedProperties con
+        referencias independientes. La referencia URI="" se recalcula explícitamente
+        sobre el documento sin ds:Signature antes de firmar con los helpers nativos."""
+        EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = doc_id + "-keyinfo"
@@ -131,11 +156,12 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo — canonicalización ESTÁNDAR (c14n), igual que el XML de oro de
-        # SIESA que la DIAN acepta y consistente con lo que `_get_uri` usa de facto
-        # para ref0 (ver docstring arriba).
+        # SignedInfo — canonicalización EXCLUSIVA (exc-c14n), IGUAL que el XML de oro de
+        # SIESA que la DIAN acepta. La exclusiva EXCLUYE el namespace 'xs' redundante de los
+        # digests de KeyInfo/SignedProperties (con inclusiva se incluía y libxml2 vs Java
+        # diferían -> ZE02). Odoo reproduce EXACTO los digests exclusivos del oro.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=STD_C14N)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXC)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
@@ -143,17 +169,17 @@ class HrPayslip(models.Model):
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo
+        # Ref 1: KeyInfo (con transform exc-c14n -> excluye xs)
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
         tr1 = _E(r1, '{%s}Transforms' % NS_DS)
-        _E(tr1, '{%s}Transform' % NS_DS, Algorithm=STD_C14N)
+        _E(tr1, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties
+        # Ref 2: SignedProperties (con transform exc-c14n -> excluye xs)
         r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id,
                 Type='http://uri.etsi.org/01903#SignedProperties')
         tr2 = _E(r2, '{%s}Transforms' % NS_DS)
-        _E(tr2, '{%s}Transform' % NS_DS, Algorithm=STD_C14N)
+        _E(tr2, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
@@ -200,6 +226,12 @@ class HrPayslip(models.Model):
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
         xml_utils._reference_digests(si)
+
+        # Ref 0 (URI=""): recalcular explícitamente sobre el documento
+        # completo sin ds:Signature. Este es el punto crítico del ZE02.
+        r0.find('{%s}DigestValue' % NS_DS).text = self._ne_reference0_digest(root)
+
+        # Con los tres digests definidos, firmar SignedInfo con RSA-SHA256.
         xml_utils._fill_signature(sig, cert)
         return root
 
@@ -213,13 +245,6 @@ class HrPayslip(models.Model):
         ssc = self._ne_software_security_code(op_mode, num_ne)
         xml_str = self._ne_build_xml(datos, cune, op_mode=op_mode, software_sc=ssc)
         root = etree.fromstring(xml_str.encode() if isinstance(xml_str, str) else xml_str)
-        # 'xmlns:xs' se exige en el documento transmitido (NIE901). Se declara AQUÍ,
-        # en la raíz, ANTES de firmar, para que quede incluido en lo que se digiere
-        # (ref0 se canonicaliza con c14n ESTÁNDAR, que serializa TODAS las
-        # declaraciones de namespace en scope, se usen o no -ver docstring de
-        # _ne_add_signature_node-). Inyectarlo DESPUÉS de firmar, por string-replace
-        # sobre los bytes ya serializados, invalida el digest de ref0 y produce ZE02.
-        root.set('{http://www.w3.org/2000/xmlns/}xs', 'http://www.w3.org/2001/XMLSchema-instance')
         cert = self._ne_cert()
         if cert:
             self._ne_add_signature_node(root, cert)
