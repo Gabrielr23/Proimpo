@@ -205,7 +205,10 @@ class HrPayslip(models.Model):
         cert = self._ne_cert()
         if cert:
             self._ne_add_signature_node(root, cert)
-        xml_bytes = etree.tostring(root, xml_declaration=True, encoding='UTF-8')
+        # Declaración XML limpia (comillas dobles, sin salto de línea antes de la raíz),
+        # igual al ejemplo oficial de la DIAN y sin caracteres de edición (regla ZB02).
+        body = etree.tostring(root, xml_declaration=False, encoding='UTF-8')
+        xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>' + body
         return xml_bytes, cune, datos
 
     # ------------------------------------------------------------------
