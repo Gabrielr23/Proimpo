@@ -326,12 +326,10 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
-        # Se firma SIN 'xs' (solo 'xsi'); el 'xs' se inyecta DESPUÉS de firmar (ver
-        # _ne_xml_firmado). Así la firma se calcula sobre la forma que la DIAN valida OK
-        # (con 'xs' presente la habilitación daba ZE02) y el documento enviado igual
-        # declara 'xs' para cumplir NIE901.
+        # 'xsi' antes de 'xs' (ambos = XMLSchema-instance) -> el atributo sale como
+        # 'xsi:schemaLocation' y quedan declarados los dos namespaces (NIE901).
         nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, None: NS}
+                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         root.set('SchemaLocation', '')
         root.set('{%s}schemaLocation' % NS_XSI,

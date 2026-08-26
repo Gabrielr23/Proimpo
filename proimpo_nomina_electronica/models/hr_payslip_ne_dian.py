@@ -207,22 +207,7 @@ class HrPayslip(models.Model):
         if cert:
             self._ne_add_signature_node(root, cert)
         xml_bytes = etree.tostring(root, xml_declaration=True, encoding='UTF-8')
-        # Inyectar 'xmlns:xs' en la RAÍZ DESPUÉS de firmar: el documento se firmó SIN 'xs'
-        # (forma que la habilitación DIAN valida OK), pero el enviado debe declarar 'xs'
-        # para cumplir NIE901. Con firma exclusiva, 'xs' no entra en los digests de
-        # KeyInfo/SignedProperties/SignedInfo, y el validador lo omite del digest del
-        # documento (ref0) por ser un namespace redundante no usado.
-        xml_bytes = self._ne_inyectar_xs(xml_bytes)
         return xml_bytes, cune, datos
-
-    @staticmethod
-    def _ne_inyectar_xs(xml_bytes):
-        xsi = b'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-        xs = b'xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" '
-        head = xml_bytes.split(b'>', 1)[0]
-        if xsi in xml_bytes and b'xmlns:xs=' not in head:
-            xml_bytes = xml_bytes.replace(xsi, xs + xsi, 1)
-        return xml_bytes
 
     # ------------------------------------------------------------------
     # Botones: generar, enviar al set de pruebas, consultar estado
