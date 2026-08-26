@@ -216,8 +216,8 @@ class HrPayslip(models.Model):
         _E(cd, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
-        # Emisor en formato NATIVO de Odoo (rfc4514, 'ST=' sin espacios), NO el de SIESA
-        _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
+        # Formato de emisor requerido por DIAN: separadores ', ' y estado como 'S='
+        _E(issuer, '{%s}X509IssuerName' % NS_DS, self._ne_issuer_dian(cert))
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
         # Política de firma DIAN (URL oficial completa) + Description
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
