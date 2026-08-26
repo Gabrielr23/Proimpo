@@ -326,11 +326,12 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
-        # Solo 'xsi' (sin el 'xs' redundante). El namespace redundante puede provocar que
-        # el validador Java de la DIAN canonicalice distinto a Odoo (libxml2) -> ZE02.
-        # La factura nativa aceptada por la DIAN trae solo 'xsi'.
+        # CLAVE: 'xsi' se declara ANTES que 'xs' (ambos = XMLSchema-instance). Así lxml
+        # renderiza el atributo como 'xsi:schemaLocation' (igual que la DIAN/Java) en la
+        # serialización Y en la canonicalización -> evita el ZE02. Y al declarar los DOS
+        # (xs y xsi) se satisface la regla NIE901 ('todos los namespaces correspondientes').
         nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, None: NS}
+                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         root.set('SchemaLocation', '')
         root.set('{%s}schemaLocation' % NS_XSI,
