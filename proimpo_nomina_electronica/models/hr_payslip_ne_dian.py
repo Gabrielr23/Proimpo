@@ -31,7 +31,7 @@ NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 # Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
 # la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
 # sola barra (así lo genera Odoo y así lo acepta la DIAN).
-SIG_POLICY_URL = "https:/facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
 SIG_POLICY_DESC = "Política de firma para nóminas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
 
