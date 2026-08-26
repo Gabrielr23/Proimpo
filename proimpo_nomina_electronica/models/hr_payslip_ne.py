@@ -327,7 +327,7 @@ class HrPayslip(models.Model):
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
         nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
+                 'ds': NS_DS, 'xs': NS_XSI, 'xsi': NS_XSI, None: NS}
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         root.set('SchemaLocation', '')
         root.set('{%s}schemaLocation' % NS_XSI,

@@ -27,8 +27,11 @@ from odoo.addons.l10n_co_dian import xml_utils
 NS_DS = "http://www.w3.org/2000/09/xmldsig#"
 NS_EXT = "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
 NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
-# Política de firma de la DIAN (misma que factura; se valida contra el Anexo Técnico de nómina)
-SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+# Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
+# la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
+# sola barra (así lo genera Odoo y así lo acepta la DIAN).
+SIG_POLICY_URL = "https:/facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+SIG_POLICY_DESC = "Política de firma para facturas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
 
 
@@ -104,12 +107,11 @@ class HrPayslip(models.Model):
         canonicalización exclusiva (exc-c14n), KeyInfo Id='KeyInfo',
         SignedProperties Id='SignedPropertiesId', política https:// sin Description,
         ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos."""
-        EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
         INCL = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
-        keyinfo_id = "KeyInfo"
-        signprops_id = "SignedPropertiesId"
+        keyinfo_id = doc_id + "-keyinfo"
+        signprops_id = doc_id + "-signedprops"
         signing_time = fields.datetime.now(tz=timezone('America/Bogota')).isoformat(timespec='milliseconds')
 
         ubl = etree.Element('{%s}UBLExtensions' % NS_EXT)
@@ -118,10 +120,8 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), igual que el
-        # motor nativo de factura de Odoo y las soluciones probadas de nómina: el KeyInfo
-        # y SignedProperties se digestan INCLUYENDO los namespaces heredados de la raíz
-        # (ds, ext, xades, xades141, xs, xsi, default). La exclusiva provocaba ZE02.
+        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), IDÉNTICO al
+        # motor nativo de factura de Odoo cuya firma la DIAN ya acepta con este certificado.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
         _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=INCL)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
@@ -131,28 +131,26 @@ class HrPayslip(models.Model):
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo (SIN transform -> canonicalización inclusiva por defecto)
-        r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id, Id=doc_id + '-ref1')
+        # Ref 1: KeyInfo (SIN transform y SIN Id -> inclusiva, igual que nativo)
+        r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties (SIN transform -> canonicalización inclusiva)
-        r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id, Id=doc_id + '-ref2',
+        # Ref 2: SignedProperties (SIN transform y SIN Id)
+        r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id,
                 Type='http://uri.etsi.org/01903#SignedProperties')
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
-        # SignatureValue (se rellena luego) — SIN atributo Id (igual al patrón de oro)
-        _E(sig, '{%s}SignatureValue' % NS_DS, 'dummy')
+        # SignatureValue (se rellena luego) — CON Id, igual que el nativo aceptado
+        _E(sig, '{%s}SignatureValue' % NS_DS, 'dummy', Id=doc_id + '-sigvalue')
 
-        # KeyInfo (Id fijo 'KeyInfo')
+        # KeyInfo (Id = doc_id-keyinfo). Certificado tal cual lo entrega Odoo (nativo).
         ki = _E(sig, '{%s}KeyInfo' % NS_DS)
         ki.set('Id', keyinfo_id)
         x509d = _E(ki, '{%s}X509Data' % NS_DS)
-        # Certificado en UNA sola línea (sin saltos base64), como lo exige la DIAN
-        _E(x509d, '{%s}X509Certificate' % NS_DS,
-           ''.join(cert._get_der_certificate_bytes().decode().split()))
+        _E(x509d, '{%s}X509Certificate' % NS_DS, cert._get_der_certificate_bytes().decode())
 
-        # Object / QualifyingProperties / SignedProperties (Id fijo 'SignedPropertiesId')
+        # Object / QualifyingProperties / SignedProperties
         obj = _E(sig, '{%s}Object' % NS_DS)
         qp = _E(obj, '{%s}QualifyingProperties' % NS_XADES, Target='#' + doc_id)
         sp = _E(qp, '{%s}SignedProperties' % NS_XADES)
@@ -165,31 +163,28 @@ class HrPayslip(models.Model):
         _E(cd, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
-        _E(issuer, '{%s}X509IssuerName' % NS_DS, self._ne_issuer_dian(cert))
+        # Emisor en formato NATIVO de Odoo (rfc4514, 'ST=' sin espacios), NO el de SIESA
+        _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
-        # Política de firma (https:// , sin Description — igual al patrón de oro)
+        # Política de firma: 'https:/' (una barra) + Description, igual que el nativo
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
         spid = _E(spi, '{%s}SignaturePolicyId' % NS_XADES)
         spolid = _E(spid, '{%s}SigPolicyId' % NS_XADES)
         _E(spolid, '{%s}Identifier' % NS_XADES, SIG_POLICY_URL)
+        _E(spolid, '{%s}Description' % NS_XADES, SIG_POLICY_DESC)
         sph = _E(spid, '{%s}SigPolicyHash' % NS_XADES)
         _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(sph, '{%s}DigestValue' % NS_DS, SIG_POLICY_HASH)
-        # Rol
+        # Rol: 'supplier' (igual que el nativo aceptado)
         srole = _E(ssp, '{%s}SignerRole' % NS_XADES)
         cr = _E(srole, '{%s}ClaimedRoles' % NS_XADES)
-        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'third party')
+        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'supplier')
 
         # Insertar al inicio y firmar reutilizando los helpers nativos
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
         xml_utils._reference_digests(si)
         xml_utils._fill_signature(sig, cert)
-        # SignatureValue en UNA sola línea (Odoo la genera con saltos cada 76 chars,
-        # y el validador de la DIAN la rechaza -> ZE02). No afecta la firma (no se digesta).
-        sv = sig.find('{%s}SignatureValue' % NS_DS)
-        if sv is not None and sv.text:
-            sv.text = ''.join(sv.text.split())
         return root
 
     def _ne_xml_firmado(self):
