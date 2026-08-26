@@ -12,12 +12,11 @@ No se paga transmisión a terceros: el envío va directo al web service de la DI
 con el certificado de la empresa, igual que hoy hace Odoo con la factura electrónica.
 """
 import io
-import logging
+import os
 import re
 import zipfile
-from copy import deepcopy
 from base64 import b64encode
-from hashlib import sha256, sha384
+from hashlib import sha384
 
 from lxml import etree
 from pytz import timezone
@@ -26,16 +25,14 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.addons.l10n_co_dian import xml_utils
 
-_logger = logging.getLogger(__name__)
-
 NS_DS = "http://www.w3.org/2000/09/xmldsig#"
 NS_EXT = "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
 NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 # Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
 # la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
 # sola barra (así lo genera Odoo y así lo acepta la DIAN).
-SIG_POLICY_URL = "https:/facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
-SIG_POLICY_DESC = "Política de firma para nóminas electrónicas de la República de Colombia."
+SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+SIG_POLICY_DESC = "Política de firma para facturas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
 
 
@@ -105,60 +102,13 @@ class HrPayslip(models.Model):
         parts = [('S=' + p[3:]) if p.startswith('ST=') else p for p in parts]
         return ', '.join(parts)
 
-    @staticmethod
-    def _ne_reference0_digest(root):
-        """Calcula el DigestValue de Reference URI="" (documento completo).
-
-        La referencia 0 usa únicamente la transformación XMLDSig
-        ``enveloped-signature``. Por tanto, antes de calcular SHA-256 se
-        debe retirar la firma ds:Signature del documento y canonizar el
-        nodo resultante con Canonical XML 1.0 (C14N inclusiva, sin comentarios).
-
-        Se calcula sobre una copia para no modificar el XML que finalmente
-        será firmado.
-        """
-        tmp = deepcopy(root)
-        ns = {'ds': NS_DS}
-        signature = tmp.find('.//ds:Signature', namespaces=ns)
-        if signature is None:
-            raise UserError(_(
-                'No se encontró ds:Signature para calcular el DigestValue de Reference URI="".'
-            ))
-
-        parent = signature.getparent()
-        if parent is None:
-            raise UserError(_(
-                'La firma ds:Signature no tiene un nodo padre válido para calcular Reference URI="".'
-            ))
-        parent.remove(signature)
-
-        canonical = etree.tostring(
-            tmp,
-            method='c14n',
-            exclusive=False,
-            with_comments=False,
-        )
-        return b64encode(sha256(canonical).digest()).decode('ascii')
-
-    @staticmethod
-    def _ne_node_digest(node):
-        """Digest SHA-256 de un nodo XML usando Canonical XML 1.0 inclusiva."""
-        canonical = etree.tostring(
-            node,
-            method='c14n',
-            exclusive=False,
-            with_comments=False,
-        )
-        return b64encode(sha256(canonical).digest()).decode('ascii')
-
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
         del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
-        canonicalización inclusiva (Canonical XML 1.0), con KeyInfo y SignedProperties
-        con referencias independientes. La referencia URI="" se recalcula explícitamente
-        sobre el documento sin ds:Signature antes de firmar con los helpers nativos."""
-        EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
-        C14N = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
+        canonicalización exclusiva (exc-c14n), KeyInfo Id='KeyInfo',
+        SignedProperties Id='SignedPropertiesId', política https:// sin Description,
+        ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos."""
+        INCL = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = doc_id + "-keyinfo"
@@ -171,12 +121,11 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo: DIAN exige Canonical XML 1.0 inclusiva (omits comments).
-        # OJO: las transformaciones de Reference 1 y Reference 2 pueden seguir usando
-        # canonicalización exclusiva; el requisito de C14N inclusiva aplica al
-        # ds:SignedInfo/ds:CanonicalizationMethod que se firma.
+        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), IDÉNTICA a la
+        # firma de factura de Odoo que YA PASÓ la habilitación de la DIAN con este mismo
+        # certificado. ref1/ref2 SIN transform (inclusiva por defecto).
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=C14N)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=INCL)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
@@ -184,14 +133,11 @@ class HrPayslip(models.Model):
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo. El ejemplo oficial de Nómina no incluye Transforms
-        # en esta referencia; por tanto, el procesamiento por defecto de XMLDSig
-        # usa Canonical XML 1.0 (omits comments).
+        # Ref 1: KeyInfo (SIN transform -> inclusiva, igual que la factura aceptada)
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties. Igual: sin Transforms, conforme al ejemplo
-        # oficial de Nómina Electrónica.
+        # Ref 2: SignedProperties (SIN transform -> inclusiva)
         r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id,
                 Type='http://uri.etsi.org/01903#SignedProperties')
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
@@ -220,9 +166,12 @@ class HrPayslip(models.Model):
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
         # Emisor en formato NATIVO de Odoo (rfc4514, 'ST=' sin espacios), NO el de SIESA
-        _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
+        # Emisor en el formato que EXIGE el validador de NÓMINA de la DIAN para certificados
+        # Certicámara: 'S=' (no 'ST=') y separador ', '. Con rfc4514 (ST=, sin espacios) el
+        # validador de nómina rechaza la firma (ZE02), aunque el de factura lo acepta.
+        _E(issuer, '{%s}X509IssuerName' % NS_DS, self._ne_issuer_dian(cert))
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
-        # Política de firma DIAN (URL oficial completa) + Description
+        # Política de firma: 'https:/' (una barra) + Description, igual que el nativo
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
         spid = _E(spi, '{%s}SignaturePolicyId' % NS_XADES)
         spolid = _E(spid, '{%s}SigPolicyId' % NS_XADES)
@@ -231,7 +180,7 @@ class HrPayslip(models.Model):
         sph = _E(spid, '{%s}SigPolicyHash' % NS_XADES)
         _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(sph, '{%s}DigestValue' % NS_DS, SIG_POLICY_HASH)
-        # Rol: 'supplier' cuando firma el obligado a emitir la nómina
+        # Rol: 'supplier' (igual que el nativo aceptado)
         srole = _E(ssp, '{%s}SignerRole' % NS_XADES)
         cr = _E(srole, '{%s}ClaimedRoles' % NS_XADES)
         _E(cr, '{%s}ClaimedRole' % NS_XADES, 'supplier')
@@ -239,23 +188,7 @@ class HrPayslip(models.Model):
         # Insertar al inicio y firmar reutilizando los helpers nativos
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
-        # DIAN Nómina: calcular explícitamente los tres DigestValue.
-        # Ref 0: documento completo sin ds:Signature.
-        r0.find('{%s}DigestValue' % NS_DS).text = self._ne_reference0_digest(root)
-
-        # Ref 1: KeyInfo, sin Transforms -> Canonical XML 1.0 inclusiva.
-        r1_target = root.xpath('//*[@Id=$id]', id=keyinfo_id)
-        if not r1_target:
-            raise UserError(_('No se encontró KeyInfo para calcular su DigestValue.'))
-        r1.find('{%s}DigestValue' % NS_DS).text = self._ne_node_digest(r1_target[0])
-
-        # Ref 2: SignedProperties, sin Transforms -> Canonical XML 1.0 inclusiva.
-        r2_target = root.xpath('//*[@Id=$id]', id=signprops_id)
-        if not r2_target:
-            raise UserError(_('No se encontró SignedProperties para calcular su DigestValue.'))
-        r2.find('{%s}DigestValue' % NS_DS).text = self._ne_node_digest(r2_target[0])
-
-        # Con los tres digests definitivos, firmar SignedInfo con RSA-SHA256.
+        xml_utils._reference_digests(si)
         xml_utils._fill_signature(sig, cert)
         return root
 
@@ -272,8 +205,43 @@ class HrPayslip(models.Model):
         cert = self._ne_cert()
         if cert:
             self._ne_add_signature_node(root, cert)
-        xml_bytes = etree.tostring(root, xml_declaration=True, encoding='UTF-8')
+        # Declaración XML limpia (comillas dobles, sin salto de línea antes de la raíz),
+        # igual al ejemplo oficial de la DIAN y sin caracteres de edición (regla ZB02).
+        body = etree.tostring(root, xml_declaration=False, encoding='UTF-8')
+        xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>' + body
         return xml_bytes, cune, datos
+
+    # ------------------------------------------------------------------
+    # Validación local contra el XSD OFICIAL de la DIAN (Caja de Herramientas)
+    # ------------------------------------------------------------------
+    def _ne_validar_xsd(self, xml_bytes, tipo='102'):
+        """Valida el XML contra el XSD oficial de la DIAN. Devuelve (ok, [errores])."""
+        xsd_name = ('NominaIndividualDeAjusteElectronicaXSDV1.0.6.xsd' if str(tipo) == '103'
+                    else 'NominaIndividualElectronicaXSDV1.0.6.xsd')
+        xsd_path = os.path.join(os.path.dirname(__file__), '..', 'schemas', 'xsd', xsd_name)
+        if not os.path.exists(xsd_path):
+            return True, []  # sin XSD instalado no se bloquea el envío
+        try:
+            schema = etree.XMLSchema(etree.parse(xsd_path))
+        except Exception:
+            return True, []
+        doc = etree.fromstring(xml_bytes if isinstance(xml_bytes, bytes) else xml_bytes.encode())
+        ok = schema.validate(doc)
+        errs = ['%s (línea %s)' % (e.message, e.line) for e in schema.error_log]
+        return ok, errs
+
+    def action_ne_validar_xsd(self):
+        """Genera el XML y lo valida contra el XSD oficial (sin enviar). Muestra resultado."""
+        self.ensure_one()
+        xml_bytes, cune, datos = self._ne_xml_firmado()
+        self.ne_cune = cune
+        self.ne_xml = xml_bytes.decode('utf-8', errors='replace')
+        ok, errs = self._ne_validar_xsd(xml_bytes, datos.get('tipo_documento', '102'))
+        if ok:
+            self.ne_mensaje = _("✓ El XML es VÁLIDO contra el XSD oficial de la DIAN.")
+        else:
+            self.ne_mensaje = _("✗ El XML NO cumple el XSD oficial:\n") + "\n".join("• " + e for e in errs[:30])
+        return True
 
     # ------------------------------------------------------------------
     # Botones: generar, enviar al set de pruebas, consultar estado
@@ -314,10 +282,12 @@ class HrPayslip(models.Model):
             xml_bytes, cune, datos = slip._ne_xml_firmado()
             slip.ne_cune = cune
             slip.ne_xml = xml_bytes.decode('utf-8', errors='replace')
-            _logger.info(
-                "DIAN SendTestSetAsync - payslip %s - XML EXACTO que se firma y envía (base64, decodificar antes de validar):\n%s",
-                slip.number or slip.id, b64encode(xml_bytes).decode(),
-            )
+
+            # Validar contra el XSD oficial ANTES de enviar (no gastar el set de pruebas)
+            ok, errs = slip._ne_validar_xsd(xml_bytes, datos.get('tipo_documento', '102'))
+            if not ok:
+                raise UserError(_("El XML no cumple el XSD oficial de la DIAN. No se envió.\n\n")
+                                + "\n".join("• " + e for e in errs[:20]))
 
             # Modo demo: no envía, solo marca generado
             if slip.company_id.l10n_co_dian_demo_mode:
@@ -348,10 +318,6 @@ class HrPayslip(models.Model):
 
     def _ne_procesar_respuesta_envio(self, resp, xml_bytes, cune):
         self.ensure_one()
-        _logger.info(
-            "DIAN SendTestSetAsync - payslip %s - status_code=%s\n--- RESPUESTA CRUDA DIAN (inicio) ---\n%s\n--- RESPUESTA CRUDA DIAN (fin) ---",
-            self.number or self.id, resp.get('status_code'), resp.get('response') or '(sin cuerpo de respuesta)',
-        )
         if not resp.get('response'):
             self.ne_state = 'rejected'
             self.ne_mensaje = _("La DIAN no respondió (timeout o servicio no disponible).")
@@ -398,10 +364,6 @@ class HrPayslip(models.Model):
                 payload={'track_id': slip.ne_zip_key, 'soap_body_template': 'l10n_co_dian.get_status_zip'},
                 service='GetStatusZip',
                 company=slip.company_id,
-            )
-            _logger.info(
-                "DIAN GetStatusZip - payslip %s - ZipKey=%s - status_code=%s\n--- RESPUESTA CRUDA DIAN (inicio) ---\n%s\n--- RESPUESTA CRUDA DIAN (fin) ---",
-                slip.number or slip.id, slip.ne_zip_key, resp.get('status_code'), resp.get('response') or '(sin cuerpo de respuesta)',
             )
             if resp.get('status_code') != 200 or not resp.get('response'):
                 slip.ne_mensaje = _("La DIAN no respondió la consulta (código %s).") % resp.get('status_code')
