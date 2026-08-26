@@ -308,8 +308,13 @@ class HrPayslip(models.Model):
           LugarTrabajoMunicipioCiudad=tr['lt_muni'], LugarTrabajoDireccion=tr['lt_dir'],
           SalarioIntegral=tr['salario_integral'], TipoContrato=tr['tipo_contrato'], Sueldo=tr['sueldo'])
         pg = datos['pago']
-        S(root, 'Pago', Forma=pg['forma'], Metodo=pg['metodo'], Banco=pg['banco'],
-          TipoCuenta=pg['tipo_cuenta'], NumeroCuenta=pg['cuenta'])
+        pago_attrs = {'Forma': pg['forma'], 'Metodo': pg['metodo']}
+        if pg['banco']:
+            pago_attrs['Banco'] = pg['banco']
+        if pg['cuenta']:
+            pago_attrs['TipoCuenta'] = pg['tipo_cuenta']
+            pago_attrs['NumeroCuenta'] = pg['cuenta']
+        S(root, 'Pago', **pago_attrs)
         fp = S(root, 'FechasPagos')
         S(fp, 'FechaPago', _text=datos['fecha_pago'])
 
