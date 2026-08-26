@@ -207,6 +207,7 @@ class HrPayslip(models.Model):
         if cert:
             self._ne_add_signature_node(root, cert)
         xml_bytes = etree.tostring(root, xml_declaration=True, encoding='UTF-8')
+        xml_bytes = etree.tostring(root, pretty_print=False, encoding='utf-8')
         return xml_bytes, cune, datos
 
     # ------------------------------------------------------------------
