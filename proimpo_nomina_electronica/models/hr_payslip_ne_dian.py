@@ -31,7 +31,7 @@ NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 # Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
 # la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
 # sola barra (así lo genera Odoo y así lo acepta la DIAN).
-SIG_POLICY_URL = "https:/facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
 SIG_POLICY_DESC = "Política de firma para facturas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
 
@@ -140,10 +140,11 @@ class HrPayslip(models.Model):
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
         del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
-        canonicalización exclusiva (exc-c14n), KeyInfo y SignedProperties con
-        referencias independientes. La referencia URI="" se recalcula explícitamente
+        canonicalización inclusiva (Canonical XML 1.0), con KeyInfo y SignedProperties
+        con referencias independientes. La referencia URI="" se recalcula explícitamente
         sobre el documento sin ds:Signature antes de firmar con los helpers nativos."""
         EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
+        C14N = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = doc_id + "-keyinfo"
@@ -156,12 +157,12 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo — canonicalización EXCLUSIVA (exc-c14n), IGUAL que el XML de oro de
-        # SIESA que la DIAN acepta. La exclusiva EXCLUYE el namespace 'xs' redundante de los
-        # digests de KeyInfo/SignedProperties (con inclusiva se incluía y libxml2 vs Java
-        # diferían -> ZE02). Odoo reproduce EXACTO los digests exclusivos del oro.
+        # SignedInfo: DIAN exige Canonical XML 1.0 inclusiva (omits comments).
+        # OJO: las transformaciones de Reference 1 y Reference 2 pueden seguir usando
+        # canonicalización exclusiva; el requisito de C14N inclusiva aplica al
+        # ds:SignedInfo/ds:CanonicalizationMethod que se firma.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXC)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=C14N)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
@@ -208,7 +209,7 @@ class HrPayslip(models.Model):
         # Emisor en formato NATIVO de Odoo (rfc4514, 'ST=' sin espacios), NO el de SIESA
         _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
-        # Política de firma: 'https:/' (una barra) + Description, igual que el nativo
+        # Política de firma DIAN (URL oficial completa) + Description
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
         spid = _E(spi, '{%s}SignaturePolicyId' % NS_XADES)
         spolid = _E(spid, '{%s}SigPolicyId' % NS_XADES)
@@ -217,7 +218,7 @@ class HrPayslip(models.Model):
         sph = _E(spid, '{%s}SigPolicyHash' % NS_XADES)
         _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(sph, '{%s}DigestValue' % NS_DS, SIG_POLICY_HASH)
-        # Rol: 'supplier' (igual que el nativo aceptado)
+        # Rol: 'supplier' cuando firma el obligado a emitir la nómina
         srole = _E(ssp, '{%s}SignerRole' % NS_XADES)
         cr = _E(srole, '{%s}ClaimedRoles' % NS_XADES)
         _E(cr, '{%s}ClaimedRole' % NS_XADES, 'supplier')
