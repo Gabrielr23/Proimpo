@@ -105,6 +105,7 @@ class HrPayslip(models.Model):
         SignedProperties Id='SignedPropertiesId', política https:// sin Description,
         ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos."""
         EXC = 'http://www.w3.org/2001/10/xml-exc-c14n#'
+        INCL = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = "KeyInfo"
@@ -117,9 +118,12 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo (canonicalización exclusiva)
+        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), igual que el
+        # motor nativo de factura de Odoo y las soluciones probadas de nómina: el KeyInfo
+        # y SignedProperties se digestan INCLUYENDO los namespaces heredados de la raíz
+        # (ds, ext, xades, xades141, xs, xsi, default). La exclusiva provocaba ZE02.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXC)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=INCL)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
@@ -127,17 +131,13 @@ class HrPayslip(models.Model):
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 1: KeyInfo (con transform exc-c14n)
+        # Ref 1: KeyInfo (SIN transform -> canonicalización inclusiva por defecto)
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id, Id=doc_id + '-ref1')
-        tr1 = _E(r1, '{%s}Transforms' % NS_DS)
-        _E(tr1, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r1, '{%s}DigestValue' % NS_DS, 'dummy')
-        # Ref 2: SignedProperties (con transform exc-c14n)
+        # Ref 2: SignedProperties (SIN transform -> canonicalización inclusiva)
         r2 = _E(si, '{%s}Reference' % NS_DS, URI='#' + signprops_id, Id=doc_id + '-ref2',
                 Type='http://uri.etsi.org/01903#SignedProperties')
-        tr2 = _E(r2, '{%s}Transforms' % NS_DS)
-        _E(tr2, '{%s}Transform' % NS_DS, Algorithm=EXC)
         _E(r2, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(r2, '{%s}DigestValue' % NS_DS, 'dummy')
 
