@@ -44,27 +44,88 @@ class HrPayslip(models.Model):
     ], string="Estado NE", default='draft', copy=False)
 
     # ------------------------------------------------------------------
-    # Sumas por concepto (usa earn.line.category y deduction_category)
+    # Conceptos desde las LÍNEAS de reglas salariales (line_ids)
+    # PROIMPO calcula devengados/deducciones con reglas, no con earn.line.
+    # Se excluyen categorías computacionales y de aportes/provisiones.
     # ------------------------------------------------------------------
-    def _earn_by_cat(self):
-        """Devuelve {category: total} sumando earn.line por categoría DIAN."""
+    def _ne_conceptos(self):
+        """Devuelve (dev, ded, qty):
+          dev = {bucket: monto}   ded = {bucket: monto, 'libranzas':[(nom,monto)]}
+          qty = {bucket: cantidad_dias}"""
         self.ensure_one()
-        out = {}
-        for e in self.earn_ids:
-            if not e.total:
+        dev = {}
+        ded = {'libranzas': []}
+        qty = {}
+        for line in self.line_ids:
+            total = round(line.total or 0.0, 2)
+            if not total:
                 continue
-            out[e.category] = out.get(e.category, 0.0) + abs(e.total)
-        return out
+            cat = (line.category_id.name or '').lower()
+            catc = (line.category_id.code or '').lower()
+            code = (line.salary_rule_id.code or '').lower()
+            name = (line.name or '').lower()
+            # Excluir: bases de cálculo, bruto, neto, aportes patronales, provisiones
+            if ('aporte' in cat or 'provis' in cat or 'base' in cat
+                    or cat.strip() in ('bruto', 'neto', 'gross', 'net', 'total')
+                    or catc in ('aporte', 'prov', 'provision', 'base', 'bruto', 'neto', 'ibc')):
+                continue
+            es_ded = ('deduc' in cat) or (total < 0) or (catc in ('ded', 'deduction'))
+            if es_ded:
+                b = self._ne_ded_bucket(code, name)
+                amt = abs(total)
+                if b == 'libranzas':
+                    ded['libranzas'].append((line.name or 'Libranza', amt))
+                else:
+                    ded[b] = ded.get(b, 0.0) + amt
+            else:
+                b = self._ne_dev_bucket(code, name)
+                dev[b] = dev.get(b, 0.0) + total
+                q = abs(line.quantity or 0.0)
+                if q and q != 1.0:
+                    qty[b] = qty.get(b, 0.0) + q
+        return dev, ded, qty
 
-    def _ded_lines(self):
-        """Devuelve lista de (deduction_category, code, name, total) de deducciones."""
-        self.ensure_one()
-        res = []
-        for d in self.line_ids.filtered(
-                lambda l: l.salary_rule_id.type_concept == 'deduction' and l.total):
-            cat = (getattr(d.salary_rule_id, 'deduction_category', '') or '').lower()
-            res.append((cat, (d.salary_rule_id.code or '').lower(), d.name or '', abs(d.total)))
-        return res
+    @staticmethod
+    def _ne_dev_bucket(code, name):
+        n = name
+        if 'transporte' in n or code in ('trans', 'auxt', 'transp'):
+            if 'viátic' in n or 'viatic' in n:
+                return 'transporte_vns' if ('no salarial' in n or ' ns' in n) else 'transporte_vs'
+            return 'transporte_aux'
+        if 'básico' in n or 'basico' in n or code in ('basic', 'sueldo', 'salariobasico'):
+            return 'basico'
+        if 'hora' in n or 'recargo' in n or 'extra' in n:
+            return 'otros'          # horas extras: detalle HEDs/HENs se hará luego
+        if 'vacacion' in n:
+            return 'vacaciones'
+        if 'cesant' in n:
+            return 'cesantias_int' if 'interes' in n or 'interés' in n else 'cesantias'
+        if 'prima' in n:
+            return 'primas_ns' if 'no salarial' in n else 'primas_s'
+        if 'bonif' in n:
+            return 'bonif_ns' if 'no salarial' in n else 'bonif_s'
+        if 'comis' in n:
+            return 'comisiones'
+        if 'auxilio' in n:
+            return 'aux_ns' if 'no salarial' in n else 'aux_s'
+        return 'otros'
+
+    @staticmethod
+    def _ne_ded_bucket(code, name):
+        n = name
+        if 'salud' in n:
+            return 'salud'
+        if 'solidaridad' in n or 'fsp' in code or 'fondo de solidaridad' in n:
+            return 'fsp'
+        if 'pensión' in n or 'pension' in n or code in ('pens',):
+            return 'pension'
+        if 'retención' in n or 'retencion' in n or 'fuente' in n or code in ('rtf', 'retefuente'):
+            return 'retencion'
+        if 'libranza' in n:
+            return 'libranzas'
+        if 'cooper' in n or 'fondo de emplead' in n or 'fondo emplead' in n:
+            return 'cooperativa'
+        return 'otras'
 
     # ------------------------------------------------------------------
     # Helpers de identidad / fechas / códigos
@@ -168,9 +229,8 @@ class HrPayslip(models.Model):
             e.address_id or company.partner_id, {'depto': e_depto, 'muni': e_muni, 'dir': e_dir})
         fecha_gen, hora_gen = self._ne_now()
 
-        earn = self._earn_by_cat()
-        ded = self._ded_lines()
-        dev_total, ded_total = self._ne_totales(earn, ded)
+        dev, ded, qty = self._ne_conceptos()
+        dev_total, ded_total = self._ne_totales(dev, ded)
 
         # Prefijo + consecutivo del número del documento
         numero = (self.number or '').replace(' ', '').replace('-', '')
@@ -214,7 +274,7 @@ class HrPayslip(models.Model):
             },
             'pago': self._ne_pago(e),
             'fecha_pago': str(self.date_to or ''),
-            'earn': earn, 'ded': ded, 'dias_trab': dias_trab,
+            'dev': dev, 'ded': ded, 'qty': qty, 'dias_trab': dias_trab,
             'dev_total': dev_total, 'ded_total': ded_total,
             'comprobante_total': round(dev_total - ded_total, 2),
         }
@@ -238,10 +298,11 @@ class HrPayslip(models.Model):
             'cuenta': (ba.acc_number if ba else '') or '',
         }
 
-    def _ne_totales(self, earn, ded):
-        dev = sum(earn.values())
-        de = sum(t for (_c, _cd, _n, t) in ded)
-        return round(dev, 2), round(de, 2)
+    def _ne_totales(self, dev, ded):
+        dev_t = sum(dev.values())
+        ded_t = sum(v for k, v in ded.items() if k != 'libranzas')
+        ded_t += sum(a for _n, a in ded.get('libranzas', []))
+        return round(dev_t, 2), round(ded_t, 2)
 
     # ------------------------------------------------------------------
     # CUNE (SHA-384) — Anexo Técnico Nómina Electrónica
@@ -327,156 +388,92 @@ class HrPayslip(models.Model):
         return etree.tostring(root, xml_declaration=True, encoding='UTF-8').decode()
 
     def _ne_build_devengados(self, S, root, datos):
-        earn = dict(datos['earn'])
-        dev = S(root, 'Devengados')
+        dev = datos['dev']
+        qty = datos.get('qty', {})
+        d = S(root, 'Devengados')
+
+        def g(k):
+            return dev.get(k, 0.0)
+
+        def cant(k, default='1'):
+            q = qty.get(k)
+            return str(int(round(q))) if q else default
+
         # Básico (obligatorio)
-        basico = earn.pop('basic', 0.0)
-        S(dev, 'Basico', DiasTrabajados=datos['dias_trab'], SueldoTrabajado=_money(basico))
+        S(d, 'Basico', DiasTrabajados=datos['dias_trab'], SueldoTrabajado=_money(g('basico')))
         # Transporte (auxilio + viáticos)
-        aux = earn.pop('transports_assistance', 0.0)
-        vs = earn.pop('transports_viatic', 0.0)
-        vns = earn.pop('transports_non_salary_viatic', 0.0)
-        if aux or vs or vns:
+        if g('transporte_aux') or g('transporte_vs') or g('transporte_vns'):
             attrs = {}
-            if aux:
-                attrs['AuxilioTransporte'] = _money(aux)
-            if vs:
-                attrs['ViaticoManuAlojS'] = _money(vs)
-            if vns:
-                attrs['ViaticoManuAlojNS'] = _money(vns)
-            S(dev, 'Transporte', **attrs)
+            if g('transporte_aux'):
+                attrs['AuxilioTransporte'] = _money(g('transporte_aux'))
+            if g('transporte_vs'):
+                attrs['ViaticoManuAlojS'] = _money(g('transporte_vs'))
+            if g('transporte_vns'):
+                attrs['ViaticoManuAlojNS'] = _money(g('transporte_vns'))
+            S(d, 'Transporte', **attrs)
         # Vacaciones
-        vac_c = earn.pop('vacation_common', 0.0)
-        vac_comp = earn.pop('vacation_compensated', 0.0)
-        if vac_c or vac_comp:
-            v = S(dev, 'Vacaciones')
-            if vac_c:
-                S(v, 'VacacionesComunes', Cantidad=self._ne_cant('vacation_common'), Pago=_money(vac_c))
-            if vac_comp:
-                S(v, 'VacacionesCompensadas', Cantidad=self._ne_cant('vacation_compensated'), Pago=_money(vac_comp))
+        if g('vacaciones'):
+            v = S(d, 'Vacaciones')
+            S(v, 'VacacionesComunes', Cantidad=cant('vacaciones'), Pago=_money(g('vacaciones')))
         # Primas
-        prima_s = earn.pop('primas', 0.0)
-        prima_ns = earn.pop('primas_non_salary', 0.0)
-        if prima_s or prima_ns:
+        if g('primas_s') or g('primas_ns'):
             attrs = {'Cantidad': '0'}
-            if prima_s:
-                attrs['Pago'] = _money(prima_s)
-            if prima_ns:
-                attrs['PagoNS'] = _money(prima_ns)
-            S(dev, 'Primas', **attrs)
+            if g('primas_s'):
+                attrs['Pago'] = _money(g('primas_s'))
+            if g('primas_ns'):
+                attrs['PagoNS'] = _money(g('primas_ns'))
+            S(d, 'Primas', **attrs)
         # Cesantías
-        ces = earn.pop('layoffs', 0.0)
-        ces_int = earn.pop('layoffs_interest', 0.0)
-        if ces or ces_int:
-            S(dev, 'Cesantias', Pago=_money(ces), Porcentaje='0.00', PagoIntereses=_money(ces_int))
-        # Incapacidades
-        inc = {'incapacities_common': ('1', earn.pop('incapacities_common', 0.0)),
-               'incapacities_professional': ('2', earn.pop('incapacities_professional', 0.0)),
-               'incapacities_working': ('3', earn.pop('incapacities_working', 0.0))}
-        if any(v for _t, v in inc.values()):
-            ic = S(dev, 'Incapacidades')
-            for _k, (tipo, val) in inc.items():
-                if val:
-                    S(ic, 'Incapacidad', Cantidad='0', Tipo=tipo, Pago=_money(val))
-        # Licencias
-        lic_mp = earn.pop('licensings_maternity_or_paternity_leaves', 0.0)
-        lic_r = earn.pop('licensings_permit_or_paid_licenses', 0.0)
-        lic_nr = earn.pop('licensings_suspension_or_unpaid_leaves', 0.0)
-        if lic_mp or lic_r or lic_nr:
-            lc = S(dev, 'Licencias')
-            if lic_mp:
-                S(lc, 'LicenciaMP', Cantidad='0', Pago=_money(lic_mp))
-            if lic_r:
-                S(lc, 'LicenciaR', Cantidad='0', Pago=_money(lic_r))
-            if lic_nr:
-                S(lc, 'LicenciaNR', Cantidad='0')
+        if g('cesantias') or g('cesantias_int'):
+            S(d, 'Cesantias', Pago=_money(g('cesantias')), Porcentaje='0.00',
+              PagoIntereses=_money(g('cesantias_int')))
         # Bonificaciones
-        bon_s = earn.pop('bonuses', 0.0)
-        bon_ns = earn.pop('bonuses_non_salary', 0.0)
-        if bon_s or bon_ns:
-            bs = S(dev, 'Bonificaciones')
+        if g('bonif_s') or g('bonif_ns'):
+            bs = S(d, 'Bonificaciones')
             attrs = {}
-            if bon_s:
-                attrs['BonificacionS'] = _money(bon_s)
-            if bon_ns:
-                attrs['BonificacionNS'] = _money(bon_ns)
+            if g('bonif_s'):
+                attrs['BonificacionS'] = _money(g('bonif_s'))
+            if g('bonif_ns'):
+                attrs['BonificacionNS'] = _money(g('bonif_ns'))
             S(bs, 'Bonificacion', **attrs)
         # Auxilios
-        aux_s = earn.pop('assistances', 0.0)
-        aux_ns = earn.pop('assistances_non_salary', 0.0)
-        if aux_s or aux_ns:
-            au = S(dev, 'Auxilios')
+        if g('aux_s') or g('aux_ns'):
+            au = S(d, 'Auxilios')
             attrs = {}
-            if aux_s:
-                attrs['AuxilioS'] = _money(aux_s)
-            if aux_ns:
-                attrs['AuxilioNS'] = _money(aux_ns)
+            if g('aux_s'):
+                attrs['AuxilioS'] = _money(g('aux_s'))
+            if g('aux_ns'):
+                attrs['AuxilioNS'] = _money(g('aux_ns'))
             S(au, 'Auxilio', **attrs)
         # Comisiones
-        com = earn.pop('commissions', 0.0)
-        if com:
-            cm = S(dev, 'Comisiones')
-            S(cm, 'Comision', _text=_money(com))
-        # Compensaciones
-        comp = earn.pop('compensations_ordinary', 0.0) + earn.pop('compensations_extraordinary', 0.0)
-        if comp:
-            cp = S(dev, 'Compensaciones')
-            S(cp, 'Compensacion', Ordinaria=_money(comp))
-        # Bono retiro
-        bono_ret = earn.pop('company_withdrawal_bonus', 0.0)
-        if bono_ret:
-            br = S(dev, 'BonoEPCTVs')
-            S(br, 'BonoEPCTV', PagoS=_money(bono_ret))
-        # Otros conceptos (todo lo restante)
-        otros = sum(earn.values())
-        if otros:
-            oc = S(dev, 'OtrosConceptos')
-            S(oc, 'OtroConcepto', ConceptoS='Otros devengados', DescripcionConceptoS='Otros', PagoS=_money(otros))
-
-    def _ne_cant(self, cat):
-        """Cantidad (días) del concepto, tomada de la earn.line con esa categoría."""
-        self.ensure_one()
-        q = sum(abs(e.quantity or 0.0) for e in self.earn_ids if e.category == cat)
-        return str(int(round(q))) if q else '1'
+        if g('comisiones'):
+            cm = S(d, 'Comisiones')
+            S(cm, 'Comision', _text=_money(g('comisiones')))
+        # Otros conceptos (horas extras y no mapeados)
+        if g('otros'):
+            oc = S(d, 'OtrosConceptos')
+            S(oc, 'OtroConcepto', ConceptoS='Otros devengados',
+              DescripcionConceptoS='Otros', PagoS=_money(g('otros')))
 
     def _ne_build_deducciones(self, S, root, datos):
-        ded = S(root, 'Deducciones')
-        salud = pension = fsp = 0.0
-        libranzas = []
-        retencion = cooperativa = reintegro = otras = 0.0
-        for cat, code, name, total in datos['ded']:
-            if cat == 'health' or code in ('salud',):
-                salud += total
-            elif cat == 'pension' or code in ('pens', 'pension'):
-                pension += total
-            elif cat in ('fsp', 'fund', 'solidarity') or code in ('fsp',):
-                fsp += total
-            elif cat in ('withholding', 'rtf') or code in ('rtf', 'retefuente'):
-                retencion += total
-            elif cat in ('libranzas', 'loan') or 'libranza' in code:
-                libranzas.append((name, total))
-            elif 'cooper' in cat or 'cooper' in code or 'fondo' in code:
-                cooperativa += total
-            elif cat == 'refund' or 'reintegr' in code:
-                reintegro += total
-            else:
-                otras += total
-        if salud:
-            S(ded, 'Salud', Porcentaje='4.00', Deduccion=_money(salud))
-        if pension:
-            S(ded, 'FondoPension', Porcentaje='4.00', Deduccion=_money(pension))
-        if fsp:
-            S(ded, 'FondoSP', Porcentaje='1.00', DeduccionSP=_money(fsp))
-        if libranzas:
-            lb = S(ded, 'Libranzas')
-            for name, total in libranzas:
+        ded = datos['ded']
+        d = S(root, 'Deducciones')
+        if ded.get('salud'):
+            S(d, 'Salud', Porcentaje='4.00', Deduccion=_money(ded['salud']))
+        if ded.get('pension'):
+            S(d, 'FondoPension', Porcentaje='4.00', Deduccion=_money(ded['pension']))
+        if ded.get('fsp'):
+            S(d, 'FondoSP', Porcentaje='1.00', DeduccionSP=_money(ded['fsp']))
+        if ded.get('libranzas'):
+            lb = S(d, 'Libranzas')
+            for name, total in ded['libranzas']:
                 S(lb, 'Libranza', Descripcion=(name or 'Libranza')[:100], Deduccion=_money(total))
-        if retencion:
-            S(ded, 'RetencionFuente', _text=_money(retencion))
-        if cooperativa:
-            S(ded, 'Cooperativa', _text=_money(cooperativa))
-        if reintegro:
-            S(ded, 'Reintegro', _text=_money(reintegro))
-        if otras:
-            od = S(ded, 'OtrasDeducciones')
-            S(od, 'OtraDeduccion', Deduccion=_money(otras))
+        if ded.get('retencion'):
+            S(d, 'RetencionFuente', _text=_money(ded['retencion']))
+        if ded.get('cooperativa'):
+            S(d, 'Cooperativa', _text=_money(ded['cooperativa']))
+        if ded.get('reintegro'):
+            S(d, 'Reintegro', _text=_money(ded['reintegro']))
+        if ded.get('otras'):
+            od = S(d, 'OtrasDeducciones')
+            S(od, 'OtraDeduccion', Deduccion=_money(ded['otras']))
