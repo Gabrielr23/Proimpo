@@ -12,6 +12,7 @@ No se paga transmisión a terceros: el envío va directo al web service de la DI
 con el certificado de la empresa, igual que hoy hace Odoo con la factura electrónica.
 """
 import io
+import re
 import zipfile
 from base64 import b64encode
 from hashlib import sha384
@@ -87,6 +88,16 @@ class HrPayslip(models.Model):
         cadena = (op_mode.dian_software_id or '') + (op_mode.dian_software_security_code or '') + (num_ne or '')
         return sha384(cadena.encode()).hexdigest()
 
+    @staticmethod
+    def _ne_issuer_dian(cert):
+        """X509IssuerName en el formato que EXIGE la DIAN (igual al de SIESA aceptado):
+        separador ', ' y abreviatura 'S=' para el estado (no 'ST=' de rfc4514).
+        La librería de Odoo devuelve rfc4514 ('ST=', sin espacios) y eso provoca ZE02."""
+        raw = cert._get_issuer_string()          # rfc4514: CN=..,O=..,C=CO,ST=..,L=..
+        parts = [p.strip() for p in re.split(r'(?<!\\),', raw)]
+        parts = [('S=' + p[3:]) if p.startswith('ST=') else p for p in parts]
+        return ', '.join(parts)
+
     def _ne_add_signature_node(self, root, cert):
         """Inserta ext:UBLExtensions con la firma ds:Signature (XAdES-EPES) al inicio
         del documento, replicando EXACTAMENTE el patrón de oro aceptado por la DIAN:
@@ -152,7 +163,7 @@ class HrPayslip(models.Model):
         _E(cd, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
-        _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
+        _E(issuer, '{%s}X509IssuerName' % NS_DS, self._ne_issuer_dian(cert))
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
         # Política de firma (https:// , sin Description — igual al patrón de oro)
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
@@ -201,6 +212,22 @@ class HrPayslip(models.Model):
             slip.ne_xml = xml_bytes.decode('utf-8', errors='replace')
             slip.ne_state = 'generated'
         return True
+
+    def action_ne_descargar(self):
+        """Descarga el XML firmado tal cual (bytes exactos) para inspección/validación."""
+        self.ensure_one()
+        if not self.ne_xml:
+            xml_bytes, cune, _d = self._ne_xml_firmado()
+            self.ne_cune = cune
+            self.ne_xml = xml_bytes.decode('utf-8', errors='replace')
+        att = self.env['ir.attachment'].create({
+            'name': 'NE_%s.xml' % (self.number or self.id),
+            'type': 'binary',
+            'datas': b64encode(self.ne_xml.encode('utf-8')),
+            'mimetype': 'application/xml',
+        })
+        return {'type': 'ir.actions.act_url',
+                'url': '/web/content/%s?download=true' % att.id, 'target': 'self'}
 
     def action_ne_enviar(self):
         """Firma y transmite al servicio SendTestSetAsync (set de pruebas DIAN),
