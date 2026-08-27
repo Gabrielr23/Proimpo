@@ -188,13 +188,13 @@ class HrPayslip(models.Model):
                 (partner.street or '') or defecto['dir'])
 
     def _ne_periodo_nomina(self):
-        """Código de periodo de nómina DIAN según duración: 4=quincenal, 5=mensual."""
+        """Código de periodo de nómina DIAN según duración: 3=quincenal, 4=mensual."""
         if self.date_from and self.date_to:
             dias = (self.date_to - self.date_from).days + 1
             if dias >= 27:
-                return '5'
-            if dias >= 14:
                 return '4'
+            if dias >= 14:
+                return '3'
             if dias >= 8:
                 return '2'
             return '1'
@@ -454,8 +454,7 @@ class HrPayslip(models.Model):
         # Otros conceptos (horas extras y no mapeados)
         if g('otros'):
             oc = S(d, 'OtrosConceptos')
-            S(oc, 'OtroConcepto', ConceptoS='Otros devengados',
-              DescripcionConceptoS='Otros', PagoS=_money(g('otros')))
+            S(oc, 'OtroConcepto', DescripcionConcepto='Otros', ConceptoS=_money(g('otros')))
 
     def _ne_build_deducciones(self, S, root, datos):
         ded = datos['ded']
