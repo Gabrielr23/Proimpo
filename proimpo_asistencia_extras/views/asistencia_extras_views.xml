@@ -1,15 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- Lista editable: el gerente aprueba/rechaza CADA concepto por separado.
+         Los recargos (RN, RDDF, RNDF) se muestran informativos: se pagan siempre. -->
+    <record id="view_extras_tree_aprobar" model="ir.ui.view">
+        <field name="name">hr.attendance.extras.list</field>
+        <field name="model">hr.attendance</field>
+        <field name="arch" type="xml">
+            <list string="Horas extra por aprobar" editable="bottom" create="0" delete="0">
+                <field name="employee_id" readonly="1"/>
+                <field name="check_in" readonly="1"/>
+                <field name="check_out" readonly="1"/>
+                <!-- Horas extra reales: cada una con su estado -->
+                <field name="hed" readonly="1" optional="show"/>
+                <field name="pa_estado_hed" readonly="not hed" optional="show"/>
+                <field name="hen" readonly="1" optional="show"/>
+                <field name="pa_estado_hen" readonly="not hen" optional="show"/>
+                <field name="heddf" readonly="1" optional="hide"/>
+                <field name="pa_estado_heddf" readonly="not heddf" optional="hide"/>
+                <field name="hendf" readonly="1" optional="hide"/>
+                <field name="pa_estado_hendf" readonly="not hendf" optional="hide"/>
+                <!-- Recargos de ley: informativos, sin estado -->
+                <field name="hrn" readonly="1" optional="show"/>
+                <field name="hrddf" readonly="1" optional="hide"/>
+                <field name="hrndf" readonly="1" optional="hide"/>
+                <!-- Lo que baja al plano -->
+                <field name="pa_total_pagar" readonly="1" sum="Total a pagar"/>
+                <field name="overtime_status" readonly="1" widget="badge"
+                       decoration-success="overtime_status == 'approved'"
+                       decoration-warning="overtime_status == 'to_approve'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Formulario: atajos "Aprobar todo" / "Rechazar todo" + detalle por concepto -->
+    <record id="view_extras_form_aprobar" model="ir.ui.view">
+        <field name="name">hr.attendance.extras.form</field>
+        <field name="model">hr.attendance</field>
+        <field name="arch" type="xml">
+            <form string="Aprobación de horas extra">
+                <header>
+                    <button name="action_pa_aprobar_todo" type="object"
+                            string="Aprobar todo" class="btn-primary"/>
+                    <button name="action_pa_rechazar_todo" type="object"
+                            string="Rechazar todo" class="btn-secondary"/>
+                    <field name="overtime_status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Registro">
+                            <field name="employee_id" readonly="1"/>
+                            <field name="check_in" readonly="1"/>
+                            <field name="check_out" readonly="1"/>
+                        </group>
+                        <group string="Total que baja al plano (CGUNO)">
+                            <field name="pa_total_pagar" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Horas extra (requieren aprobación del gerente)">
+                        <group>
+                            <field name="hed" readonly="1"/>
+                            <field name="hen" readonly="1"/>
+                            <field name="heddf" readonly="1"/>
+                            <field name="hendf" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="pa_estado_hed" readonly="not hed"/>
+                            <field name="pa_estado_hen" readonly="not hen"/>
+                            <field name="pa_estado_heddf" readonly="not heddf"/>
+                            <field name="pa_estado_hendf" readonly="not hendf"/>
+                        </group>
+                    </group>
+                    <group string="Recargos de ley (se pagan siempre, no se aprueban)">
+                        <field name="hrn" readonly="1"/>
+                        <field name="hrddf" readonly="1"/>
+                        <field name="hrndf" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <!-- Accion a la que apunta el boton del correo: asistencias con horas extra por aprobar -->
     <record id="action_extras_por_aprobar" model="ir.actions.act_window">
         <field name="name">Horas extra por aprobar</field>
         <field name="res_model">hr.attendance</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('pa_para_aprobar_por_mi','=',True),('overtime_status','=','to_approve'),'|','|','|','|','|','|',('hed','&gt;',0),('hen','&gt;',0),('hrn','&gt;',0),('heddf','&gt;',0),('hrddf','&gt;',0),('hendf','&gt;',0),('hrndf','&gt;',0)]</field>
+        <field name="domain">[('pa_para_aprobar_por_mi','=',True),('overtime_status','=','to_approve'),'|','|','|',('hed','&gt;',0),('hen','&gt;',0),('heddf','&gt;',0),('hendf','&gt;',0)]</field>
         <field name="context">{'search_default_group_employee': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No hay horas extra pendientes de aprobación</p>
-            <p>Aquí aparecen los registros de asistencia con horas extra que están por aprobar.</p>
+            <p>Aquí aparecen los registros de asistencia con horas extra que están por aprobar.
+               Puede aprobar o rechazar cada concepto por separado; los recargos de ley se pagan siempre.</p>
         </field>
     </record>
+
+    <!-- Enlaza la accion con las vistas propias (lista primero, luego formulario) -->
+    <record id="extras_av_tree" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_extras_tree_aprobar"/>
+        <field name="act_window_id" ref="action_extras_por_aprobar"/>
+    </record>
+    <record id="extras_av_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_extras_form_aprobar"/>
+        <field name="act_window_id" ref="action_extras_por_aprobar"/>
+    </record>
+
 </odoo>
