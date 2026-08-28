@@ -1,15 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Accion a la que apunta el boton del correo: asistencias con horas extra por aprobar -->
+
+    <!-- ================================================================
+         Se CONSERVAN las vistas existentes (nativas + hr_att_expected, con
+         marcaciones editables y tiempos esperados). Aqui solo se HEREDAN
+         para agregar la aprobacion POR CONCEPTO: un estado por cada hora
+         extra y los botones para aprobar/rechazar. Los recargos no se tocan.
+         ================================================================ -->
+
+    <!-- Formulario: se apoya en la vista con tiempos esperados -->
+    <record id="view_extras_form_aprobar" model="ir.ui.view">
+        <field name="name">hr.attendance.form.extras.aprobar</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_att_expected.hr_attendance_view_form_expected"/>
+        <field name="arch" type="xml">
+            <!-- Botones de aprobacion (solo si el registro trae horas extra reales) -->
+            <xpath expr="//form/header" position="inside">
+                <button name="action_pa_aprobar_todo" type="object" string="Aprobar extras"
+                        class="btn-primary"
+                        invisible="not (hed or hen or heddf or hendf)"/>
+                <button name="action_pa_rechazar_todo" type="object" string="Rechazar extras"
+                        class="btn-secondary"
+                        invisible="not (hed or hen or heddf or hendf)"/>
+                <button name="action_pa_aprobar_pendientes" type="object" string="Aprobar pendientes"
+                        class="btn-secondary"
+                        invisible="not (hed or hen or heddf or hendf)"/>
+            </xpath>
+            <!-- Estado por concepto, junto a cada hora extra del grupo "Detalle Horas" -->
+            <field name="hed" position="after">
+                <field name="pa_estado_hed" invisible="not hed"/>
+            </field>
+            <field name="hen" position="after">
+                <field name="pa_estado_hen" invisible="not hen"/>
+            </field>
+            <field name="heddf" position="after">
+                <field name="pa_estado_heddf" invisible="not heddf"/>
+            </field>
+            <field name="hendf" position="after">
+                <field name="pa_estado_hendf" invisible="not hendf"/>
+            </field>
+            <!-- Total que efectivamente baja al plano (extras aprobadas + recargos) -->
+            <field name="hrndf" position="after">
+                <field name="pa_total_pagar" readonly="1"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Lista: se apoya en la lista con tiempos esperados -->
+    <record id="view_extras_tree_aprobar" model="ir.ui.view">
+        <field name="name">hr.attendance.list.extras.aprobar</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_att_expected.hr_attendance_view_tree_expected"/>
+        <field name="arch" type="xml">
+            <field name="hed" position="after">
+                <field name="pa_estado_hed" optional="show" readonly="not hed"/>
+            </field>
+            <field name="hen" position="after">
+                <field name="pa_estado_hen" optional="show" readonly="not hen"/>
+            </field>
+            <field name="heddf" position="after">
+                <field name="pa_estado_heddf" optional="hide" readonly="not heddf"/>
+            </field>
+            <field name="hendf" position="after">
+                <field name="pa_estado_hendf" optional="hide" readonly="not hendf"/>
+            </field>
+            <field name="hrndf" position="after">
+                <field name="pa_total_pagar" optional="show" sum="Total a pagar"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Acciones MASIVAS: aparecen en el menu "Acciones" al seleccionar
+         registros en la lista. Permiten el flujo con muchos empleados:
+         rechazar lo puntual y aprobar en bloque todo lo pendiente.
+         ================================================================ -->
+    <record id="action_pa_aprobar_masivo" model="ir.actions.server">
+        <field name="name">Aprobar horas extra pendientes</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_pa_aprobar_pendientes()</field>
+    </record>
+
+    <record id="action_pa_rechazar_masivo" model="ir.actions.server">
+        <field name="name">Rechazar horas extra</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_pa_rechazar_todo()</field>
+    </record>
+
+    <!-- Accion (restaurada): usa las vistas por defecto del modelo, que ya
+         incluyen las nativas + hr_att_expected + esta herencia. Asi se conservan
+         las marcaciones editables (check_in / check_out) y los tiempos esperados. -->
     <record id="action_extras_por_aprobar" model="ir.actions.act_window">
         <field name="name">Horas extra por aprobar</field>
         <field name="res_model">hr.attendance</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('pa_para_aprobar_por_mi','=',True),('overtime_status','=','to_approve'),'|','|','|','|','|','|',('hed','&gt;',0),('hen','&gt;',0),('hrn','&gt;',0),('heddf','&gt;',0),('hrddf','&gt;',0),('hendf','&gt;',0),('hrndf','&gt;',0)]</field>
+        <field name="domain">[('pa_para_aprobar_por_mi','=',True),('overtime_status','=','to_approve'),'|','|','|',('hed','&gt;',0),('hen','&gt;',0),('heddf','&gt;',0),('hendf','&gt;',0)]</field>
         <field name="context">{'search_default_group_employee': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No hay horas extra pendientes de aprobación</p>
-            <p>Aquí aparecen los registros de asistencia con horas extra que están por aprobar.</p>
+            <p>Aquí aparecen los registros de asistencia con horas extra que están por aprobar.
+               Puede aprobar o rechazar cada concepto por separado; los recargos de ley se pagan siempre.
+               Las marcaciones (entrada/salida) siguen siendo editables para correcciones.</p>
         </field>
     </record>
+
 </odoo>

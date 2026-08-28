@@ -8,8 +8,8 @@
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
         <field name="active" eval="True"/>
-        <!-- 12:00 UTC = 7:00 a.m. hora Colombia -->
-        <field name="nextcall" eval="(DateTime.now().replace(hour=12, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <!-- 15:00 UTC = 10:00 a.m. hora Colombia -->
+        <field name="nextcall" eval="(DateTime.now().replace(hour=15, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 
     <!-- Destinatarios del reporte (separados por coma). Ajustar en Ajustes > Tecnico > Parametros -->
