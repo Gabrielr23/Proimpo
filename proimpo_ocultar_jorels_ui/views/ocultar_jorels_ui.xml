@@ -26,11 +26,14 @@
             <xpath expr="//button[@name='status_zip']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            <!-- Pestañas de Jorels: "Respuesta Edi" (Edi Response) y "Edi Payload" -->
+            <!-- Pestañas de Jorels: "Respuesta Edi" (Edi Response) y "Edi Payload".
+                 La pestaña "Edi Payload" no tiene atributo name, y Odoo 19 no
+                 permite seleccionar por 'string'; se ubica por un campo único que
+                 contiene (edi_payload_html) subiendo a su <page> contenedor. -->
             <xpath expr="//page[@name='edi_response']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            <xpath expr="//page[@string='Edi Payload']" position="attributes">
+            <xpath expr="//field[@name='edi_payload_html']/ancestor::page[1]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
         </field>
