@@ -31,7 +31,7 @@ NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 # Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
 # la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
 # sola barra (así lo genera Odoo y así lo acepta la DIAN).
-SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
+SIG_POLICY_URL = "https:/facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
 SIG_POLICY_DESC = "Política de firma para facturas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
 
@@ -166,10 +166,9 @@ class HrPayslip(models.Model):
         _E(cd, '{%s}DigestValue' % NS_DS, cert._get_fingerprint_bytes(formatting='base64').decode())
         issuer = _E(c, '{%s}IssuerSerial' % NS_XADES)
         # Emisor en formato NATIVO de Odoo (rfc4514, 'ST=' sin espacios), NO el de SIESA
-        # Emisor en el formato que EXIGE el validador de NÓMINA de la DIAN para certificados
-        # Certicámara: 'S=' (no 'ST=') y separador ', '. Con rfc4514 (ST=, sin espacios) el
-        # validador de nómina rechaza la firma (ZE02), aunque el de factura lo acepta.
-        _E(issuer, '{%s}X509IssuerName' % NS_DS, self._ne_issuer_dian(cert))
+        # Emisor en formato rfc4514 (ST=), IDÉNTICO a la factura de Odoo que la DIAN YA
+        # ACEPTÓ en habilitación con este mismo certificado (SETP990000004, autorizada).
+        _E(issuer, '{%s}X509IssuerName' % NS_DS, cert._get_issuer_string())
         _E(issuer, '{%s}X509SerialNumber' % NS_DS, int(cert.serial_number))
         # Política de firma: 'https:/' (una barra) + Description, igual que el nativo
         spi = _E(ssp, '{%s}SignaturePolicyIdentifier' % NS_XADES)
