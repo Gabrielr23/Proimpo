@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         RECIBO DE NÓMINA (hr.payslip)
+         Oculta los botones y pestañas de nómina electrónica de Jorels.
+         PROIMPO usa su propio módulo (proimpo_nomina_electronica), por lo
+         que estos no se usan. Se hereda la vista de Jorels y se fuerza
+         invisible; nada se elimina, se puede revertir desinstalando.
+         ================================================================ -->
+    <record id="ocultar_jorels_payslip" model="ir.ui.view">
+        <field name="name">hr.payslip.ocultar.jorels.ne</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="l10n_co_hr_payroll_enterprise.hr_payslip_view_form_l10n_co_hr_payroll"/>
+        <field name="arch" type="xml">
+            <!-- Botones DIAN de Jorels en el encabezado / stat buttons -->
+            <xpath expr="//button[@name='dian_preview']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='dian_pdf_view']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='validate_dian']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='status_zip']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Pestañas de Jorels: "Respuesta Edi" (Edi Response) y "Edi Payload" -->
+            <xpath expr="//page[@name='edi_response']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page[@string='Edi Payload']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         FACTURAS (account.move)
+         Oculta los botones DIAN de Jorels (Validate DIAN, Test de
+         validación, Consult DIAN y previsualizaciones). NO se toca el
+         botón "Enviar" ni ningún botón nativo de Odoo.
+         ================================================================ -->
+    <record id="ocultar_jorels_account_move" model="ir.ui.view">
+        <field name="name">account.move.ocultar.jorels.dian</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_co_edi_jorels.account_move_view_form_inherit_l10n_co_edi_jorels"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='dian_preview']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='dian_pdf_view']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='validate_dian']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='validate_dian_test']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='skip_validate_dian']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='skip_validate_dian_production']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='status_zip']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='status_document']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
