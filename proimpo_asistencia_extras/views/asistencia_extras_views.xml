@@ -22,6 +22,9 @@
                 <button name="action_pa_rechazar_todo" type="object" string="Rechazar extras"
                         class="btn-secondary"
                         invisible="not (hed or hen or heddf or hendf)"/>
+                <button name="action_pa_aprobar_pendientes" type="object" string="Aprobar pendientes"
+                        class="btn-secondary"
+                        invisible="not (hed or hen or heddf or hendf)"/>
             </xpath>
             <!-- Estado por concepto, junto a cada hora extra del grupo "Detalle Horas" -->
             <field name="hed" position="after">
@@ -65,6 +68,29 @@
                 <field name="pa_total_pagar" optional="show" sum="Total a pagar"/>
             </field>
         </field>
+    </record>
+
+    <!-- ================================================================
+         Acciones MASIVAS: aparecen en el menu "Acciones" al seleccionar
+         registros en la lista. Permiten el flujo con muchos empleados:
+         rechazar lo puntual y aprobar en bloque todo lo pendiente.
+         ================================================================ -->
+    <record id="action_pa_aprobar_masivo" model="ir.actions.server">
+        <field name="name">Aprobar horas extra pendientes</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_pa_aprobar_pendientes()</field>
+    </record>
+
+    <record id="action_pa_rechazar_masivo" model="ir.actions.server">
+        <field name="name">Rechazar horas extra</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_pa_rechazar_todo()</field>
     </record>
 
     <!-- Accion (restaurada): usa las vistas por defecto del modelo, que ya

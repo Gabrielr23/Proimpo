@@ -182,16 +182,42 @@ class HrAttendance(models.Model):
                 r.write(vals)
         self._pa_sync_overtime()
 
+    def _pa_notif(self, msg, tipo='success'):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': "Horas extra", 'message': msg,
+                       'type': tipo, 'sticky': False},
+        }
+
     def action_pa_aprobar_todo(self):
-        """Boton: aprueba todas las horas extra del registro."""
+        """Boton: aprueba TODAS las horas extra del registro."""
         self._pa_set_estado_todos('aprobada')
-        return True
+        return self._pa_notif("Horas extra aprobadas: %d registro(s)." % len(self))
 
     def action_pa_rechazar_todo(self):
-        """Boton: rechaza todas las horas extra del registro (los recargos se
-        siguen pagando)."""
+        """Boton / accion masiva: rechaza TODAS las horas extra de los registros
+        seleccionados (los recargos se siguen pagando)."""
         self._pa_set_estado_todos('rechazada')
-        return True
+        return self._pa_notif("Horas extra rechazadas: %d registro(s)." % len(self))
+
+    def action_pa_aprobar_pendientes(self):
+        """Aprobacion MASIVA: aprueba solo los conceptos que siguen 'por_aprobar'
+        y RESPETA lo ya rechazado o aprobado. Pensado para el flujo de muchos
+        empleados: el gerente rechaza lo puntual y luego, sobre la seleccion (o
+        seleccionando todo), aprueba en bloque todo lo demas."""
+        n = 0
+        for r in self:
+            vals = {}
+            for cod in COD_EXTRA_APROB:
+                if (getattr(r, cod, 0.0) or 0.0) > 0 and r['pa_estado_' + cod] == 'por_aprobar':
+                    vals['pa_estado_' + cod] = 'aprobada'
+            if vals:
+                r.write(vals)
+                n += 1
+        self._pa_sync_overtime()
+        return self._pa_notif("Aprobación masiva: %d registro(s) con horas pendientes aprobadas. "
+                              "Los rechazos se conservaron." % n)
 
     def _extras_total(self):
         """Suma de todas las horas extra/recargos del registro."""
