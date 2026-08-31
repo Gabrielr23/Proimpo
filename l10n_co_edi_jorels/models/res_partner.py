@@ -90,12 +90,8 @@ class ResPartner(models.Model):
     @api.depends('vat', 'type_document_identification_id')
     def _compute_edi_sanitize_vat(self):
         """Sanitize vat in colombia for document type"""
-        # TEMP (migracion 19.0): no-op para evitar recomputo masivo durante la carga
-        # de datos base. Se debe recalcular con un script/wizard despues de migrar.
-        # for rec in self:
-        #     rec.edi_sanitize_vat = rec._edi_sanitize_vat(rec.vat, rec.type_document_identification_id.id)
         for rec in self:
-            rec.edi_sanitize_vat = rec.edi_sanitize_vat
+            rec.edi_sanitize_vat = rec._edi_sanitize_vat(rec.vat, rec.type_document_identification_id.id)
 
     @api.model
     def _get_type_document_identification_id(self, l10n_latam_identification_type_id):
@@ -142,99 +138,84 @@ class ResPartner(models.Model):
 
     @api.depends('l10n_latam_identification_type_id')
     def _compute_type_document_identification_id(self):
-        # TEMP (migracion 19.0): no-op, ver nota en _compute_edi_sanitize_vat
-        # for partner in self:
-        #     partner.type_document_identification_id = self._get_type_document_identification_id(
-        #         partner.l10n_latam_identification_type_id
-        #     )
+        if not self.env['l10n_co_edi_jorels.type_document_identifications'].search_count([]):
+            self.env['res.company'].init_csv_data('l10n_co_edi_jorels.l10n_co_edi_jorels.type_document_identifications')
+
         for partner in self:
-            partner.type_document_identification_id = partner.type_document_identification_id
+            partner.type_document_identification_id = self._get_type_document_identification_id(
+                partner.l10n_latam_identification_type_id
+            )
 
     @api.depends('zip', 'country_id')
     def _compute_postal_id(self):
-        # TEMP (migracion 19.0): no-op, ver nota en _compute_edi_sanitize_vat.
-        # Este era el candidato mas fuerte a MemoryError (3 busquedas por partner
-        # contra l10n_co_edi_jorels.postal, que tiene miles de registros).
-        # for rec in self:
-        #     if rec.zip and rec.country_id and rec.country_id.code == 'CO':
-        #         postal_obj = rec.env['l10n_co_edi_jorels.postal']
-        #         postal_search = postal_obj.sudo().search([('name', '=', rec.zip)], limit=1)
-        #         if postal_search:
-        #             rec.postal_id = postal_search.id
-        #             department = rec.env['l10n_co_edi_jorels.departments'].sudo().search(
-        #                 [('code', '=', rec.postal_id.department_id.code)], limit=1
-        #             )
-        #             rec.postal_department_id = department.id
-        #             municipality = rec.env['l10n_co_edi_jorels.municipalities'].sudo().search(
-        #                 [('code', '=', rec.postal_id.municipality_id.code)], limit=1
-        #             )
-        #             rec.postal_municipality_id = municipality.id
-        #     else:
-        #         rec.postal_id = None
-        #         rec.postal_department_id = None
-        #         rec.postal_municipality_id = None
         for rec in self:
-            rec.postal_id = rec.postal_id
-            rec.postal_department_id = rec.postal_department_id
-            rec.postal_municipality_id = rec.postal_municipality_id
+            if rec.zip and rec.country_id and rec.country_id.code == 'CO':
+                postal_obj = rec.env['l10n_co_edi_jorels.postal']
+                postal_search = postal_obj.sudo().search([('name', '=', rec.zip)])
+                if postal_search:
+                    rec.postal_id = postal_search[0].id
+                    rec.postal_department_id = rec.env['l10n_co_edi_jorels.departments'].sudo().search(
+                        [('code', '=', rec.postal_id.department_id.code)]
+                    )[0].id
+                    rec.postal_municipality_id = rec.env['l10n_co_edi_jorels.municipalities'].sudo().search(
+                        [('code', '=', rec.postal_id.municipality_id.code)]
+                    )[0].id
+            else:
+                rec.postal_id = None
+                rec.postal_department_id = None
+                rec.postal_municipality_id = None
 
     @api.depends('name', 'is_company')
     def _compute_names(self):
-        # TEMP (migracion 19.0): no-op, ver nota en _compute_edi_sanitize_vat
         for rec in self:
-            rec.first_name = rec.first_name
-            rec.other_names = rec.other_names
-            rec.surname = rec.surname
-            rec.second_surname = rec.second_surname
-        # for rec in self:
-        # if rec.name:
-        # rec.first_name = None
-        # rec.other_names = None
-        # rec.surname = None
-        # rec.second_surname = None
+            if rec.name:
+                rec.first_name = None
+                rec.other_names = None
+                rec.surname = None
+                rec.second_surname = None
 
-        # if rec.is_company:
-        # rec.first_name = rec.name
-        # else:
-        # split_name = rec.name.split(',')
-        # if len(split_name) > 1:
-        # # Surnames
-        # split_surname = split_name[0].split()
-        # if len(split_surname) <= 1:
-        # rec.surname = split_surname[0] if split_surname else None
-        # elif len(split_surname) == 2:
-        # rec.surname = split_surname[0]
-        # rec.second_surname = split_surname[1]
-        # else:
-        # rec.surname = ' '.join(split_surname[0:-1])
-        # rec.second_surname = ' '.join(split_surname[-1:])
+                if rec.is_company:
+                    rec.first_name = rec.name
+                else:
+                    split_name = rec.name.split(',')
+                    if len(split_name) > 1:
+                        # Surnames
+                        split_surname = split_name[0].split()
+                        if len(split_surname) <= 1:
+                            rec.surname = split_surname[0] if split_surname else None
+                        elif len(split_surname) == 2:
+                            rec.surname = split_surname[0]
+                            rec.second_surname = split_surname[1]
+                        else:
+                            rec.surname = ' '.join(split_surname[0:-1])
+                            rec.second_surname = ' '.join(split_surname[-1:])
 
-        # # Names
-        # split_names = split_name[1].split()
-        # rec.first_name = split_names[0] if split_names else None
-        # if len(split_names) > 1:
-        # rec.other_names = ' '.join(split_names[1:])
-        # else:
-        # split_name = rec.name.split()
-        # if len(split_name) == 0 or len(split_name) == 1:
-        # rec.first_name = rec.name
-        # elif len(split_name) == 2:
-        # rec.first_name = split_name[0]
-        # rec.surname = split_name[1]
-        # elif len(split_name) == 3:
-        # rec.first_name = split_name[0]
-        # rec.surname = split_name[1]
-        # rec.second_surname = split_name[2]
-        # elif len(split_name) == 4:
-        # rec.first_name = split_name[0]
-        # rec.other_names = split_name[1]
-        # rec.surname = split_name[2]
-        # rec.second_surname = split_name[3]
-        # else:
-        # rec.first_name = split_name[0]
-        # rec.other_names = split_name[1]
-        # rec.surname = ' '.join(split_name[2:-1])
-        # rec.second_surname = ' '.join(split_name[-1:])
+                        # Names
+                        split_names = split_name[1].split()
+                        rec.first_name = split_names[0] if split_names else None
+                        if len(split_names) > 1:
+                            rec.other_names = ' '.join(split_names[1:])
+                    else:
+                        split_name = rec.name.split()
+                        if len(split_name) == 0 or len(split_name) == 1:
+                            rec.first_name = rec.name
+                        elif len(split_name) == 2:
+                            rec.first_name = split_name[0]
+                            rec.surname = split_name[1]
+                        elif len(split_name) == 3:
+                            rec.first_name = split_name[0]
+                            rec.surname = split_name[1]
+                            rec.second_surname = split_name[2]
+                        elif len(split_name) == 4:
+                            rec.first_name = split_name[0]
+                            rec.other_names = split_name[1]
+                            rec.surname = split_name[2]
+                            rec.second_surname = split_name[3]
+                        else:
+                            rec.first_name = split_name[0]
+                            rec.other_names = split_name[1]
+                            rec.surname = ' '.join(split_name[2:-1])
+                            rec.second_surname = ' '.join(split_name[-1:])
 
     @api.model
     def _format_company_name(self, name):
