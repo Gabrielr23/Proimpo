@@ -138,8 +138,8 @@ class ResPartner(models.Model):
 
     @api.depends('l10n_latam_identification_type_id')
     def _compute_type_document_identification_id(self):
-        if not self.env['l10n_co_edi_jorels.type_document_identifications'].search_count([]):
-            self.env['res.company'].init_csv_data('l10n_co_edi_jorels.l10n_co_edi_jorels.type_document_identifications')
+        # if not self.env['l10n_co_edi_jorels.type_document_identifications'].search_count([]):
+        #     self.env['res.company'].init_csv_data('l10n_co_edi_jorels.l10n_co_edi_jorels.type_document_identifications')
 
         for partner in self:
             partner.type_document_identification_id = self._get_type_document_identification_id(
