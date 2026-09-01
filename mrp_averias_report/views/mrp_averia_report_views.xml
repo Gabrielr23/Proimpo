@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ PIVOT ============================ -->
+    <record id="view_mrp_averia_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.averia.report.pivot</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Averías Tipificadas" sample="1">
+                <field name="averia" type="row"/>
+                <field name="workcenter_id" type="col"/>
+                <field name="cantidad" type="measure"/>
+                <field name="cantidad_buena" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ============================ GRÁFICO ============================ -->
+    <record id="view_mrp_averia_report_graph" model="ir.ui.view">
+        <field name="name">mrp.averia.report.graph</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <graph string="Averías Tipificadas" type="bar" sample="1">
+                <field name="averia"/>
+                <field name="cantidad" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ============================ LISTA ============================ -->
+    <record id="view_mrp_averia_report_list" model="ir.ui.view">
+        <field name="name">mrp.averia.report.list</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <list string="Averías Tipificadas" create="false" edit="false" delete="false" sample="1">
+                <field name="date" widget="datetime"/>
+                <field name="turno"/>
+                <field name="averia"/>
+                <field name="cantidad" sum="Total averías"/>
+                <field name="cantidad_buena" sum="Total producido" optional="show"/>
+                <field name="duracion" sum="Minutos" optional="hide" widget="float_time"/>
+                <field name="employee_id" optional="hide"/>
+                <field name="loss_id" optional="hide"/>
+                <field name="linea_tiempo_id" optional="hide"/>
+                <field name="product_id" optional="show"/>
+                <field name="categ_id" optional="hide"/>
+                <field name="workcenter_id" optional="show"/>
+                <field name="operation_id" optional="hide"/>
+                <field name="production_id" optional="show"/>
+                <field name="workorder_id" optional="hide"/>
+                <field name="check_id" optional="show"/>
+                <field name="point_id" optional="hide"/>
+                <field name="template_name" optional="hide"/>
+                <field name="quality_state" optional="show" widget="badge"
+                       decoration-warning="quality_state == 'none'"
+                       decoration-success="quality_state == 'pass'"
+                       decoration-danger="quality_state == 'fail'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================ BÚSQUEDA ============================ -->
+    <record id="view_mrp_averia_report_search" model="ir.ui.view">
+        <field name="name">mrp.averia.report.search</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <search string="Averías Tipificadas">
+                <field name="averia"/>
+                <field name="product_id"/>
+                <field name="production_id"/>
+                <field name="workorder_id"/>
+                <field name="workcenter_id"/>
+                <field name="check_id"/>
+                <field name="employee_id"/>
+
+                <filter name="filter_date" date="date" string="Fecha"/>
+                <separator/>
+                <filter name="state_none" string="Control pendiente"
+                        domain="[('quality_state', '=', 'none')]"/>
+                <filter name="state_fail" string="Control fallido"
+                        domain="[('quality_state', '=', 'fail')]"/>
+                <separator/>
+                <filter name="con_cantidad" string="Con cantidad registrada"
+                        domain="[('cantidad', '&gt;', 0)]"/>
+                <filter name="filas_produccion" string="Filas con producción"
+                        domain="[('es_primera', '=', True)]"/>
+
+                <group expand="1" string="Agrupar por">
+                    <filter name="group_averia" string="Tipo de Avería"
+                            context="{'group_by': 'averia'}"/>
+                    <filter name="group_turno" string="Turno"
+                            context="{'group_by': 'turno'}"/>
+                    <filter name="group_workcenter" string="Centro de Trabajo"
+                            context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_operation" string="Operación"
+                            context="{'group_by': 'operation_id'}"/>
+                    <filter name="group_product" string="Producto"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter name="group_categ" string="Categoría de Producto"
+                            context="{'group_by': 'categ_id'}"/>
+                    <filter name="group_production" string="Orden de Fabricación"
+                            context="{'group_by': 'production_id'}"/>
+                    <filter name="group_employee" string="Empleado"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_loss" string="Productividad"
+                            context="{'group_by': 'loss_id'}"/>
+                    <filter name="group_point" string="Punto de Control"
+                            context="{'group_by': 'point_id'}"/>
+                    <filter name="group_template" string="Plantilla"
+                            context="{'group_by': 'template_name'}"/>
+                    <separator/>
+                    <filter name="group_date_day" string="Día"
+                            context="{'group_by': 'date:day'}"/>
+                    <filter name="group_date_week" string="Semana"
+                            context="{'group_by': 'date:week'}"/>
+                    <filter name="group_date_month" string="Mes"
+                            context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================ ACCIÓN ============================ -->
+    <record id="action_mrp_averia_report" model="ir.actions.act_window">
+        <field name="name">Averías Tipificadas</field>
+        <field name="res_model">mrp.averia.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_mrp_averia_report_search"/>
+        <field name="context">{'search_default_group_averia': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Todavía no hay averías tipificadas
+            </p>
+            <p>
+                Este informe consolida las líneas registradas por los operarios en
+                las hojas de trabajo de calidad. Aparecerán aquí en cuanto se
+                tipifique la primera avería.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================= ACCIÓN DE SERVIDOR: REGENERAR ================= -->
+    <record id="action_server_rebuild_averia_view" model="ir.actions.server">
+        <field name="name">Regenerar informe de averías</field>
+        <field name="model_id" ref="model_mrp_averia_report"/>
+        <field name="binding_model_id" ref="model_mrp_averia_report"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_rebuild_view()</field>
+    </record>
+
+    <!-- ============================ MENÚ ============================ -->
+    <!-- Sin parent: el post_init_hook lo cuelga bajo la app Calidad. -->
+    <menuitem id="menu_mrp_averia_report"
+              name="Averías Tipificadas"
+              action="action_mrp_averia_report"
+              sequence="90"/>
+
+</odoo>
