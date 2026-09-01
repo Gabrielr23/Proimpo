@@ -11,6 +11,13 @@ _logger = logging.getLogger(__name__)
 # HRNDF) son automaticos y NO requieren aprobacion.
 COD_EXTRA_APROB = ['hed', 'hen', 'heddf', 'hendf']
 
+# Recargos: son de LEY (C.S.T. art. 168 y ss.). Se pagan siempre que se trabajo
+# de noche/festivo, esten o no autorizados. NUNCA pasan por aprobacion.
+COD_RECARGO = ['hrn', 'hrddf', 'hrndf']
+
+# Todos los conceptos que se pagan (extras + recargos).
+COD_PAGO = COD_EXTRA_APROB + COD_RECARGO
+
 COD_EXTRAS = [
     ('hed', 'Extra diurna'),
     ('hen', 'Extra nocturna'),
@@ -21,9 +28,41 @@ COD_EXTRAS = [
     ('hrndf', 'Recargo nocturno dom/fest'),
 ]
 
+# Estados de aprobacion por concepto (solo para las horas extra reales).
+SEL_ESTADO = [
+    ('por_aprobar', 'Por aprobar'),
+    ('aprobada', 'Aprobada'),
+    ('rechazada', 'Rechazada'),
+]
+
 
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
+
+    def _pa_autoaprobar(self):
+        """Aprueba en tiempo real los registros completos sin horas extra reales
+        (solo recargos o nada). Esos no requieren aprobacion del gerente."""
+        if 'overtime_status' not in self._fields:
+            return
+        for r in self:
+            if r.check_out and r.overtime_status == 'to_approve' and r._extras_reales() <= 0:
+                r.with_context(pa_auto=True).write({'overtime_status': 'approved'})
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        recs = super().create(vals_list)
+        if not self.env.context.get('pa_auto'):
+            recs._pa_autoaprobar()
+        return recs
+
+    def write(self, vals):
+        res = super().write(vals)
+        if not self.env.context.get('pa_auto'):
+            if any(k in vals for k in ('check_in', 'check_out')):
+                self._pa_autoaprobar()
+            if any(k.startswith('pa_estado_') for k in vals):
+                self._pa_sync_overtime()
+        return res
 
     pa_para_aprobar_por_mi = fields.Boolean(
         compute='_compute_pa_para_aprobar_por_mi',
@@ -51,6 +90,134 @@ class HrAttendance(models.Model):
             return [('id', '=', 0)]
         deptos = self.env['hr.department'].search([('id', 'child_of', gestiona.ids)])
         return [('employee_id.department_id', 'in', deptos.ids)]
+
+    # ------------------------------------------------------------------
+    # Aprobacion POR CONCEPTO
+    # ------------------------------------------------------------------
+    # Estado de cada hora extra real (los recargos no tienen estado: se pagan
+    # siempre). Son campos calculados-almacenados y editables: el gerente puede
+    # sobrescribir el valor por defecto (por_aprobar) con Aprobada/Rechazada.
+    pa_estado_hed = fields.Selection(
+        SEL_ESTADO, string="Estado HED", compute='_compute_pa_estados',
+        store=True, readonly=False)
+    pa_estado_hen = fields.Selection(
+        SEL_ESTADO, string="Estado HEN", compute='_compute_pa_estados',
+        store=True, readonly=False)
+    pa_estado_heddf = fields.Selection(
+        SEL_ESTADO, string="Estado HEDDF", compute='_compute_pa_estados',
+        store=True, readonly=False)
+    pa_estado_hendf = fields.Selection(
+        SEL_ESTADO, string="Estado HENDF", compute='_compute_pa_estados',
+        store=True, readonly=False)
+
+    # Horas que efectivamente se pagan (lo unico que debe bajar al plano CGUNO).
+    pa_hed_pagar = fields.Float(string="HED a pagar", compute='_compute_pa_pagar', store=True)
+    pa_hen_pagar = fields.Float(string="HEN a pagar", compute='_compute_pa_pagar', store=True)
+    pa_heddf_pagar = fields.Float(string="HEDDF a pagar", compute='_compute_pa_pagar', store=True)
+    pa_hendf_pagar = fields.Float(string="HENDF a pagar", compute='_compute_pa_pagar', store=True)
+    pa_hrn_pagar = fields.Float(string="RN a pagar", compute='_compute_pa_pagar', store=True)
+    pa_hrddf_pagar = fields.Float(string="RDDF a pagar", compute='_compute_pa_pagar', store=True)
+    pa_hrndf_pagar = fields.Float(string="RNDF a pagar", compute='_compute_pa_pagar', store=True)
+    pa_total_pagar = fields.Float(string="Total a pagar (h)", compute='_compute_pa_pagar', store=True)
+
+    @api.depends('hed', 'hen', 'heddf', 'hendf')
+    def _compute_pa_estados(self):
+        """Inicializa el estado de cada extra a 'por_aprobar' cuando tiene horas,
+        y lo deja vacio cuando no. Respeta la decision manual del gerente
+        (aprobada/rechazada) una vez tomada."""
+        for r in self:
+            for cod in COD_EXTRA_APROB:
+                f = 'pa_estado_' + cod
+                horas = getattr(r, cod, 0.0) or 0.0
+                cur = r[f]
+                if horas <= 0:
+                    r[f] = False
+                elif cur in ('aprobada', 'rechazada', 'por_aprobar'):
+                    r[f] = cur
+                else:
+                    r[f] = 'por_aprobar'
+
+    @api.depends('hed', 'hen', 'heddf', 'hendf', 'hrn', 'hrddf', 'hrndf',
+                 'pa_estado_hed', 'pa_estado_hen', 'pa_estado_heddf', 'pa_estado_hendf')
+    def _compute_pa_pagar(self):
+        """Horas a pagar por concepto: el extra solo si esta 'aprobada'; el
+        recargo siempre (es de ley)."""
+        for r in self:
+            total = 0.0
+            for cod in COD_EXTRA_APROB:
+                horas = getattr(r, cod, 0.0) or 0.0
+                val = horas if r['pa_estado_' + cod] == 'aprobada' else 0.0
+                r['pa_%s_pagar' % cod] = val
+                total += val
+            for cod in COD_RECARGO:
+                horas = getattr(r, cod, 0.0) or 0.0
+                r['pa_%s_pagar' % cod] = horas
+                total += horas
+            r.pa_total_pagar = total
+
+    def _pa_sync_overtime(self):
+        """Consolida el overtime_status nativo a partir de los estados por
+        concepto: 'to_approve' mientras quede algun extra por decidir;
+        'approved' (revisado) cuando ya se decidieron todos. Los recargos no
+        influyen. Los registros sin extras los maneja _pa_autoaprobar."""
+        if 'overtime_status' not in self._fields:
+            return
+        for r in self:
+            estados = [r['pa_estado_' + c] for c in COD_EXTRA_APROB
+                       if (getattr(r, c, 0.0) or 0.0) > 0]
+            if not estados:
+                continue
+            nuevo = 'to_approve' if any(e in (False, 'por_aprobar') for e in estados) else 'approved'
+            if r.overtime_status != nuevo:
+                r.with_context(pa_auto=True).write({'overtime_status': nuevo})
+
+    def _pa_set_estado_todos(self, estado):
+        """Fija el mismo estado a todos los conceptos extra con horas del registro."""
+        for r in self:
+            vals = {}
+            for cod in COD_EXTRA_APROB:
+                if (getattr(r, cod, 0.0) or 0.0) > 0:
+                    vals['pa_estado_' + cod] = estado
+            if vals:
+                r.write(vals)
+        self._pa_sync_overtime()
+
+    def _pa_notif(self, msg, tipo='success'):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': "Horas extra", 'message': msg,
+                       'type': tipo, 'sticky': False},
+        }
+
+    def action_pa_aprobar_todo(self):
+        """Boton: aprueba TODAS las horas extra del registro."""
+        self._pa_set_estado_todos('aprobada')
+        return self._pa_notif("Horas extra aprobadas: %d registro(s)." % len(self))
+
+    def action_pa_rechazar_todo(self):
+        """Boton / accion masiva: rechaza TODAS las horas extra de los registros
+        seleccionados (los recargos se siguen pagando)."""
+        self._pa_set_estado_todos('rechazada')
+        return self._pa_notif("Horas extra rechazadas: %d registro(s)." % len(self))
+
+    def action_pa_aprobar_pendientes(self):
+        """Aprobacion MASIVA: aprueba solo los conceptos que siguen 'por_aprobar'
+        y RESPETA lo ya rechazado o aprobado. Pensado para el flujo de muchos
+        empleados: el gerente rechaza lo puntual y luego, sobre la seleccion (o
+        seleccionando todo), aprueba en bloque todo lo demas."""
+        n = 0
+        for r in self:
+            vals = {}
+            for cod in COD_EXTRA_APROB:
+                if (getattr(r, cod, 0.0) or 0.0) > 0 and r['pa_estado_' + cod] == 'por_aprobar':
+                    vals['pa_estado_' + cod] = 'aprobada'
+            if vals:
+                r.write(vals)
+                n += 1
+        self._pa_sync_overtime()
+        return self._pa_notif("Aprobación masiva: %d registro(s) con horas pendientes aprobadas. "
+                              "Los rechazos se conservaron." % n)
 
     def _extras_total(self):
         """Suma de todas las horas extra/recargos del registro."""
