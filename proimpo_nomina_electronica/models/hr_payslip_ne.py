@@ -327,13 +327,11 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
-        # 'xs' y 'xsi' con URIs DISTINTOS (xs=XMLSchema, xsi=XMLSchema-instance).
-        # Antes ambos apuntaban a XMLSchema-instance: el parser de la DIAN deduplicaba
-        # el 'xs' redundante y al canonicalizar el SignedInfo la firma no cuadraba (ZE02).
-        # Con URIs distintos, 'xs' ya no es redundante, la DIAN no lo descarta y la firma
-        # verifica. Se mantienen ambos prefijos declarados (NIE901).
+        # 'xs' y 'xsi' AMBOS = XMLSchema-instance: es lo que exige NIE901 (coincide con
+        # el ejemplo oficial de la DIAN). No cambiar el URI de 'xs' (romper esto dispara
+        # NIE901). El problema del ZE02 se ataca por la canonicalizacion de la firma.
         nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XS, None: NS}
+                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         root.set('SchemaLocation', '')
         root.set('{%s}schemaLocation' % NS_XSI,

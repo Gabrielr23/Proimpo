@@ -109,6 +109,7 @@ class HrPayslip(models.Model):
         SignedProperties Id='SignedPropertiesId', política https:// sin Description,
         ClaimedRole 'third party'. Luego rellena digests + firma con helpers nativos."""
         INCL = 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315'
+        EXCL = 'http://www.w3.org/2001/10/xml-exc-c14n#'
         SHA256 = 'http://www.w3.org/2001/04/xmlenc#sha256'
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = doc_id + "-keyinfo"
@@ -121,11 +122,15 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), IDÉNTICA a la
-        # firma de factura de Odoo que YA PASÓ la habilitación de la DIAN con este mismo
-        # certificado. ref1/ref2 SIN transform (inclusiva por defecto).
+        # SignedInfo — canonicalización EXCLUSIVA (xml-exc-c14n#).
+        # Motivo: NIE901 obliga a declarar 'xs' y 'xsi' con el MISMO URI (namespace
+        # duplicado). Con c14n INCLUSIVA ese duplicado entra al SignedInfo canónico y el
+        # validador de nómina de la DIAN lo procesa distinto al verificar la firma -> ZE02.
+        # Con c14n EXCLUSIVA, el SignedInfo canónico solo incluye los namespaces realmente
+        # usados (ds), dejando fuera xs/xsi -> la firma es inmune al duplicado y la DIAN la
+        # verifica igual. El helper nativo _fill_signature respeta este algoritmo declarado.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=INCL)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXCL)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
         # Ref 0: documento completo (enveloped)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
