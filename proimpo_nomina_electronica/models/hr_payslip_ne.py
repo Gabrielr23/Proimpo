@@ -15,6 +15,7 @@ NS_DS = "http://www.w3.org/2000/09/xmldsig#"
 NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 NS_XADES141 = "http://uri.etsi.org/01903/v1.4.1#"
 NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
+NS_XS = "http://www.w3.org/2001/XMLSchema"  # URI correcto de 'xs' (distinto de xsi)
 
 # Valores de ubicación del EMPLEADOR (PROIMPO) — reales, ya aceptados por la DIAN.
 _EMPLEADOR_DEF = {'depto': '76', 'muni': '76892', 'dir': 'CL 15 27 A 176 BL 7 BD 2'}
@@ -326,10 +327,13 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
-        # 'xsi' antes de 'xs' (ambos = XMLSchema-instance) -> el atributo sale como
-        # 'xsi:schemaLocation' y quedan declarados los dos namespaces (NIE901).
+        # 'xs' y 'xsi' con URIs DISTINTOS (xs=XMLSchema, xsi=XMLSchema-instance).
+        # Antes ambos apuntaban a XMLSchema-instance: el parser de la DIAN deduplicaba
+        # el 'xs' redundante y al canonicalizar el SignedInfo la firma no cuadraba (ZE02).
+        # Con URIs distintos, 'xs' ya no es redundante, la DIAN no lo descarta y la firma
+        # verifica. Se mantienen ambos prefijos declarados (NIE901).
         nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
+                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XS, None: NS}
         root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
         root.set('SchemaLocation', '')
         root.set('{%s}schemaLocation' % NS_XSI,
