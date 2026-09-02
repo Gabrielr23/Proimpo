@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_alerta_inasistencias_wizard_form" model="ir.ui.view">
+        <field name="name">alerta.inasistencias.wizard.form</field>
+        <field name="model">alerta.inasistencias.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Enviar Alerta de Inasistencias">
+                <p>
+                    Esto genera el reporte de inasistencias en este momento,
+                    guarda el Excel completo como adjunto en Odoo y envía el
+                    correo a RH (con copia de respaldo) de inmediato — fuera
+                    de los 4 horarios programados (07:00, 14:00, 23:15 y el
+                    resumen de las 06:30).
+                </p>
+                <group>
+                    <field name="fecha_objetivo_sel" widget="radio"/>
+                </group>
+                <footer>
+                    <button name="action_enviar_ahora" type="object"
+                            string="Enviar alerta ahora" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_alerta_inasistencias_wizard" model="ir.actions.act_window">
+        <field name="name">Enviar Alerta de Inasistencias Ahora</field>
+        <field name="res_model">alerta.inasistencias.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Anclado bajo el menú raíz de la app Asistencias. Verificado contra
+         el código fuente de Odoo 18.0: hr_attendance.menu_hr_attendance_root
+         existe con ese id exacto (addons/hr_attendance/views/hr_attendance_view.xml). -->
+    <menuitem id="menu_alerta_inasistencias_wizard"
+              name="Alerta de Inasistencias"
+              parent="hr_attendance.menu_hr_attendance_root"
+              action="action_alerta_inasistencias_wizard"
+              sequence="100"/>
+
+</odoo>
