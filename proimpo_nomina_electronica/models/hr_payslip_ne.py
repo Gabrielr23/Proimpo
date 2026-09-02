@@ -379,14 +379,13 @@ class HrPayslip(models.Model):
         S(root, 'Empleador', RazonSocial=em['razon_social'], NIT=em['nit'], DV=em['dv'],
           Pais='CO', DepartamentoEstado=em['depto'], MunicipioCiudad=em['muni'], Direccion=em['dir'])
         tr = datos['trabajador']
-        # v4.2.1 (NIE048/NIE049): SegundoApellido y OtrosNombres son opcionales, pero si se
-        # incluyen NO pueden ir vacios. Solo se emiten cuando tienen valor.
+        # v4.2.3: segun el XSD oficial, SegundoApellido es OBLIGATORIO (use="required",
+        # puede ir vacio) y OtrosNombres es opcional; la DIAN (NIE049) rechaza
+        # OtrosNombres presente pero vacio -> solo se emite cuando tiene valor.
         tr_attrs = {'TipoTrabajador': tr['tipo_trabajador'], 'SubTipoTrabajador': tr['subtipo_trabajador'],
                     'AltoRiesgoPension': tr['alto_riesgo'], 'TipoDocumento': tr['tipo_doc'],
-                    'NumeroDocumento': tr['numero_doc'], 'PrimerApellido': tr['ap1']}
-        if (tr['ap2'] or '').strip():
-            tr_attrs['SegundoApellido'] = tr['ap2'].strip()
-        tr_attrs['PrimerNombre'] = tr['no1']
+                    'NumeroDocumento': tr['numero_doc'], 'PrimerApellido': tr['ap1'],
+                    'SegundoApellido': (tr['ap2'] or '').strip(), 'PrimerNombre': tr['no1']}
         if (tr['no2'] or '').strip():
             tr_attrs['OtrosNombres'] = tr['no2'].strip()
         S(root, 'Trabajador', **tr_attrs,
