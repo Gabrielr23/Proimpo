@@ -114,7 +114,9 @@ class HrPayslip(models.Model):
         doc_id = "xmldsig-" + str(xml_utils._uuid1())
         keyinfo_id = doc_id + "-keyinfo"
         signprops_id = doc_id + "-signedprops"
-        signing_time = fields.datetime.now(tz=timezone('America/Bogota')).isoformat(timespec='milliseconds')
+        # SigningTime SIN milisegundos (timespec='seconds'): las nóminas aceptadas
+        # (SIESA, AGUILAR) NO llevan milisegundos. Con milisegundos -> ZE02.
+        signing_time = fields.datetime.now(tz=timezone('America/Bogota')).isoformat(timespec='seconds')
 
         ubl = etree.Element('{%s}UBLExtensions' % NS_EXT)
         ext = _E(ubl, '{%s}UBLExtension' % NS_EXT)
@@ -122,25 +124,18 @@ class HrPayslip(models.Model):
         sig = _E(content, '{%s}Signature' % NS_DS)
         sig.set('Id', doc_id)
 
-        # SignedInfo — canonicalización EXCLUSIVA (xml-exc-c14n#).
-        # Motivo: NIE901 obliga a declarar 'xs' y 'xsi' con el MISMO URI (namespace
-        # duplicado). Con c14n INCLUSIVA ese duplicado entra al SignedInfo canónico y el
-        # validador de nómina de la DIAN lo procesa distinto al verificar la firma -> ZE02.
-        # Con c14n EXCLUSIVA, el SignedInfo canónico solo incluye los namespaces realmente
-        # usados (ds), dejando fuera xs/xsi -> la firma es inmune al duplicado y la DIAN la
-        # verifica igual. El helper nativo _fill_signature respeta este algoritmo declarado.
+        # SignedInfo — canonicalización INCLUSIVA (REC-xml-c14n-20010315), igual que la
+        # nómina AGUILAR que la DIAN YA ACEPTÓ (y que el Anexo DC03). ref1/ref2 sin transform.
         si = _E(sig, '{%s}SignedInfo' % NS_DS)
-        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=EXCL)
+        _E(si, '{%s}CanonicalizationMethod' % NS_DS, Algorithm=INCL)
         _E(si, '{%s}SignatureMethod' % NS_DS, Algorithm='http://www.w3.org/2001/04/xmldsig-more#rsa-sha256')
-        # Ref 0: documento completo (enveloped)
+        # Ref 0: documento completo (enveloped, sin c14n explícita -> inclusiva por defecto,
+        # igual que la nómina aceptada)
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
         tr0 = _E(r0, '{%s}Transforms' % NS_DS)
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
-        # Transform adicional exc-c14n: la referencia del documento se canonicaliza
-        # EXCLUSIVA, dejando fuera el 'xs' no usado -> el digest es inmune al dedup DIAN.
-        _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2001/10/xml-exc-c14n#')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
-        r0_dv = _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
+        _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
         # Ref 1: KeyInfo (SIN transform -> inclusiva, igual que la factura aceptada)
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
@@ -183,28 +178,21 @@ class HrPayslip(models.Model):
         spid = _E(spi, '{%s}SignaturePolicyId' % NS_XADES)
         spolid = _E(spid, '{%s}SigPolicyId' % NS_XADES)
         _E(spolid, '{%s}Identifier' % NS_XADES, SIG_POLICY_URL)
-        _E(spolid, '{%s}Description' % NS_XADES, SIG_POLICY_DESC)
+        # SIN Description: las nóminas aceptadas (SIESA, AGUILAR) NO llevan el elemento
+        # xades:Description dentro de SigPolicyId. Incluirlo -> ZE02.
         sph = _E(spid, '{%s}SigPolicyHash' % NS_XADES)
         _E(sph, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
         _E(sph, '{%s}DigestValue' % NS_DS, SIG_POLICY_HASH)
-        # Rol: 'supplier' (igual que el nativo aceptado)
+        # Rol: 'third party' — es el que llevan AMBAS nóminas aceptadas (SIESA y AGUILAR).
+        # El emisor de nómina actúa como tercero, no como 'supplier' (eso es de factura).
         srole = _E(ssp, '{%s}SignerRole' % NS_XADES)
         cr = _E(srole, '{%s}ClaimedRoles' % NS_XADES)
-        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'supplier')
+        _E(cr, '{%s}ClaimedRole' % NS_XADES, 'third party')
 
         # Insertar al inicio y firmar reutilizando los helpers nativos
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
         xml_utils._reference_digests(si)
-        # El helper nativo calcula la referencia URI="" con c14n INCLUSIVA (mira solo el
-        # primer transform, enveloped-signature). La recalculamos EXCLUSIVA para que el
-        # 'xs' no usado quede fuera y el digest sea inmune al dedup del validador DIAN.
-        import hashlib as _hl, base64 as _b64, copy as _copy
-        _tmp = _copy.deepcopy(root)
-        for _s in _tmp.findall('.//{%s}Signature' % NS_DS):
-            _s.getparent().remove(_s)
-        _doc_c14n = etree.tostring(_tmp, method='c14n', exclusive=True, with_comments=False)
-        r0_dv.text = _b64.b64encode(_hl.sha256(_doc_c14n).digest()).decode()
         xml_utils._fill_signature(sig, cert)
         return root
 
