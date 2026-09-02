@@ -704,10 +704,12 @@ class HrPayslip(models.Model):
     def _ne_build_deducciones(self, S, root, datos):
         ded = datos['ded']
         d = S(root, 'Deducciones')
-        if ded.get('salud'):
-            S(d, 'Salud', Porcentaje='4.00', Deduccion=_money(ded['salud']))
-        if ded.get('pension'):
-            S(d, 'FondoPension', Porcentaje='4.00', Deduccion=_money(ded['pension']))
+        # Salud y FondoPension son OBLIGATORIOS en el XSD (1-1). Un pensionado (sin aporte a
+        # pension) o un caso sin aporte a salud se reporta con Porcentaje y Deduccion en 0.00
+        # (NIE164/NIE166: "el porcentaje/valor que corresponda"). v4.3.2
+        S(d, 'Salud', Porcentaje='4.00' if ded.get('salud') else '0.00', Deduccion=_money(ded.get('salud', 0.0)))
+        S(d, 'FondoPension', Porcentaje='4.00' if ded.get('pension') else '0.00',
+          Deduccion=_money(ded.get('pension', 0.0)))
         if ded.get('fsp'):
             S(d, 'FondoSP', Porcentaje='1.00', DeduccionSP=_money(ded['fsp']))
         if ded.get('libranzas'):
