@@ -58,10 +58,19 @@ EXPORTAR_EXCEL = True
 ENVIAR_POR_CORREO = True
 
 # Nombres de los Parámetros del Sistema (Ajustes > Técnico > Parámetros del
-# sistema) de donde se leen los destinatarios. Ninguno de los dos correos
-# queda escrito en este archivo.
+# sistema) de donde se leen los destinatarios y el remitente. Ninguno de
+# los tres correos queda escrito en este archivo.
 PARAM_CORREO_RRHH = 'alerta_inasistencia.correo_rrhh'
 PARAM_CORREO_COPIA = 'alerta_inasistencia.correo_copia'
+# Remitente que se muestra en el correo (para que no parezca enviado por el
+# usuario que dispara el cron/botón, sino por una cuenta de notificaciones).
+# Formato esperado: 'Nombre a mostrar <correo@dominio.com>', por ejemplo
+# 'noreply <notificacionesodoo@proimpo.com>'. Si no se configura este
+# parámetro, Odoo usa su comportamiento por defecto (el correo del usuario
+# que ejecuta la acción). IMPORTANTE: para que no caiga en spam, esa
+# dirección debería ser una cuenta real autorizada (SPF/DKIM) por el mismo
+# servidor de correo saliente que ya tienen configurado en Odoo.
+PARAM_CORREO_REMITENTE = 'alerta_inasistencia.correo_remitente'
 
 
 # ---------------------------------------------------------------------------
@@ -558,6 +567,7 @@ def enviar_correo_inasistencias(env, reporte, adjunto=None):
     ConfigParam = env['ir.config_parameter'].sudo()
     destinatarios = _parsear_lista_correos(ConfigParam.get_param(PARAM_CORREO_RRHH))
     copia = _parsear_lista_correos(ConfigParam.get_param(PARAM_CORREO_COPIA))
+    remitente = (ConfigParam.get_param(PARAM_CORREO_REMITENTE) or '').strip()
 
     if not destinatarios:
         _logger.warning(
@@ -577,6 +587,11 @@ def enviar_correo_inasistencias(env, reporte, adjunto=None):
     }
     if copia:
         valores_correo['email_cc'] = ','.join(copia)
+    if remitente:
+        # 'Nombre a mostrar <correo@dominio.com>', p. ej.
+        # 'noreply <notificacionesodoo@proimpo.com>' — así el correo no
+        # aparece enviado por el usuario que dispara el cron/botón.
+        valores_correo['email_from'] = remitente
     if adjunto:
         valores_correo['attachment_ids'] = [(4, adjunto.id)]
 
