@@ -55,7 +55,8 @@ class HrPayslip(models.Model):
           qty = {bucket: cantidad_dias}"""
         self.ensure_one()
         dev = {}
-        ded = {'libranzas': []}
+        ded = {'libranzas': [], 'otras': []}
+        otros = []      # [(descripcion, monto)] -> OtrosConceptos/OtroConcepto
         qty = {}
         for line in self.line_ids:
             total = round(line.total or 0.0, 2)
@@ -70,21 +71,91 @@ class HrPayslip(models.Model):
                     or cat.strip() in ('bruto', 'neto', 'gross', 'net', 'total')
                     or catc in ('aporte', 'prov', 'provision', 'base', 'bruto', 'neto', 'ibc')):
                 continue
-            es_ded = ('deduc' in cat) or (total < 0) or (catc in ('ded', 'deduction'))
+            es_ded = ('deduc' in cat) or (catc in ('ded', 'deduction'))
             if es_ded:
                 b = self._ne_ded_bucket(code, name)
                 amt = abs(total)
                 if b == 'libranzas':
                     ded['libranzas'].append((line.name or 'Libranza', amt))
+                elif b == 'otras':
+                    ded['otras'].append(amt)
                 else:
                     ded[b] = ded.get(b, 0.0) + amt
             else:
                 b = self._ne_dev_bucket(code, name)
+                if b == 'horas':
+                    # Horas extras/recargos: el detalle sale de earn_ids (HED/HEN/HRN...).
+                    # Si no hay detalle, se reporta como OtroConcepto con su descripcion.
+                    if not self._ne_tiene_detalle_horas():
+                        otros.append((line.name or 'Horas extras', total))
+                    continue
+                if b == 'otros':
+                    otros.append((line.name or 'Otro concepto', total))
+                    continue
+                # v4.2.5: un devengado negativo (p.ej. "Mayor valor pagado comision") se
+                # netea contra su mismo bucket; si el bucket queda negativo, pasa a
+                # OtraDeduccion (ver abajo).
                 dev[b] = dev.get(b, 0.0) + total
                 q = abs(line.quantity or 0.0)
                 if q and q != 1.0:
                     qty[b] = qty.get(b, 0.0) + q
+        # Otros conceptos: agrupar por descripcion; negativos -> OtraDeduccion
+        agg = {}
+        for n, a in otros:
+            agg[n] = agg.get(n, 0.0) + a
+        dev['otros'] = [(n, round(a, 2)) for n, a in agg.items() if round(a, 2) > 0]
+        for n, a in agg.items():
+            if round(a, 2) < 0:
+                ded['otras'].append(abs(round(a, 2)))
+        for b in list(dev.keys()):
+            if b != 'otros' and round(dev[b], 2) < 0:
+                ded['otras'].append(abs(round(dev[b], 2)))
+                dev[b] = 0.0
         return dev, ded, qty
+
+    # Categorias del motor (earn.line) -> elemento DIAN y porcentaje de recargo
+    _NE_HORAS = {
+        'daily_overtime':                         ('HEDs',   'HED',   '25.00'),
+        'overtime_night_hours':                   ('HENs',   'HEN',   '75.00'),
+        'hours_night_surcharge':                  ('HRNs',   'HRN',   '35.00'),
+        'sunday_holiday_daily_overtime':          ('HEDDFs', 'HEDDF', '100.00'),
+        'daily_surcharge_hours_sundays_holidays': ('HRDDFs', 'HRDDF', '75.00'),
+        'sunday_night_overtime_holidays':         ('HENDFs', 'HENDF', '150.00'),
+        'sunday_holidays_night_surcharge_hours':  ('HRNDFs', 'HRNDF', '110.00'),
+    }
+
+    def _ne_tiene_detalle_horas(self):
+        self.ensure_one()
+        return any(e.category in self._NE_HORAS and e.total for e in getattr(self, 'earn_ids', []))
+
+    def _ne_detalle_horas(self):
+        """[(parent, child, {HoraInicio, HoraFin, Cantidad, Porcentaje, Pago})] desde earn_ids,
+        en el orden del XSD."""
+        self.ensure_one()
+        from datetime import datetime, timedelta
+        out = {}
+        for e in getattr(self, 'earn_ids', []):
+            m = self._NE_HORAS.get(e.category)
+            if not m or not e.total:
+                continue
+            attrs = {}
+            if e.date_start:
+                ini = datetime(e.date_start.year, e.date_start.month, e.date_start.day) + timedelta(hours=e.time_start or 0.0)
+                fin_d = e.date_end or e.date_start
+                fin = datetime(fin_d.year, fin_d.month, fin_d.day) + timedelta(hours=e.time_end or 0.0)
+                if fin <= ini:
+                    fin = ini + timedelta(hours=abs(e.quantity or 1.0))
+                attrs['HoraInicio'] = ini.strftime('%Y-%m-%dT%H:%M:%S')
+                attrs['HoraFin'] = fin.strftime('%Y-%m-%dT%H:%M:%S')
+            attrs['Cantidad'] = ('%.2f' % abs(e.quantity or 1.0)).rstrip('0').rstrip('.')
+            attrs['Porcentaje'] = m[2]
+            attrs['Pago'] = _money(abs(e.total))
+            out.setdefault(e.category, []).append(attrs)
+        res = []
+        for cat, m in self._NE_HORAS.items():
+            for attrs in out.get(cat, []):
+                res.append((m[0], m[1], attrs))
+        return res
 
     @staticmethod
     def _ne_dev_bucket(code, name):
@@ -96,7 +167,7 @@ class HrPayslip(models.Model):
         if 'básico' in n or 'basico' in n or code in ('basic', 'sueldo', 'salariobasico'):
             return 'basico'
         if 'hora' in n or 'recargo' in n or 'extra' in n:
-            return 'otros'          # horas extras: detalle HEDs/HENs se hará luego
+            return 'horas'
         if 'vacacion' in n:
             return 'vacaciones'
         if 'cesant' in n:
@@ -305,9 +376,12 @@ class HrPayslip(models.Model):
         }
 
     def _ne_totales(self, dev, ded):
-        dev_t = sum(dev.values())
-        ded_t = sum(v for k, v in ded.items() if k != 'libranzas')
+        dev_t = sum(v for k, v in dev.items() if k != 'otros')
+        dev_t += sum(a for _n, a in dev.get('otros', []))
+        dev_t += sum(float(h[2]['Pago']) for h in self._ne_detalle_horas())
+        ded_t = sum(v for k, v in ded.items() if k not in ('libranzas', 'otras'))
         ded_t += sum(a for _n, a in ded.get('libranzas', []))
+        ded_t += sum(ded.get('otras', []))
         return round(dev_t, 2), round(ded_t, 2)
 
     # ------------------------------------------------------------------
@@ -419,7 +493,8 @@ class HrPayslip(models.Model):
         d = S(root, 'Devengados')
 
         def g(k):
-            return dev.get(k, 0.0)
+            v = dev.get(k, 0.0)
+            return v if isinstance(v, (int, float)) else 0.0
 
         def cant(k, default='1'):
             q = qty.get(k)
@@ -437,6 +512,12 @@ class HrPayslip(models.Model):
             if g('transporte_vns'):
                 attrs['ViaticoManuAlojNS'] = _money(g('transporte_vns'))
             S(d, 'Transporte', **attrs)
+        # Horas extras y recargos (HEDs, HENs, HRNs, HEDDFs, HRDDFs, HENDFs, HRNDFs)
+        parents = {}
+        for parent, child, attrs in self._ne_detalle_horas():
+            if parent not in parents:
+                parents[parent] = S(d, parent)
+            S(parents[parent], child, **attrs)
         # Vacaciones
         if g('vacaciones'):
             v = S(d, 'Vacaciones')
@@ -471,15 +552,17 @@ class HrPayslip(models.Model):
             if g('aux_ns'):
                 attrs['AuxilioNS'] = _money(g('aux_ns'))
             S(au, 'Auxilio', **attrs)
-        # Comisiones
+        # Otros conceptos (XSD: DescripcionConcepto obligatorio + ConceptoS/ConceptoNS)
+        otros = dev.get('otros') or []
+        if otros:
+            oc = S(d, 'OtrosConceptos')
+            for nombre, monto in otros:
+                S(oc, 'OtroConcepto', DescripcionConcepto=(nombre or 'Otro concepto')[:100],
+                  ConceptoS=_money(monto))
+        # Comisiones (XSD: despues de OtrosConceptos)
         if g('comisiones'):
             cm = S(d, 'Comisiones')
             S(cm, 'Comision', _text=_money(g('comisiones')))
-        # Otros conceptos (horas extras y no mapeados)
-        if g('otros'):
-            oc = S(d, 'OtrosConceptos')
-            S(oc, 'OtroConcepto', ConceptoS='Otros devengados',
-              DescripcionConceptoS='Otros', PagoS=_money(g('otros')))
 
     def _ne_build_deducciones(self, S, root, datos):
         ded = datos['ded']
@@ -498,7 +581,8 @@ class HrPayslip(models.Model):
         # RetencionFuente, AFC, Cooperativa, Reintegro
         if ded.get('otras'):
             od = S(d, 'OtrasDeducciones')
-            S(od, 'OtraDeduccion', Deduccion=_money(ded['otras']))
+            for monto in ded['otras']:
+                S(od, 'OtraDeduccion', _text=_money(monto))
         if ded.get('pension_voluntaria'):
             S(d, 'PensionVoluntaria', _text=_money(ded['pension_voluntaria']))
         if ded.get('retencion'):
