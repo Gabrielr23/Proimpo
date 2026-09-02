@@ -224,6 +224,17 @@ class HrPayslip(models.Model):
             return 'transporte_aux'
         if 'básico' in n or 'basico' in n or code in ('basic', 'sueldo', 'salariobasico'):
             return 'basico'
+        # v4.4.0: aprendices y liquidacion
+        if 'sostenimiento' in n or 'apoyo' in n or code in ('apoyo', 'apoyosost'):
+            return 'apoyo'
+        if 'indemniz' in n or code in ('liqind', 'indem'):
+            return 'indemnizacion'
+        if ('bonif' in n and 'retiro' in n) or code in ('bonret', 'bonifretiro'):
+            return 'bonif_retiro'
+        if 'dotaci' in n or code in ('dotacion',):
+            return 'dotacion'
+        if 'vacacion' in n and ('compens' in n or code in ('vaccomp',)):
+            return 'vacaciones_comp'
         if 'hora' in n or 'recargo' in n or 'extra' in n:
             return 'horas'
         if 'vacacion' in n:
@@ -260,6 +271,8 @@ class HrPayslip(models.Model):
             return 'libranzas'
         if 'cooper' in n or 'fondo de emplead' in n or 'fondo emplead' in n:
             return 'cooperativa'
+        if 'deuda' in n or code in ('deuda',):
+            return 'deuda'
         return 'otras'
 
     # ------------------------------------------------------------------
@@ -401,9 +414,13 @@ class HrPayslip(models.Model):
             'fecha_gen': fecha_gen, 'hora_gen': hora_gen,
             'periodo': {
                 'ingreso': str(ct.date_start) if ct and ct.date_start else str(self.date_from or ''),
+                # v4.4.0: FechaRetiro cuando es liquidacion o el contrato termina dentro del periodo
+                'retiro': (str(ct.date_end) if ct and ct.date_end and self.date_to
+                           and (self._ne_es_liquidacion() or ct.date_end <= self.date_to) else ''),
                 'inicio': str(self.date_from or ''), 'fin': str(self.date_to or ''),
                 'tiempo': str(tiempo_lab),
             },
+            'liquidacion': self._ne_es_liquidacion(),
             'periodo_nomina': self._ne_periodo_nomina(),
             'secuencia': {'prefijo': prefijo, 'consecutivo': consecutivo, 'numero': numero_full},
             'lugar': {'depto': e_depto, 'muni': e_muni},
@@ -433,12 +450,28 @@ class HrPayslip(models.Model):
 
     @staticmethod
     def _ne_tipo_contrato(ct):
+        """Catalogo DIAN 5.5.2: 1 Termino fijo, 2 Indefinido, 3 Obra o labor, 4 Aprendizaje,
+        5 Practicas. v4.4.0: se toma del campo DIAN del motor (type_contract_id.code); si no
+        esta, se deduce del tipo de trabajador (12/19 -> aprendizaje) o del tipo generico de Odoo."""
         if not ct:
             return '1'
-        m = {'permanent': '1', 'indefinite': '1', 'fixed': '2', 'temporary': '2',
+        tc = getattr(ct, 'type_contract_id', False)
+        if tc and (tc.code or '').strip() in ('1', '2', '3', '4', '5'):
+            return tc.code.strip()
+        tw = getattr(ct, 'type_worker_id', False)
+        if tw and (tw.code or '') in ('12', '19'):
+            return '4'
+        m = {'permanent': '2', 'indefinite': '2', 'fixed': '1', 'temporary': '1',
              'project': '3', 'apprentice': '4', 'internship': '5'}
         val = (getattr(ct, 'contract_type_id', False) and (ct.contract_type_id.code or '').lower()) or ''
         return m.get(val, '1')
+
+    def _ne_es_liquidacion(self):
+        self.ensure_one()
+        if getattr(self, 'is_settlement', False):
+            return True
+        n = (self.struct_id.name or '').lower() if self.struct_id else ''
+        return 'liquidaci' in n
 
     def _ne_pago(self, e):
         ba = e.bank_account_id
@@ -517,7 +550,10 @@ class HrPayslip(models.Model):
     def _ne_build_cuerpo(self, S, root, datos, cune, op_mode, software_sc):
         """Periodo ... ComprobanteTotal (comun a NominaIndividual y a Reemplazar)."""
         p = datos['periodo']
-        S(root, 'Periodo', FechaIngreso=p['ingreso'], FechaLiquidacionInicio=p['inicio'],
+        per_attrs = {'FechaIngreso': p['ingreso']}
+        if p.get('retiro'):
+            per_attrs['FechaRetiro'] = p['retiro']
+        S(root, 'Periodo', **per_attrs, FechaLiquidacionInicio=p['inicio'],
           FechaLiquidacionFin=p['fin'], TiempoLaborado=p['tiempo'], FechaGen=datos['fecha_gen'])
         sec = datos['secuencia']
         S(root, 'NumeroSecuenciaXML', CodigoTrabajador=datos['trabajador']['codigo_trabajador'],
@@ -655,10 +691,16 @@ class HrPayslip(models.Model):
             if parent not in parents:
                 parents[parent] = S(d, parent)
             S(parents[parent], child, **attrs)
-        # Vacaciones
-        if g('vacaciones'):
+        # Vacaciones (en liquidacion, las vacaciones se pagan COMPENSADAS)
+        vac_comp = g('vacaciones_comp') + (g('vacaciones') if datos.get('liquidacion') else 0.0)
+        vac_com = 0.0 if datos.get('liquidacion') else g('vacaciones')
+        if vac_com or vac_comp:
             v = S(d, 'Vacaciones')
-            S(v, 'VacacionesComunes', Cantidad=cant('vacaciones'), Pago=_money(g('vacaciones')))
+            if vac_com:
+                S(v, 'VacacionesComunes', Cantidad=cant('vacaciones'), Pago=_money(vac_com))
+            if vac_comp:
+                q = (qty.get('vacaciones_comp') or 0.0) + ((qty.get('vacaciones') or 0.0) if datos.get('liquidacion') else 0.0)
+                S(v, 'VacacionesCompensadas', Cantidad=str(int(round(q))) if q else '1', Pago=_money(vac_comp))
         # Primas
         if g('primas_s') or g('primas_ns'):
             attrs = {'Cantidad': '0'}
@@ -700,6 +742,16 @@ class HrPayslip(models.Model):
         if g('comisiones'):
             cm = S(d, 'Comisiones')
             S(cm, 'Comision', _text=_money(g('comisiones')))
+        # v4.4.0 - orden XSD: PagosTerceros, Anticipos, Dotacion, ApoyoSost, Teletrabajo,
+        # BonifRetiro, Indemnizacion, Reintegro
+        if g('dotacion'):
+            S(d, 'Dotacion', _text=_money(g('dotacion')))
+        if g('apoyo'):
+            S(d, 'ApoyoSost', _text=_money(g('apoyo')))
+        if g('bonif_retiro'):
+            S(d, 'BonifRetiro', _text=_money(g('bonif_retiro')))
+        if g('indemnizacion'):
+            S(d, 'Indemnizacion', _text=_money(g('indemnizacion')))
 
     def _ne_build_deducciones(self, S, root, datos):
         ded = datos['ded']
@@ -732,3 +784,5 @@ class HrPayslip(models.Model):
             S(d, 'Cooperativa', _text=_money(ded['cooperativa']))
         if ded.get('reintegro'):
             S(d, 'Reintegro', _text=_money(ded['reintegro']))
+        if ded.get('deuda'):
+            S(d, 'Deuda', _text=_money(ded['deuda']))
