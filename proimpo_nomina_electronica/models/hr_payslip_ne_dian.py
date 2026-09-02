@@ -136,8 +136,11 @@ class HrPayslip(models.Model):
         r0 = _E(si, '{%s}Reference' % NS_DS, URI='', Id=doc_id + '-ref0')
         tr0 = _E(r0, '{%s}Transforms' % NS_DS)
         _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
+        # Transform adicional exc-c14n: la referencia del documento se canonicaliza
+        # EXCLUSIVA, dejando fuera el 'xs' no usado -> el digest es inmune al dedup DIAN.
+        _E(tr0, '{%s}Transform' % NS_DS, Algorithm='http://www.w3.org/2001/10/xml-exc-c14n#')
         _E(r0, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
-        _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
+        r0_dv = _E(r0, '{%s}DigestValue' % NS_DS, 'dummy')
         # Ref 1: KeyInfo (SIN transform -> inclusiva, igual que la factura aceptada)
         r1 = _E(si, '{%s}Reference' % NS_DS, URI='#' + keyinfo_id)
         _E(r1, '{%s}DigestMethod' % NS_DS, Algorithm=SHA256)
@@ -193,6 +196,15 @@ class HrPayslip(models.Model):
         root.insert(0, ubl)
         xml_utils._remove_tail_and_text_in_hierarchy(root)
         xml_utils._reference_digests(si)
+        # El helper nativo calcula la referencia URI="" con c14n INCLUSIVA (mira solo el
+        # primer transform, enveloped-signature). La recalculamos EXCLUSIVA para que el
+        # 'xs' no usado quede fuera y el digest sea inmune al dedup del validador DIAN.
+        import hashlib as _hl, base64 as _b64, copy as _copy
+        _tmp = _copy.deepcopy(root)
+        for _s in _tmp.findall('.//{%s}Signature' % NS_DS):
+            _s.getparent().remove(_s)
+        _doc_c14n = etree.tostring(_tmp, method='c14n', exclusive=True, with_comments=False)
+        r0_dv.text = _b64.b64encode(_hl.sha256(_doc_c14n).digest()).decode()
         xml_utils._fill_signature(sig, cert)
         return root
 
