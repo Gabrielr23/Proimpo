@@ -432,14 +432,15 @@ def exportar_reporte_excel(env, reporte):
         if len(columnas) > 4:
             hoja.set_column(4, 4, 22)
 
+    # Nota: se dejaron fuera del Excel a propósito las hojas "Sin horario
+    # definido", "Advertencias horario" y "Asistio en festivo" (decisión
+    # del 2026-09-02) — esas categorías se siguen calculando y viendo en la
+    # consola/log al correr manualmente, pero ya no se escriben en el
+    # adjunto que recibe RH.
     columnas_base = ['Cédula', 'Nombre completo', 'Área', 'Entrada esperada']
     escribir_hoja('Inasistencias', reporte['inasistencias'], columnas_base, fmt_header)
     escribir_hoja('Aun no inicia turno', reporte['pendientes_por_llegar'], columnas_base, fmt_header_warn)
     escribir_hoja('Con permiso', reporte['con_permiso'], columnas_base + ['Tipo de ausencia'], fmt_header_ok)
-    escribir_hoja('Sin horario definido', reporte['sin_horario_definido'], columnas_base, fmt_header)
-    if INCLUIR_ADVERTENCIAS_HORARIO:
-        escribir_hoja('Advertencias horario', reporte['advertencias_horario'], columnas_base, fmt_header)
-        escribir_hoja('Asistio en festivo', reporte['marcaron_en_festivo'], columnas_base + ['Festivo/cierre'], fmt_header_warn)
 
     hoja_resumen = workbook.add_worksheet('Resumen')
     hoja_resumen.write(0, 0, 'Reporte de inasistencias', fmt_header)
@@ -453,12 +454,10 @@ def exportar_reporte_excel(env, reporte):
     hoja_resumen.write(4, 1, len(reporte['pendientes_por_llegar']))
     hoja_resumen.write(5, 0, 'Total con permiso:')
     hoja_resumen.write(5, 1, len(reporte['con_permiso']))
-    hoja_resumen.write(6, 0, 'Total marcó asistencia en festivo/cierre:')
-    hoja_resumen.write(6, 1, len(reporte['marcaron_en_festivo']))
-    hoja_resumen.write(7, 0, 'Festivos/cierres detectados:')
-    hoja_resumen.write(7, 1, ', '.join(reporte['festivos_detectados']) if reporte['festivos_detectados'] else 'Ninguno')
-    hoja_resumen.write(8, 0, 'Tolerancia aplicada (min):')
-    hoja_resumen.write(8, 1, TOLERANCIA_MINUTOS)
+    hoja_resumen.write(6, 0, 'Festivos/cierres detectados:')
+    hoja_resumen.write(6, 1, ', '.join(reporte['festivos_detectados']) if reporte['festivos_detectados'] else 'Ninguno')
+    hoja_resumen.write(7, 0, 'Tolerancia aplicada (min):')
+    hoja_resumen.write(7, 1, TOLERANCIA_MINUTOS)
     hoja_resumen.set_column(0, 0, 30)
     hoja_resumen.set_column(1, 1, 30)
 
