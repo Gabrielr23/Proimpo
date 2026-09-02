@@ -118,6 +118,11 @@ class HrPayslip(models.Model):
             return 'salud'
         if 'solidaridad' in n or 'fsp' in code or 'fondo de solidaridad' in n:
             return 'fsp'
+        # v4.2.2: pension voluntaria y AFC van en sus propios elementos (no en FondoPension)
+        if 'voluntar' in n or code in ('pensvol', 'pens_vol', 'pvol'):
+            return 'pension_voluntaria'
+        if 'afc' in n.split() or code in ('afc',) or 'cuenta afc' in n or 'ahorro para el fomento' in n:
+            return 'afc'
         if 'pensión' in n or 'pension' in n or code in ('pens',):
             return 'pension'
         if 'retención' in n or 'retencion' in n or 'fuente' in n or code in ('rtf', 'retefuente'):
@@ -374,9 +379,17 @@ class HrPayslip(models.Model):
         S(root, 'Empleador', RazonSocial=em['razon_social'], NIT=em['nit'], DV=em['dv'],
           Pais='CO', DepartamentoEstado=em['depto'], MunicipioCiudad=em['muni'], Direccion=em['dir'])
         tr = datos['trabajador']
-        S(root, 'Trabajador', TipoTrabajador=tr['tipo_trabajador'], SubTipoTrabajador=tr['subtipo_trabajador'],
-          AltoRiesgoPension=tr['alto_riesgo'], TipoDocumento=tr['tipo_doc'], NumeroDocumento=tr['numero_doc'],
-          PrimerApellido=tr['ap1'], SegundoApellido=tr['ap2'], PrimerNombre=tr['no1'], OtrosNombres=tr['no2'],
+        # v4.2.1 (NIE048/NIE049): SegundoApellido y OtrosNombres son opcionales, pero si se
+        # incluyen NO pueden ir vacios. Solo se emiten cuando tienen valor.
+        tr_attrs = {'TipoTrabajador': tr['tipo_trabajador'], 'SubTipoTrabajador': tr['subtipo_trabajador'],
+                    'AltoRiesgoPension': tr['alto_riesgo'], 'TipoDocumento': tr['tipo_doc'],
+                    'NumeroDocumento': tr['numero_doc'], 'PrimerApellido': tr['ap1']}
+        if (tr['ap2'] or '').strip():
+            tr_attrs['SegundoApellido'] = tr['ap2'].strip()
+        tr_attrs['PrimerNombre'] = tr['no1']
+        if (tr['no2'] or '').strip():
+            tr_attrs['OtrosNombres'] = tr['no2'].strip()
+        S(root, 'Trabajador', **tr_attrs,
           LugarTrabajoPais='CO', LugarTrabajoDepartamentoEstado=tr['lt_depto'],
           LugarTrabajoMunicipioCiudad=tr['lt_muni'], LugarTrabajoDireccion=tr['lt_dir'],
           SalarioIntegral=tr['salario_integral'], TipoContrato=tr['tipo_contrato'], Sueldo=tr['sueldo'],
@@ -482,12 +495,18 @@ class HrPayslip(models.Model):
             lb = S(d, 'Libranzas')
             for name, total in ded['libranzas']:
                 S(lb, 'Libranza', Descripcion=(name or 'Libranza')[:100], Deduccion=_money(total))
+        # Orden EXACTO del XSD: ... Libranzas, OtrasDeducciones, PensionVoluntaria,
+        # RetencionFuente, AFC, Cooperativa, Reintegro
+        if ded.get('otras'):
+            od = S(d, 'OtrasDeducciones')
+            S(od, 'OtraDeduccion', Deduccion=_money(ded['otras']))
+        if ded.get('pension_voluntaria'):
+            S(d, 'PensionVoluntaria', _text=_money(ded['pension_voluntaria']))
         if ded.get('retencion'):
             S(d, 'RetencionFuente', _text=_money(ded['retencion']))
+        if ded.get('afc'):
+            S(d, 'AFC', _text=_money(ded['afc']))
         if ded.get('cooperativa'):
             S(d, 'Cooperativa', _text=_money(ded['cooperativa']))
         if ded.get('reintegro'):
             S(d, 'Reintegro', _text=_money(ded['reintegro']))
-        if ded.get('otras'):
-            od = S(d, 'OtrasDeducciones')
-            S(od, 'OtraDeduccion', Deduccion=_money(ded['otras']))
