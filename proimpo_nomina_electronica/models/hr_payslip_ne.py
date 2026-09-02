@@ -327,15 +327,18 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _ne_build_xml(self, datos, cune, op_mode=None, software_sc=''):
         from lxml import etree
-        # 'xs' y 'xsi' AMBOS = XMLSchema-instance: es lo que exige NIE901 (coincide con
-        # el ejemplo oficial de la DIAN). No cambiar el URI de 'xs' (romper esto dispara
-        # NIE901). El problema del ZE02 se ataca por la canonicalizacion de la firma.
-        nsmap = {'xades': NS_XADES, 'xades141': NS_XADES141, 'ext': NS_EXT,
-                 'ds': NS_DS, 'xsi': NS_XSI, 'xs': NS_XSI, None: NS}
-        root = etree.Element('{%s}NominaIndividual' % NS, nsmap=nsmap)
-        root.set('SchemaLocation', '')
-        root.set('{%s}schemaLocation' % NS_XSI,
-                 'dian:gov:co:facturaelectronica:NominaIndividual NominaIndividualElectronicaXSD.xsd')
+        # v4.2.0: la raiz se construye desde texto para replicar BYTE A BYTE la raiz de las
+        # nominas ACEPTADAS por la DIAN (GOMEZ/AGUILAR): orden de namespaces
+        # default, xs, ds, ext, xades, xades141, xsi y atributo xsi:schemaLocation.
+        # 'xs' y 'xsi' AMBOS = XMLSchema-instance (lo exige NIE901). Con nsmap de lxml el
+        # orden cambia y el atributo sale como xs:schemaLocation; un validador que remapee
+        # prefijos duplicados alteraria el digest del documento -> ZE02.
+        root = etree.fromstring(
+            '<NominaIndividual xmlns="%s" xmlns:xs="%s" xmlns:ds="%s" xmlns:ext="%s" '
+            'xmlns:xades="%s" xmlns:xades141="%s" xmlns:xsi="%s" SchemaLocation="" '
+            'xsi:schemaLocation="dian:gov:co:facturaelectronica:NominaIndividual '
+            'NominaIndividualElectronicaXSD.xsd"/>'
+            % (NS, NS_XSI, NS_DS, NS_EXT, NS_XADES, NS_XADES141, NS_XSI))
 
         def S(parent, tag, _text=None, **attrs):
             el = etree.SubElement(parent, '{%s}%s' % (NS, tag))
@@ -345,6 +348,9 @@ class HrPayslip(models.Model):
                 el.set(k, str(v))
             return el
 
+        # v4.2.0: elementos opcionales presentes en las nóminas ACEPTADAS (GOMEZ/AGUILAR):
+        # Novedad, RazonSocial en ProveedorXML, TRM, Notas, CodigoTrabajador y Redondeo.
+        S(root, 'Novedad', _text='false', CUNENov=cune)
         p = datos['periodo']
         S(root, 'Periodo', FechaIngreso=p['ingreso'], FechaLiquidacionInicio=p['inicio'],
           FechaLiquidacionFin=p['fin'], TiempoLaborado=p['tiempo'], FechaGen=datos['fecha_gen'])
@@ -354,14 +360,16 @@ class HrPayslip(models.Model):
         S(root, 'LugarGeneracionXML', Pais='CO', DepartamentoEstado=datos['lugar']['depto'],
           MunicipioCiudad=datos['lugar']['muni'], Idioma='es')
         if op_mode is not None:
-            S(root, 'ProveedorXML', NIT=datos['empleador']['nit'], DV=datos['empleador']['dv'],
+            S(root, 'ProveedorXML', RazonSocial=datos['empleador']['razon_social'],
+              NIT=datos['empleador']['nit'], DV=datos['empleador']['dv'],
               SoftwareID=op_mode.dian_software_id or '', SoftwareSC=software_sc or '')
         S(root, 'CodigoQR', _text=self._ne_qr_url(cune))
         S(root, 'InformacionGeneral',
           Version='V1.0: Documento Soporte de Pago de Nómina Electrónica',
           Ambiente=datos['ambiente'], TipoXML=datos['tipo_documento'], CUNE=cune,
           EncripCUNE='CUNE-SHA384', FechaGen=datos['fecha_gen'], HoraGen=datos['hora_gen'],
-          PeriodoNomina=datos['periodo_nomina'], TipoMoneda='COP')
+          PeriodoNomina=datos['periodo_nomina'], TipoMoneda='COP', TRM='0')
+        S(root, 'Notas', _text='NOMINA %s %s A %s' % (sec['numero'], p['inicio'], p['fin']))
         em = datos['empleador']
         S(root, 'Empleador', RazonSocial=em['razon_social'], NIT=em['nit'], DV=em['dv'],
           Pais='CO', DepartamentoEstado=em['depto'], MunicipioCiudad=em['muni'], Direccion=em['dir'])
@@ -371,7 +379,8 @@ class HrPayslip(models.Model):
           PrimerApellido=tr['ap1'], SegundoApellido=tr['ap2'], PrimerNombre=tr['no1'], OtrosNombres=tr['no2'],
           LugarTrabajoPais='CO', LugarTrabajoDepartamentoEstado=tr['lt_depto'],
           LugarTrabajoMunicipioCiudad=tr['lt_muni'], LugarTrabajoDireccion=tr['lt_dir'],
-          SalarioIntegral=tr['salario_integral'], TipoContrato=tr['tipo_contrato'], Sueldo=tr['sueldo'])
+          SalarioIntegral=tr['salario_integral'], TipoContrato=tr['tipo_contrato'], Sueldo=tr['sueldo'],
+          CodigoTrabajador=tr['codigo_trabajador'])
         pg = datos['pago']
         pago_attrs = {'Forma': pg['forma'], 'Metodo': pg['metodo']}
         if pg['banco']:
@@ -386,10 +395,11 @@ class HrPayslip(models.Model):
         self._ne_build_devengados(S, root, datos)
         self._ne_build_deducciones(S, root, datos)
 
+        S(root, 'Redondeo', _text='0.00')
         S(root, 'DevengadosTotal', _text=_money(datos['dev_total']))
         S(root, 'DeduccionesTotal', _text=_money(datos['ded_total']))
         S(root, 'ComprobanteTotal', _text=_money(datos['comprobante_total']))
-        return etree.tostring(root, xml_declaration=True, encoding='UTF-8').decode()
+        return etree.tostring(root, encoding='UTF-8').decode()
 
     def _ne_build_devengados(self, S, root, datos):
         dev = datos['dev']

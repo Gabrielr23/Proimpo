@@ -28,9 +28,9 @@ from odoo.addons.l10n_co_dian import xml_utils
 NS_DS = "http://www.w3.org/2000/09/xmldsig#"
 NS_EXT = "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
 NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
-# Política de firma de la DIAN — VALORES EXACTOS del motor nativo de Odoo (factura que
-# la DIAN ya acepta con el certificado Certicámara de PROIMPO). Ojo: 'https:/' con UNA
-# sola barra (así lo genera Odoo y así lo acepta la DIAN).
+# Política de firma de la DIAN. v4.1.0: URL con 'https://' (DOS barras), igual a las
+# nóminas ACEPTADAS de referencia (GOMEZ ROJAS / AGUILAR SUAREZ). El motor nativo de
+# factura usa 'https:/' (una barra) pero para nómina se replica el documento aceptado.
 SIG_POLICY_URL = "https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf"
 SIG_POLICY_DESC = "Política de firma para facturas electrónicas de la República de Colombia."
 SIG_POLICY_HASH = "dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y="
@@ -211,8 +211,9 @@ class HrPayslip(models.Model):
             self._ne_add_signature_node(root, cert)
         # Declaración XML limpia (comillas dobles, sin salto de línea antes de la raíz),
         # igual al ejemplo oficial de la DIAN y sin caracteres de edición (regla ZB02).
-        body = etree.tostring(root, xml_declaration=False, encoding='UTF-8')
-        xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>' + body
+        # v4.2.0: SIN declaracion <?xml ...?>: ni la factura aceptada (SETP990000008) ni
+        # las nominas aceptadas (GOMEZ/AGUILAR) la llevan.
+        xml_bytes = etree.tostring(root, xml_declaration=False, encoding='UTF-8')
         return xml_bytes, cune, datos
 
     # ------------------------------------------------------------------
