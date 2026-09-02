@@ -204,7 +204,13 @@ class HrPayslip(models.Model):
         num_ne = datos['secuencia']['numero']
         cune = self._ne_cune(datos, software_pin=op_mode.dian_software_security_code or '')
         ssc = self._ne_software_security_code(op_mode, num_ne)
-        xml_str = self._ne_build_xml(datos, cune, op_mode=op_mode, software_sc=ssc)
+        if datos.get('nota'):
+            xml_str = self._ne_build_xml_ajuste(datos, cune, op_mode=op_mode, software_sc=ssc)
+        else:
+            xml_str = self._ne_build_xml(datos, cune, op_mode=op_mode, software_sc=ssc)
+        # v4.3.0: guardar numero y FechaGen enviados (los usa una futura nota de ajuste)
+        self.ne_numero = num_ne
+        self.ne_fecha_gen = datos['fecha_gen']
         root = etree.fromstring(xml_str.encode() if isinstance(xml_str, str) else xml_str)
         cert = self._ne_cert()
         if cert:
@@ -359,6 +365,24 @@ class HrPayslip(models.Model):
             self.ne_state = 'rejected'
             self.ne_mensaje = self._ne_render_msg(root)
 
+    def action_ne_corregir(self):
+        """v4.3.0: crea la nota de ajuste tipo REEMPLAZAR: copia del recibo aceptado, en
+        borrador, apuntando al original. El usuario corrige novedades, calcula y envia."""
+        self.ensure_one()
+        if self.ne_state != 'accepted':
+            raise UserError(_("Solo se puede corregir un recibo ACEPTADO por la DIAN."))
+        if self.ne_tipo_nota:
+            raise UserError(_("No se puede hacer una nota de ajuste sobre otra nota de ajuste."))
+        vals = {'ne_reemplaza_id': self.id, 'ne_state': 'draft',
+                'name': _("Corrección (reemplazo) de %s") % (self.number or '')}
+        if 'credit_note' in self._fields:
+            vals['credit_note'] = False
+        if 'origin_payslip_id' in self._fields:
+            vals['origin_payslip_id'] = False
+        nuevo = self.copy(vals)
+        return {'type': 'ir.actions.act_window', 'res_model': 'hr.payslip',
+                'res_id': nuevo.id, 'view_mode': 'form', 'target': 'current'}
+
     def action_ne_consultar(self):
         """Consulta el resultado del set de pruebas (GetStatusZip) usando el ZipKey."""
         for slip in self:
@@ -379,6 +403,13 @@ class HrPayslip(models.Model):
                 slip.ne_state = 'accepted'
                 if slip.ne_document_id:
                     slip.ne_document_id.state = 'invoice_accepted'
+                # v4.3.0: una nota de ajuste aceptada cambia el estado del recibo original
+                pred = slip._ne_predecesor()
+                if pred:
+                    pred.ne_state = 'replaced' if slip.ne_tipo_nota == '1' else 'deleted'
+                    pred.ne_mensaje = _("%s por la nota de ajuste %s (CUNE %s).") % (
+                        _("Reemplazado") if slip.ne_tipo_nota == '1' else _("Eliminado"),
+                        slip.ne_numero, slip.ne_cune)
             elif not root.findtext('.//{*}StatusCode'):
                 slip.ne_state = 'sent'   # sigue pendiente
             else:

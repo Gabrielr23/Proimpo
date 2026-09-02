@@ -16,6 +16,10 @@
                 <button name="action_ne_consultar" type="object"
                         string="Consultar estado DIAN"
                         invisible="not ne_zip_key"/>
+                <button name="action_ne_corregir" type="object"
+                        string="Corregir (nota de reemplazo)" class="btn-secondary"
+                        invisible="ne_state != 'accepted' or ne_tipo_nota"
+                        confirm="Se creará un recibo en borrador que reemplazará ante la DIAN al recibo actual. ¿Continuar?"/>
                 <button name="action_ne_descargar" type="object"
                         string="Descargar XML"
                         invisible="not ne_xml"/>
@@ -25,6 +29,8 @@
                 <page string="Nómina Electrónica" name="ne">
                     <group>
                         <group string="Documento DIAN">
+                            <field name="ne_numero" readonly="1"/>
+                            <field name="ne_fecha_gen" readonly="1"/>
                             <field name="ne_cune" readonly="1"/>
                             <field name="ne_zip_key" readonly="1"/>
                             <field name="ne_document_id" readonly="1"/>
@@ -32,8 +38,14 @@
                         <group string="Mensaje DIAN">
                             <field name="ne_mensaje" nolabel="1" readonly="1"/>
                         </group>
+                        <group string="Nota de ajuste (tipo 103)">
+                            <field name="ne_tipo_nota"/>
+                            <field name="ne_reemplaza_id" invisible="not ne_reemplaza_id"/>
+                            <field name="origin_payslip_id" invisible="ne_tipo_nota != '2'" readonly="1"/>
+                            <field name="ne_ajuste_ids" invisible="not ne_ajuste_ids" readonly="1"/>
+                        </group>
                     </group>
-                    <separator string="XML NominaIndividual (firmado)"/>
+                    <separator string="XML NominaIndividual / NominaIndividualDeAjuste (firmado)"/>
                     <field name="ne_xml" readonly="1" widget="ace" options="{'mode': 'xml'}"/>
                 </page>
             </xpath>

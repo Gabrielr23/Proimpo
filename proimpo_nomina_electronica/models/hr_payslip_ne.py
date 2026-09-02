@@ -16,6 +16,9 @@ NS_XADES = "http://uri.etsi.org/01903/v1.3.2#"
 NS_XADES141 = "http://uri.etsi.org/01903/v1.4.1#"
 NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
 NS_XS = "http://www.w3.org/2001/XMLSchema"  # URI correcto de 'xs' (distinto de xsi)
+NS_AJUSTE = "dian:gov:co:facturaelectronica:NominaIndividualDeAjuste"
+VERSION_NOMINA = 'V1.0: Documento Soporte de Pago de Nómina Electrónica'
+VERSION_AJUSTE = 'V1.0: Nota de Ajuste de Documento Soporte de Pago de Nómina Electrónica'
 
 # Valores de ubicación del EMPLEADOR (PROIMPO) — reales, ya aceptados por la DIAN.
 _EMPLEADOR_DEF = {'depto': '76', 'muni': '76892', 'dir': 'CL 15 27 A 176 BL 7 BD 2'}
@@ -42,7 +45,62 @@ class HrPayslip(models.Model):
     ne_state = fields.Selection([
         ('draft', 'Borrador'), ('generated', 'Generado'),
         ('sent', 'Enviado'), ('accepted', 'Aceptado'), ('rejected', 'Rechazado'),
+        ('replaced', 'Reemplazado (nota de ajuste)'), ('deleted', 'Eliminado (nota de ajuste)'),
     ], string="Estado NE", default='draft', copy=False)
+    # v4.3.0 - Nota de ajuste (tipo 103)
+    ne_numero = fields.Char(string="Número NE (DIAN)", copy=False, readonly=True,
+                            help="Numero del documento tal como fue enviado a la DIAN (prefijo+consecutivo).")
+    ne_fecha_gen = fields.Char(string="FechaGen NE", copy=False, readonly=True)
+    ne_reemplaza_id = fields.Many2one('hr.payslip', string="Reemplaza a (nota de ajuste)", copy=False,
+                                      readonly=True, help="Recibo aceptado por la DIAN que esta nota corrige.")
+    ne_tipo_nota = fields.Selection([('1', 'Reemplazar'), ('2', 'Eliminar')], string="Tipo de nota",
+                                    compute='_compute_ne_tipo_nota', store=False)
+    ne_ajuste_ids = fields.One2many('hr.payslip', 'ne_reemplaza_id', string="Notas de reemplazo")
+
+    @api.depends('ne_reemplaza_id', 'credit_note', 'origin_payslip_id')
+    def _compute_ne_tipo_nota(self):
+        for rec in self:
+            if rec.ne_reemplaza_id:
+                rec.ne_tipo_nota = '1'
+            elif getattr(rec, 'credit_note', False) and getattr(rec, 'origin_payslip_id', False):
+                rec.ne_tipo_nota = '2'
+            else:
+                rec.ne_tipo_nota = False
+
+    def _ne_predecesor(self):
+        """Recibo original al que esta nota de ajuste hace referencia (o vacio)."""
+        self.ensure_one()
+        if self.ne_reemplaza_id:
+            return self.ne_reemplaza_id
+        if getattr(self, 'credit_note', False) and getattr(self, 'origin_payslip_id', False):
+            return self.origin_payslip_id
+        return self.browse()
+
+    def _ne_datos_predecesor(self):
+        """(NumeroPred, CUNEPred, FechaGenPred) del recibo original aceptado."""
+        from odoo.exceptions import UserError
+        pred = self._ne_predecesor()
+        if not pred:
+            raise UserError(_("Esta nota de ajuste no tiene recibo original asociado."))
+        if pred.ne_state not in ('accepted', 'replaced', 'deleted') or not pred.ne_cune:
+            raise UserError(_("El recibo original %s no esta ACEPTADO por la DIAN; "
+                              "solo se pueden ajustar documentos aceptados.") % (pred.number or pred.id))
+        numero = pred.ne_numero
+        fecha = pred.ne_fecha_gen
+        if (not numero or not fecha) and pred.ne_xml:
+            # Documentos aceptados antes de v4.3.0: leer del XML enviado
+            from lxml import etree
+            try:
+                r = etree.fromstring(pred.ne_xml.encode('utf-8'))
+                sec = r.find('{%s}NumeroSecuenciaXML' % NS)
+                ig = r.find('{%s}InformacionGeneral' % NS)
+                numero = numero or (sec.get('Numero') if sec is not None else '')
+                fecha = fecha or (ig.get('FechaGen') if ig is not None else '')
+            except Exception:
+                pass
+        if not numero or not fecha:
+            raise UserError(_("No se pudo determinar el numero o la fecha de generacion del recibo original."))
+        return numero, pred.ne_cune, fecha
 
     # ------------------------------------------------------------------
     # Conceptos desde las LÍNEAS de reglas salariales (line_ids)
@@ -310,10 +368,26 @@ class HrPayslip(models.Model):
         dev_total, ded_total = self._ne_totales(dev, ded)
 
         # Prefijo + consecutivo del número del documento
-        numero = (self.number or '').replace(' ', '').replace('-', '')
-        prefijo = ''.join(c for c in numero if not c.isdigit())[:4] or 'NE'
-        consecutivo = ''.join(c for c in numero if c.isdigit()) or str(self.id)
-        numero_full = prefijo + consecutivo
+        tipo_nota = self.ne_tipo_nota
+        nota = None
+        if tipo_nota:
+            # v4.3.0: nota de ajuste (103) con secuencia propia NA + consecutivo
+            if not self.ne_numero:
+                seq = self.env['ir.sequence'].sudo().next_by_code('proimpo.ne.ajuste') or str(self.id)
+                self.ne_numero = 'NA' + ''.join(c for c in seq if c.isdigit())
+            prefijo, consecutivo = 'NA', self.ne_numero[2:]
+            numero_full = self.ne_numero
+            pn, pc, pf = self._ne_datos_predecesor()
+            nota = {'tipo': tipo_nota, 'pred_numero': pn, 'pred_cune': pc, 'pred_fecha': pf}
+        else:
+            numero = (self.number or '').replace(' ', '').replace('-', '')
+            prefijo = ''.join(c for c in numero if not c.isdigit())[:4] or 'NE'
+            consecutivo = ''.join(c for c in numero if c.isdigit()) or str(self.id)
+            numero_full = prefijo + consecutivo
+        if nota and nota['tipo'] == '2':
+            # Eliminar: sin devengados/deducciones; el CUNE se calcula con 0.00
+            dev, ded, qty = {}, {'libranzas': [], 'otras': []}, {}
+            dev_total, ded_total = 0.0, 0.0
 
         dias_trab = self._ne_dias_trabajados()
         tiempo_lab = dias_trab
@@ -321,7 +395,8 @@ class HrPayslip(models.Model):
             tiempo_lab = max(0, (self.date_to - ct.date_start).days)
 
         return {
-            'tipo_documento': '102',
+            'tipo_documento': '103' if nota else '102',
+            'nota': nota,
             'ambiente': '2' if company.l10n_co_dian_test_environment else '1',
             'fecha_gen': fecha_gen, 'hora_gen': hora_gen,
             'periodo': {
@@ -430,6 +505,11 @@ class HrPayslip(models.Model):
         # v4.2.0: elementos opcionales presentes en las nóminas ACEPTADAS (GOMEZ/AGUILAR):
         # Novedad, RazonSocial en ProveedorXML, TRM, Notas, CodigoTrabajador y Redondeo.
         S(root, 'Novedad', _text='false', CUNENov=cune)
+        self._ne_build_cuerpo(S, root, datos, cune, op_mode, software_sc)
+        return etree.tostring(root, encoding='UTF-8').decode()
+
+    def _ne_build_cuerpo(self, S, root, datos, cune, op_mode, software_sc):
+        """Periodo ... ComprobanteTotal (comun a NominaIndividual y a Reemplazar)."""
         p = datos['periodo']
         S(root, 'Periodo', FechaIngreso=p['ingreso'], FechaLiquidacionInicio=p['inicio'],
           FechaLiquidacionFin=p['fin'], TiempoLaborado=p['tiempo'], FechaGen=datos['fecha_gen'])
@@ -444,11 +524,14 @@ class HrPayslip(models.Model):
               SoftwareID=op_mode.dian_software_id or '', SoftwareSC=software_sc or '')
         S(root, 'CodigoQR', _text=self._ne_qr_url(cune))
         S(root, 'InformacionGeneral',
-          Version='V1.0: Documento Soporte de Pago de Nómina Electrónica',
+          Version=(VERSION_AJUSTE if datos.get('nota') else VERSION_NOMINA),
           Ambiente=datos['ambiente'], TipoXML=datos['tipo_documento'], CUNE=cune,
           EncripCUNE='CUNE-SHA384', FechaGen=datos['fecha_gen'], HoraGen=datos['hora_gen'],
           PeriodoNomina=datos['periodo_nomina'], TipoMoneda='COP', TRM='0')
-        S(root, 'Notas', _text='NOMINA %s %s A %s' % (sec['numero'], p['inicio'], p['fin']))
+        if datos.get('nota'):
+            S(root, 'Notas', _text='REEMPLAZA NOMINA %s' % datos['nota']['pred_numero'])
+        else:
+            S(root, 'Notas', _text='NOMINA %s %s A %s' % (sec['numero'], p['inicio'], p['fin']))
         em = datos['empleador']
         S(root, 'Empleador', RazonSocial=em['razon_social'], NIT=em['nit'], DV=em['dv'],
           Pais='CO', DepartamentoEstado=em['depto'], MunicipioCiudad=em['muni'], Direccion=em['dir'])
@@ -485,6 +568,54 @@ class HrPayslip(models.Model):
         S(root, 'DevengadosTotal', _text=_money(datos['dev_total']))
         S(root, 'DeduccionesTotal', _text=_money(datos['ded_total']))
         S(root, 'ComprobanteTotal', _text=_money(datos['comprobante_total']))
+
+    # ------------------------------------------------------------------
+    # v4.3.0 - XML NominaIndividualDeAjuste (tipo 103): Reemplazar / Eliminar
+    # ------------------------------------------------------------------
+    def _ne_build_xml_ajuste(self, datos, cune, op_mode=None, software_sc=''):
+        from lxml import etree
+        nota = datos['nota']
+        # Misma raiz (orden de namespaces) que la nomina aceptada, con el XSD de ajuste
+        root = etree.fromstring(
+            '<NominaIndividualDeAjuste xmlns="%s" xmlns:xs="%s" xmlns:ds="%s" xmlns:ext="%s" '
+            'xmlns:xades="%s" xmlns:xades141="%s" xmlns:xsi="%s" SchemaLocation="" '
+            'xsi:schemaLocation="dian:gov:co:facturaelectronica:NominaIndividualDeAjuste '
+            'NominaIndividualDeAjusteElectronicaXSD.xsd"/>'
+            % (NS_AJUSTE, NS_XSI, NS_DS, NS_EXT, NS_XADES, NS_XADES141, NS_XSI))
+
+        def S(parent, tag, _text=None, **attrs):
+            el = etree.SubElement(parent, '{%s}%s' % (NS_AJUSTE, tag))
+            if _text is not None:
+                el.text = str(_text)
+            for k, v in attrs.items():
+                el.set(k, str(v))
+            return el
+
+        S(root, 'TipoNota', _text=nota['tipo'])
+        pred = dict(NumeroPred=nota['pred_numero'], CUNEPred=nota['pred_cune'], FechaGenPred=nota['pred_fecha'])
+        if nota['tipo'] == '1':
+            r = S(root, 'Reemplazar')
+            S(r, 'ReemplazandoPredecesor', **pred)
+            self._ne_build_cuerpo(S, r, datos, cune, op_mode, software_sc)
+        else:
+            e = S(root, 'Eliminar')
+            S(e, 'EliminandoPredecesor', **pred)
+            sec = datos['secuencia']
+            S(e, 'NumeroSecuenciaXML', Prefijo=sec['prefijo'], Consecutivo=sec['consecutivo'], Numero=sec['numero'])
+            S(e, 'LugarGeneracionXML', Pais='CO', DepartamentoEstado=datos['lugar']['depto'],
+              MunicipioCiudad=datos['lugar']['muni'], Idioma='es')
+            if op_mode is not None:
+                S(e, 'ProveedorXML', RazonSocial=datos['empleador']['razon_social'],
+                  NIT=datos['empleador']['nit'], DV=datos['empleador']['dv'],
+                  SoftwareID=op_mode.dian_software_id or '', SoftwareSC=software_sc or '')
+            S(e, 'CodigoQR', _text=self._ne_qr_url(cune))
+            S(e, 'InformacionGeneral', Version=VERSION_AJUSTE,
+              Ambiente=datos['ambiente'], TipoXML=datos['tipo_documento'], CUNE=cune,
+              EncripCUNE='CUNE-SHA384', FechaGen=datos['fecha_gen'], HoraGen=datos['hora_gen'])
+            S(e, 'Notas', _text='ELIMINA NOMINA %s' % nota['pred_numero'])
+            em = datos['empleador']
+            S(e, 'Empleador', RazonSocial=em['razon_social'], NIT=em['nit'], DV=em['dv'],
+              Pais='CO', DepartamentoEstado=em['depto'], MunicipioCiudad=em['muni'], Direccion=em['dir'])
         return etree.tostring(root, encoding='UTF-8').decode()
 
     def _ne_build_devengados(self, S, root, datos):
