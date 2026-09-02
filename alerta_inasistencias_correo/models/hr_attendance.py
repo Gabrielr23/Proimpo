@@ -21,7 +21,7 @@ con una sola línea:
 """
 
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 import pytz
 
@@ -626,15 +626,44 @@ def ejecutar_alerta_inasistencias(env, fecha_objetivo=None, imprimir_consola=Tru
 
 
 # ---------------------------------------------------------------------------
-# MÉTODO EN hr.attendance — esto es lo que llaman el botón del asistente
+# MÉTODOS EN hr.attendance — esto es lo que llaman el botón del asistente
 # (wizard/alerta_inasistencias_wizard.py) y los ir.cron / Acciones de
 # Servidor programadas.
+#
+# Se exponen 3 métodos en vez de 1 a propósito: los dos de arriba
+# (_hoy / _resumen_ayer) no reciben ningún parámetro y no requieren hacer
+# ningún cálculo de fecha en el código de la Acción de Servidor — así el
+# código que se pega ahí es una sola línea, sin arriesgarse a que el
+# sandbox de "Ejecutar código Python" rechace algo (import de timedelta,
+# referencias a TZ, etc.). El tercero (sin sufijo) queda disponible para
+# uso más flexible, por ejemplo desde el asistente o la shell.
 # ---------------------------------------------------------------------------
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
     @api.model
+    def ejecutar_alerta_inasistencias_hoy(self):
+        """Para la Acción de Servidor de las alertas del día (07:00, 14:00,
+        23:15). Código a pegar en la Acción de Servidor:
+
+            env['hr.attendance'].sudo().ejecutar_alerta_inasistencias_hoy()
+        """
+        return self.ejecutar_alerta_inasistencias(fecha_objetivo=None)
+
+    @api.model
+    def ejecutar_alerta_inasistencias_resumen_ayer(self):
+        """Para la Acción de Servidor del resumen diario (06:30), que
+        evalúa el día calendario anterior completo. Código a pegar:
+
+            env['hr.attendance'].sudo().ejecutar_alerta_inasistencias_resumen_ayer()
+        """
+        ayer = datetime.now(TZ).date() - timedelta(days=1)
+        return self.ejecutar_alerta_inasistencias(fecha_objetivo=ayer)
+
+    @api.model
     def ejecutar_alerta_inasistencias(self, fecha_objetivo=None, imprimir_consola=True):
+        """Punto de entrada genérico (usado por el wizard y por los dos
+        métodos de arriba). fecha_objetivo=None evalúa "hoy"."""
         return ejecutar_alerta_inasistencias(
             self.env, fecha_objetivo=fecha_objetivo, imprimir_consola=imprimir_consola,
         )
