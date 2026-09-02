@@ -463,11 +463,17 @@ class HrPayslip(models.Model):
     # CUNE (SHA-384) — Anexo Técnico Nómina Electrónica
     # ------------------------------------------------------------------
     def _ne_cune(self, datos, software_pin=''):
+        # Anexo tecnico 8.1.1.4: para la nota de ajuste ELIMINAR, ValDev/ValDed/ValTol = 0.00
+        # y DocEmp = 0 (no la cedula del trabajador). v4.3.1 (regla NIAE238).
+        nota = datos.get('nota')
+        eliminar = bool(nota and nota.get('tipo') == '2')
         cadena = '{num}{fec}{hora}{dev}{ded}{tot}{nit}{doc}{tipo}{pin}{amb}'.format(
             num=datos['secuencia']['numero'], fec=datos['fecha_gen'], hora=datos['hora_gen'],
-            dev=_money(datos['dev_total']), ded=_money(datos['ded_total']),
-            tot=_money(datos['comprobante_total']),
-            nit=datos['empleador']['nit'], doc=datos['trabajador']['numero_doc'],
+            dev='0.00' if eliminar else _money(datos['dev_total']),
+            ded='0.00' if eliminar else _money(datos['ded_total']),
+            tot='0.00' if eliminar else _money(datos['comprobante_total']),
+            nit=datos['empleador']['nit'],
+            doc='0' if eliminar else datos['trabajador']['numero_doc'],
             tipo=datos['tipo_documento'], pin=software_pin, amb=datos['ambiente'])
         return sha384(cadena.encode()).hexdigest()
 
