@@ -26,12 +26,17 @@
             <field name="model">account.journal</field>
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//group[@name='group_alias_edit']" position="after">
-                    <group string="Electronic invoicing" invisible="type not in ('sale','purchase','general')">
-                        <field name="resolution_invoice_id" domain="[('company_id','=',company_id)]"/>
-                        <field name="resolution_credit_note_id" domain="[('company_id','=',company_id)]"/>
-                        <field name="resolution_debit_note_id" domain="[('company_id','=',company_id)]"/>
-                    </group>
+                <!-- Odoo 19: el grupo 'group_alias_edit' ya no existe en el formulario de diario;
+                     se ancla al notebook (estable en todas las versiones) como pestana propia. -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Electronic invoicing" name="l10n_co_edi_jorels_page"
+                          invisible="type not in ('sale','purchase','general')">
+                        <group>
+                            <field name="resolution_invoice_id" domain="[('company_id','=',company_id)]"/>
+                            <field name="resolution_credit_note_id" domain="[('company_id','=',company_id)]"/>
+                            <field name="resolution_debit_note_id" domain="[('company_id','=',company_id)]"/>
+                        </group>
+                    </page>
                 </xpath>
                 <xpath expr="//field[@name='type']" position="after">
                     <field name="is_out_country" invisible="type not in ('sale', 'purchase')"/>
