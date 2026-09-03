@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_hr_overtime_line_tree" model="ir.ui.view">
+        <field name="name">hr.overtime.line.tree</field>
+        <field name="model">hr.overtime.line</field>
+        <field name="arch" type="xml">
+            <list>                          <!-- ← cambio aquí -->
+                <field name="employee_id"/>
+                <field name="date"/>
+                <field name="approved_hours"/>
+                <field name="reason"/>
+            </list>                         <!-- ← cambio aquí -->
+        </field>
+    </record>
+
+    <record id="view_hr_overtime_line_form" model="ir.ui.view">
+        <field name="name">hr.overtime.line.form</field>
+        <field name="model">hr.overtime.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="date"/>
+                        <field name="approved_hours"/>
+                    </group>
+                    <group>
+                        <field name="reason"/>
+                        <field name="observation"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_overtime_line" model="ir.actions.act_window">
+        <field name="name">Cupos Diarios</field>
+        <field name="res_model">hr.overtime.line</field>
+        <field name="view_mode">list,form</field>  <!-- ← cambio aquí -->
+    </record>
+
+    <menuitem id="menu_hr_overtime_root"
+              name="Horas Extras"
+              parent="hr.menu_hr_root"
+              sequence="50"/>
+
+    <menuitem id="menu_hr_overtime_line"
+              name="Cupos Diarios"
+              parent="menu_hr_overtime_root"
+              action="action_hr_overtime_line"
+              sequence="10"/>
+
+</odoo>

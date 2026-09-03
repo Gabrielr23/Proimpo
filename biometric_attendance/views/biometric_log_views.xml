@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_biometric_log_list" model="ir.ui.view">
+        <field name="name">biometric.log.list</field>
+        <field name="model">biometric.log</field>
+        <field name="arch" type="xml">
+            <list string="Registros Biométricos" decoration-muted="not processed">
+                <field name="timestamp"/>
+                <field name="employee_name"/>
+                <field name="employee_cedula"/>
+                <field name="status_display"/>
+                <field name="original_status"/>
+                <field name="ip_address"/>
+                <field name="processed"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_biometric_log_form" model="ir.ui.view">
+        <field name="name">biometric.log.form</field>
+        <field name="model">biometric.log</field>
+        <field name="arch" type="xml">
+            <form string="Registro Biométrico">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="employee_cedula"/>
+                            <field name="timestamp"/>
+                        </group>
+                        <group>
+                            <field name="status"/>
+                            <field name="original_status"/>
+                            <field name="ip_address"/>
+                            <field name="processed"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detalles">
+                            <group>
+                                <field name="determination_reason"/>
+                                <field name="payload"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_biometric_log_search" model="ir.ui.view">
+        <field name="name">biometric.log.search</field>
+        <field name="model">biometric.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="employee_cedula"/>
+                <filter name="processed" string="Procesados" domain="[('processed','=',True)]"/>
+                <filter name="skipped" string="Ignorados" domain="[('processed','=',False)]"/>
+                <filter name="check_in" string="Entradas" domain="[('status','=','check_in')]"/>
+                <filter name="check_out" string="Salidas" domain="[('status','=','check_out')]"/>
+                <filter name="group_employee" string="Empleado" context="{'group_by':'employee_id'}"/>
+                <filter name="group_date" string="Fecha" context="{'group_by':'timestamp'}"/>
+                <filter name="group_status" string="Estado" context="{'group_by':'status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_biometric_log" model="ir.actions.act_window">
+        <field name="name">Registros Biométricos</field>
+        <field name="res_model">biometric.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_biometric_log"
+              name="Registros Biométricos"
+              parent="hr_attendance.menu_hr_attendance_root"
+              action="action_biometric_log"
+              sequence="10"/>
+</odoo>
