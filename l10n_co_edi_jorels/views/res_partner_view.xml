@@ -34,8 +34,8 @@
                         </div>
                     </button>
                 </div>
-                <xpath expr="//field[@name='name' and @id='individual']" position="after">
-                    <br/>
+                <!-- Odoo 19: el campo name ya no lleva id='individual'; se ancla al bloque de titulo -->
+                <xpath expr="//div[hasclass('oe_title')]" position="inside">
                     <field name="trade_name" placeholder="Trade name"/>
                 </xpath>
                 <xpath expr="//field[@name='vat']" position="after">
