@@ -1,6 +1,6 @@
 {
     'name': 'EDI Colombia - Envío en Lote',
-    'version': '18.0.1.2.0',
+    'version': '19.0.1.2.0',
     'category': 'Accounting/Localizations/EDI',
     'summary': 'Envío en lote de documentos electrónicos a la DIAN (Servicio Gratuito)',
     'description': """
@@ -9,7 +9,7 @@
         en segundo plano (background), sin bloquear la interfaz del usuario.
     """,
     'author': 'PROIMPO SAS',
-    'depends': ['l10n_co_edi'],
+    'depends': ['l10n_co_edi', 'l10n_co_dian'],
     'data': [
         'data/server_action.xml',
     ],
