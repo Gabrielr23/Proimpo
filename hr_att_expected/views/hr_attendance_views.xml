@@ -129,14 +129,12 @@ if records:
                         domain="[('is_late', '=', False), ('left_early', '=', False)]"/>
                 
                 <separator/>
-                
                 <!-- Agrupar por -->
-                <group expand="0" string="Agrupar por">
                     <filter string="Puntualidad entrada" name="group_by_late"
                             context="{'group_by': 'is_late'}"/>
                     <filter string="Puntualidad salida" name="group_by_early"
                             context="{'group_by': 'left_early'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

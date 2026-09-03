@@ -81,10 +81,10 @@
                 <field name="partner_id"/>
                 <filter name="open" string="Activos" domain="[('state','=','open')]"/>
                 <filter name="done" string="Pagados" domain="[('state','=','done')]"/>
-                <group expand="0" string="Agrupar por">
+                <separator/>
                     <filter name="g_employee" string="Empleado" context="{'group_by':'employee_id'}"/>
                     <filter name="g_type" string="Tipo" context="{'group_by':'loan_type'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

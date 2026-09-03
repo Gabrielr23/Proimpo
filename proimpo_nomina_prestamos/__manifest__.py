@@ -13,7 +13,7 @@ automático de saldos:
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.1.1',
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': [
         'security/ir.model.access.csv',
