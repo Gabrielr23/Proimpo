@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Odoo 19: res.groups ya no tiene 'category_id' (ahora 'privilege_id') ni 'users'
+         (ahora 'user_ids'). El grupo se crea sin categoria; el administrador ya tiene
+         acceso total por base.group_system (ver hr_attendance.py). Asignar el grupo a
+         los aprobadores de nomina/RRHH desde Ajustes > Usuarios. -->
     <record id="group_asistencia_ver_todo" model="res.groups">
         <field name="name">Asistencias: aprobar todas (Nomina/RRHH)</field>
-        <field name="category_id" ref="base.module_category_human_resources_attendances"/>
-        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
     </record>
 </odoo>
