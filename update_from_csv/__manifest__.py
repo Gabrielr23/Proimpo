@@ -21,16 +21,16 @@
 #
 
 {
-    'name': "update_from_csv",
+    'name': 'PROIMPO Utilidades (importación CSV)',
     'summary': """Update from csv files""",
     'description': """Update data from csv files""",
-    'author': "Jorels SAS",
-    'website': "https://www.jorels.com",
+    'author': 'PROIMPO SAS',
+    'website': 'https://www.proimpo.com',
     'license': 'LGPL-3',
     'category': 'Tools',
     'version': '18.0.0.1',
     'images': ['static/images/main_screenshot.png'],
-    'support': 'info@jorels.com',
+    'support': 'info@proimpo.com',
     'depends': ['base'],
     'data': [
     ],

@@ -37,7 +37,7 @@ class SaleOrder(models.Model):
 			if so.state in ('sale','done') and not so.invoice_status == 'invoiced':
 				due=so.amount_total
 				due_notinv+=due
-				print('DUE_NOTINV -----------------------------------',due_notinv)
+				_logger.debug('DUE_NOTINV -----------------------------------%s', due_notinv)
 
 		#verifica las facturas 
 		all_invoices=self.env['account.move'].search([
@@ -56,7 +56,7 @@ class SaleOrder(models.Model):
 			all_open+=1
 			aa='\n\nInvoice %s Due %s \n\n' % (inv.display_name, due)
 
-		print('ALL_DUE ---------------------------------------- ',all_due)
+		_logger.debug('ALL_DUE ---------------------------------------- %s', all_due)
 
 		# Busca solo las facturas vencidas
 		all_invoices = self.env['account.move'].search([
@@ -74,7 +74,7 @@ class SaleOrder(models.Model):
 		
 		new_balance=self.amount_total + all_due + due_notinv
 		
-		print('NEW_BALANCE ---------------------------------------',new_balance)
+		_logger.debug('NEW_BALANCE --------------------------------------- %s', new_balance)
 
 		if new_balance > partner.my_credit_limit:
 			params = {'sale_order':self.id,
@@ -99,8 +99,8 @@ class SaleOrder(models.Model):
                                  and i.partner_id = %s",(self.partner_id.id,))
                                
 			
-			res = self.env.cr.fetchone() or False       
-			print('res ',res)
+			res = self.env.cr.fetchone() or False
+			_logger.debug('res %s', res)
 
 			if not res or res[0] == None:
 			   _logger.debug('\n\n Showing HERE \n\n')
@@ -110,8 +110,8 @@ class SaleOrder(models.Model):
 				if res[0] != None:
 					#data = datetime.strptime(res[0], "%Y-%m-%d")
 					data = datetime.combine(res[0], datetime.min.time())
-					print('DATA --------------------------',data)            
-					
+					_logger.debug('DATA -------------------------- %s', data)
+
 					#Busca el número de la factura
 
 					self.env.cr.execute("select i.name as fecha from account_move i\
@@ -122,9 +122,9 @@ class SaleOrder(models.Model):
                                and i.partner_id = %s \
                                limit 1",(res[0], self.partner_id.id,))
                                
-					res = self.env.cr.fetchone() or False   
-					print('res factura: ',res)   
-					print('d ',d)
+					res = self.env.cr.fetchone() or False
+					_logger.debug('res factura: %s', res)
+					_logger.debug('d %s', d)
 
 					# CORRECCIÓN: Se aplican los días de gracia (d) y se verifica
 					# que haya saldo vencido real (all_date_due > 0)
@@ -164,7 +164,7 @@ class SaleOrder(models.Model):
 		#print('** action_confirm cupos')
 		_logger.debug(' \n\n \t Calling Action Confirm for a child\n\n\n')		
 		for order in self:
-			b=order._context.get('can_exceed_limit')
+			b=self.env.context.get('can_exceed_limit')
 			_logger.debug(' \n\n \n My Context \n\n\n')
 			_logger.debug(b)
 			if b==1:
@@ -175,7 +175,7 @@ class SaleOrder(models.Model):
 				_logger.debug(params)
 
 				if params[0]==1:
-					print('params2', params[0])
+					_logger.debug('params2 %s', params[0])
 					_logger.debug(' \n\n \t No Limit issue : Order can be Confirmed\n\n\n')
 					return super(SaleOrder, self).action_confirm()
 				else:		
@@ -187,19 +187,17 @@ class SaleOrder(models.Model):
 							'type': 'ir.actions.act_window',
 							'name': 'Control limites de crédito',
 							'res_model': 'sale.control.limit.wizard',
-							'view_type': 'form',
 							'view_mode': 'form',
 							'res_id'    : new.id,
 							'view_id': self.env.ref('control_credit_limit.my_credit_limit_confirm_wizard',False).id,
 							'target': 'new',
 						}
-				
+
 					else:
 						return {
 							'type': 'ir.actions.act_window',
 							'name': 'Solicitar aprobación para orden de venta',
 							'res_model': 'sale.control.limit.wizard',
-							'view_type': 'form',
 							'view_mode': 'form',
 							'res_id'    : new.id,
 							'view_id': self.env.ref('control_credit_limit.my_credit_limit_wizard',False).id,

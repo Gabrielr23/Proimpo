@@ -933,7 +933,7 @@ class AccountMove(models.Model):
         return lines
 
     def _compute_amount(self):
-        return super(AccountMove, self)._compute_amount()
+        super(AccountMove, self)._compute_amount()
 
         for rec in self:
             amount_tax_withholding = 0

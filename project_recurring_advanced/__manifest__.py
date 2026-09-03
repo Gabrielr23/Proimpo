@@ -1,6 +1,6 @@
 {
     "name": "Recurring Task Advanced",
-    "version": "18.0.0.1.0",
+    "version": "19.0.1.0.0",
     "price": 9.99,
     "currency": "USD",
     "license": "OPL-1",

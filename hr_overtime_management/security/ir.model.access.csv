@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hr_overtime_line_manager,hr.overtime.line manager,model_hr_overtime_line,hr_overtime_management.group_hr_overtime_manager,1,1,1,1
-access_hr_overtime_line_hr_manager,hr.overtime.line hr manager,model_hr_overtime_line,hr.group_hr_manager,1,1,1,1
-access_hr_overtime_line_user,hr.overtime.line user,model_hr_overtime_line,hr.group_hr_user,1,0,0,0
-access_hr_overtime_line_admin,hr.overtime.line admin,model_hr_overtime_line,base.group_system,1,1,1,1

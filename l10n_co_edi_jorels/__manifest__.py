@@ -21,16 +21,16 @@
 #
 
 {
-    'name': "Facturación electrónica DIAN para Colombia por Jorels SAS",
-    'summary': 'Facturación electrónica DIAN para Colombia por Jorels SAS',
+    'name': 'PROIMPO Base Electrónica DIAN Colombia',
+    'summary': 'Base de facturación/localización electrónica DIAN - PROIMPO SAS',
     'description': "Electronic invoicing management for companies in Colombia",
-    'author': "Jorels SAS",
+    'author': 'PROIMPO SAS',
     'license': "LGPL-3",
     'category': 'Invoicing & Payments',
     'version': '18.0.24.05.010000',
-    'website': "https://www.jorels.com",
+    'website': 'https://www.proimpo.com',
     'images': ['static/images/main_screenshot.png'],
-    'support': 'info@jorels.com',
+    'support': 'info@proimpo.com',
 
     # Odoo, OCA and Jorels dependencies
     'depends': [

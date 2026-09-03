@@ -21,16 +21,16 @@
 #
 
 {
-    'name': 'Nómina electrónica DIAN para Colombia por Jorels SAS (Enterprise)',
-    'summary': 'Nómina electrónica DIAN para Colombia por Jorels SAS (Enterprise)',
+    'name': 'PROIMPO Nómina Electrónica Colombia (motor)',
+    'summary': 'Motor de nómina electrónica Colombia - PROIMPO SAS',
     'description': "Electronic payroll management for companies in Colombia (Enterprise)",
-    'author': 'Jorels SAS',
+    'author': 'PROIMPO SAS',
     'license': 'LGPL-3',
     'category': 'Human Resources',
     'version': '18.0.24.01.310116',
-    'website': "https://www.jorels.com",
+    'website': 'https://www.proimpo.com',
     'images': ['static/images/main_screenshot.png'],
-    'support': 'info@jorels.com',
+    'support': 'info@proimpo.com',
     'depends': [
         'hr_payroll',
         'l10n_co_edi_jorels',

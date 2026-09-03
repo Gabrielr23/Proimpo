@@ -8,7 +8,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': "18.0.1.0.0",
+    'version': "19.0.1.0.0",
     'depends': ['account'],
     'data': [
         'security/nomina_seguridad_groups.xml',

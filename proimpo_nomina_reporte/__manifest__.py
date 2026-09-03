@@ -6,7 +6,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '18.0.1.2.0',
+    'version': '19.0.1.2.0',
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': ['views/hr_payslip_run_views.xml'],
     'installable': True,
