@@ -28,7 +28,7 @@
     'website': 'https://www.proimpo.com',
     'license': 'LGPL-3',
     'category': 'Tools',
-    'version': '18.0.0.1',
+    'version': '19.0.0.1',
     'images': ['static/images/main_screenshot.png'],
     'support': 'info@proimpo.com',
     'depends': ['base'],

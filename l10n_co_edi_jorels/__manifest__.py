@@ -27,7 +27,7 @@
     'author': 'PROIMPO SAS',
     'license': "LGPL-3",
     'category': 'Invoicing & Payments',
-    'version': '18.0.24.05.010000',
+    'version': '19.0.24.05.010000',
     'website': 'https://www.proimpo.com',
     'images': ['static/images/main_screenshot.png'],
     'support': 'info@proimpo.com',

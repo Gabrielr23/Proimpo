@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!--
     l10n_co_hr_payroll
     Copyright (C) 2024  Jorels SAS
@@ -17,31 +17,24 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     email: info@jorels.com
- -->
-<odoo>
+ --><odoo>
     <record id="view_l10n_co_edi_jorels_radian_form" model="ir.ui.view">
         <field name="name">l10n_co_edi_jorels.radian.form</field>
         <field name="model">l10n_co_edi_jorels.radian</field>
         <field name="arch" type="xml">
             <form string="Radian events">
                 <header>
-                    <button string="Validate" name="action_post" type="object" invisible="state != 'draft'"
-                            class="oe_highlight"/>
-                    <button name="validate_dian" type="object" string="Validate DIAN"
-                            class="oe_highlight o_invoice_validate"
-                            invisible="edi_is_valid or not edi_is_not_test or state != 'posted'"/>
-                    <button name="status_zip" type="object" string="Consult DIAN" groups="base.group_no_one"
-                            invisible="state == 'draft'"/>
+                    <button string="Validate" name="action_post" type="object" invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="validate_dian" type="object" string="Validate DIAN" class="oe_highlight o_invoice_validate" invisible="edi_is_valid or not edi_is_not_test or state != 'posted'"/>
+                    <button name="status_zip" type="object" string="Consult DIAN" groups="base.group_no_one" invisible="state == 'draft'"/>
                     <button string="Set to Draft" name="action_draft" type="object" invisible="state != 'cancel'"/>
-                    <button string="Cancel" name="action_cancel" type="object"
-                            invisible="state not in ('draft', 'posted')"/>
+                    <button string="Cancel" name="action_cancel" type="object" invisible="state not in ('draft', 'posted')"/>
                     <button string="Send by email" name="action_send_email" type="object" invisible="state != 'posted'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="dian_preview" type="object" class="oe_stat_button" icon="fa-globe icon"
-                                invisible="not edi_uuid">
+                        <button name="dian_preview" type="object" class="oe_stat_button" icon="fa-globe icon" invisible="not edi_uuid">
                             <div class="o_field_widget o_stat_info">
                                 <span class="o_stat_text">DIAN</span>
                                 <span class="o_stat_text">Web view</span>
@@ -62,8 +55,7 @@
                     </h1>
                     <group>
                         <group name="group-left">
-                            <field name="move_id" readonly="state != 'draft'"
-                                   options="{'no_create': True, 'no_create_edit':True}"/>
+                            <field name="move_id" readonly="state != 'draft'" options="{'no_create': True, 'no_create_edit':True}"/>
                             <field name="event_id" readonly="state != 'draft'"/>
                             <field name="rejection_concept_id" invisible="event_id != 4" readonly="state != 'draft'"/>
                         </group>
@@ -128,8 +120,7 @@
                 <field name="date"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="state"/>
-                <button type="object" name="button_open_form_current"
-                        icon="fa-caret-right icon" title="Open form"/>
+                <button type="object" name="button_open_form_current" icon="fa-caret-right icon" title="Open form"/>
             </list>
         </field>
     </record>
@@ -146,48 +137,25 @@
                 <field name="state"/>
                 <field name="user_id"/>
                 <field name="edi_is_valid"/>
-                <filter name="filter_draft"
-                        string="Draft"
-                        domain="[('state','=','draft')]"/>
-                <filter name="filter_posted"
-                        string="Posted"
-                        domain="[('state','=','posted')]"/>
-                <filter name="filter_cancel"
-                        string="Cancelled"
-                        domain="[('state','=','cancel')]"/>
+                <filter name="filter_draft" string="Draft" domain="[('state','=','draft')]"/>
+                <filter name="filter_posted" string="Posted" domain="[('state','=','posted')]"/>
+                <filter name="filter_cancel" string="Cancelled" domain="[('state','=','cancel')]"/>
                 <separator/>
-                <filter name="not_valid_dian"
-                        string="Not valid in DIAN"
-                        domain="[('edi_is_valid','=',False)]"/>
+                <filter name="not_valid_dian" string="Not valid in DIAN" domain="[('edi_is_valid','=',False)]"/>
                 <separator/>
-                <filter name="my_pending_events"
-                        string="My pending events"
-                        domain="['&amp;',('edi_is_valid','=',False),'|',('state','=','draft'),('state','=','posted')]"
-                />
+                <filter name="my_pending_events" string="My pending events" domain="['&amp;',('edi_is_valid','=',False),'|',('state','=','draft'),('state','=','posted')]"/>
                 <separator/>
                 <filter domain="[('user_id','=',uid)]" name="myevents" help="My Events"/>
-                <group expand="0" string="Invoice">
-                    <filter name="groupby_move" context="{'group_by' : 'move_id'}" string="Invoice"/>
-                </group>
-                <group expand="0" string="Event">
-                    <filter name="groupby_event" context="{'group_by' : 'event_id'}" string="Event"/>
-                </group>
                 <separator/>
-                <filter name="filter_030"
-                        string="Acknowledgment of receipt"
-                        domain="[('event_id.code','=','030')]"/>
-                <filter name="filter_031"
-                        string="Claim"
-                        domain="[('event_id.code','=','031')]"/>
-                <filter name="filter_032"
-                        string="Receipt of goods/services"
-                        domain="[('event_id.code','=','032')]"/>
-                <filter name="filter_033"
-                        string="Express acceptance"
-                        domain="[('event_id.code','=','033')]"/>
-                <filter name="filter_034"
-                        string="Tacit acceptance"
-                        domain="[('event_id.code','=','034')]"/>
+                <filter name="groupby_move" context="{'group_by' : 'move_id'}" string="Invoice"/>
+                <separator/>
+                <filter name="groupby_event" context="{'group_by' : 'event_id'}" string="Event"/>
+                <separator/>
+                <filter name="filter_030" string="Acknowledgment of receipt" domain="[('event_id.code','=','030')]"/>
+                <filter name="filter_031" string="Claim" domain="[('event_id.code','=','031')]"/>
+                <filter name="filter_032" string="Receipt of goods/services" domain="[('event_id.code','=','032')]"/>
+                <filter name="filter_033" string="Express acceptance" domain="[('event_id.code','=','033')]"/>
+                <filter name="filter_034" string="Tacit acceptance" domain="[('event_id.code','=','034')]"/>
                 <separator/>
             </search>
         </field>
@@ -223,10 +191,7 @@
         <field name="act_window_id" ref="action_l10n_co_edi_jorels_radian_supplier"/>
     </record>
 
-    <menuitem action="action_l10n_co_edi_jorels_radian_supplier"
-              id="menu_l10n_co_edi_jorels_radian_tree"
-              name="Radian events"
-              parent="account.menu_finance_payables"/>
+    <menuitem action="action_l10n_co_edi_jorels_radian_supplier" id="menu_l10n_co_edi_jorels_radian_tree" name="Radian events" parent="account.menu_finance_payables"/>
 
     <!-- Customer Radian actions and menus -->
     <record id="action_l10n_co_edi_jorels_radian_customer" model="ir.actions.act_window">
@@ -258,10 +223,7 @@
         <field name="act_window_id" ref="action_l10n_co_edi_jorels_radian_customer"/>
     </record>
 
-    <menuitem action="action_l10n_co_edi_jorels_radian_customer"
-              id="menu_l10n_co_edi_jorels_radian_customer"
-              name="Radian events"
-              parent="account.menu_finance_receivables"/>
+    <menuitem action="action_l10n_co_edi_jorels_radian_customer" id="menu_l10n_co_edi_jorels_radian_customer" name="Radian events" parent="account.menu_finance_receivables"/>
 
     <record id="action_send_radian_by_email" model="ir.actions.server">
         <field name="name">Send Radian event By Email</field>
