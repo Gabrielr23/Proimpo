@@ -47,10 +47,28 @@ class MrpProduction(models.Model):
     #     setea siempre en el move de scrap de un componente) + scrapped.
     # ------------------------------------------------------------------
 
-    @api.onchange('qty_producing')
+    @api.onchange('qty_producing', 'product_qty')
     def _onchange_qty_producing(self):
+        """Vista previa en el formulario, antes de guardar. El campo
+        'Cantidad' que se ve/edita en el encabezado de la orden corresponde,
+        según el estado, a qty_producing (mientras se está produciendo) o a
+        product_qty (en borrador, o al abrir el asistente "Cambiar cantidad
+        a producir"). El onchange cubre la edición interactiva en el
+        formulario; como un onchange no persiste hasta que se guarda el
+        registro, el disparo que sí garantiza el recálculo pase lo que pase
+        (edición inline + guardar, o el asistente de cambio de cantidad,
+        que escribe el valor directamente por servidor sin pasar por un
+        onchange) es el override de write() más abajo."""
         for move_line in self.move_raw_ids:
             self._update_move_raw_quantity(move_line)
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'product_qty' in vals or 'qty_producing' in vals:
+            for production in self:
+                for move_line in production.move_raw_ids:
+                    production._update_move_raw_quantity(move_line)
+        return res
 
     def _update_move_raw_quantity(self, move_line):
         """Recalcula move_line.quantity ("Cantidad hecha") para un

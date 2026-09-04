@@ -20,9 +20,12 @@ if records:
         </field>
     </record>
 
-    <!-- Botón manual en el propio formulario de la orden, para poder forzar
-         el recálculo durante pruebas sin depender de tocar "Cantidad a
-         producir" (que es lo único que dispara el onchange original). -->
+    <!-- Botón manual en el propio formulario de la orden, como respaldo por
+         si hace falta forzar el recálculo (por ejemplo tras editar datos
+         de movimientos directamente). El recálculo automático al escribir
+         la Cantidad (product_qty/qty_producing) ya no depende de este
+         botón: ver el override de write() en mrp_update_consumed.py. Sin
+         ventana de confirmación, para no interrumpir el flujo. -->
     <record id="view_mrp_production_form_inherit_recompute" model="ir.ui.view">
         <field name="name">mrp.production.form.inherit.recompute.consumed</field>
         <field name="model">mrp.production</field>
@@ -32,8 +35,7 @@ if records:
                 <button name="action_recompute_consumed_quantities"
                         type="object"
                         string="Recalcular consumo"
-                        class="btn-secondary"
-                        confirm="Esto recalcula la 'Cantidad hecha' de los componentes a partir de los movimientos de stock (PC, Devolución, Desecho). ¿Continuar?"/>
+                        class="btn-secondary"/>
             </xpath>
         </field>
     </record>
