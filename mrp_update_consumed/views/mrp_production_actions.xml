@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+    <!-- Acción para recalcular la "Cantidad hecha" de los componentes de
+         una o varias Órdenes de fabricación con la lógica corregida.
+         Sirve para corregir órdenes que ya quedaron con la cantidad
+         inflada por el bug de Desecho/Devolución (antes de este fix).
+         Uso: en la vista de lista de Órdenes de fabricación, seleccionar
+         una o varias órdenes -> menú "Acciones" -> "Recalcular cantidad
+         consumida (Desecho/Devolución)". -->
+    <record id="action_recompute_consumed_quantities_server" model="ir.actions.server">
+        <field name="name">Recalcular cantidad consumida (Desecho/Devolución)</field>
+        <field name="model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_recompute_consumed_quantities()
+        </field>
+    </record>
+</odoo>
