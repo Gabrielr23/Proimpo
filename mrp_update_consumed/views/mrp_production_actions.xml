@@ -19,4 +19,22 @@ if records:
     records.action_recompute_consumed_quantities()
         </field>
     </record>
+
+    <!-- Botón manual en el propio formulario de la orden, para poder forzar
+         el recálculo durante pruebas sin depender de tocar "Cantidad a
+         producir" (que es lo único que dispara el onchange original). -->
+    <record id="view_mrp_production_form_inherit_recompute" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.recompute.consumed</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_recompute_consumed_quantities"
+                        type="object"
+                        string="Recalcular consumo"
+                        class="btn-secondary"
+                        confirm="Esto recalcula la 'Cantidad hecha' de los componentes a partir de los movimientos de stock (PC, Devolución, Desecho). ¿Continuar?"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

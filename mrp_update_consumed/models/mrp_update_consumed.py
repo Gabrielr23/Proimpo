@@ -75,6 +75,13 @@ class MrpProduction(models.Model):
         ], order="date desc", limit=1)
 
         if not last_pc_move.picking_id.totally_transferred:
+            _logger.info(
+                "mrp_update_consumed: MO %s producto %s - no se recalcula: no hay "
+                "ningún PC 'done' con 'Transferido totalmente' marcado (último PC "
+                "encontrado: %s, picking: %s).",
+                self.display_name, product_id, last_pc_move.ids,
+                last_pc_move.picking_id.display_name,
+            )
             return
 
         move_stock_all = self.env['stock.move'].search([
@@ -96,7 +103,9 @@ class MrpProduction(models.Model):
                 # 'internal') marcados manualmente como to_refund.
                 qty_all -= move_all.quantity
 
-        qty_all -= self._get_scrapped_qty(product_id)
+        qty_before_scrap = qty_all
+        scrapped_qty = self._get_scrapped_qty(product_id)
+        qty_all -= scrapped_qty
 
         qty_consumed = self.move_stock_no_done(product_id, group_id) or 0.0
 
@@ -106,6 +115,17 @@ class MrpProduction(models.Model):
         new_quantity = round(
             ((qty_all - qty_consumed) / self.product_qty) * self.qty_producing, 2
         )
+
+        _logger.info(
+            "mrp_update_consumed: MO %s producto %s - moves PC/Devolución=%s, "
+            "qty_all (antes de desecho)=%s, desechado=%s, qty_all final=%s, "
+            "qty_consumed(mrp_operation)=%s, product_qty=%s, qty_producing=%s -> "
+            "nueva cantidad hecha=%s (actual=%s)",
+            self.display_name, product_id, move_stock_all.ids, qty_before_scrap,
+            scrapped_qty, qty_all, qty_consumed, self.product_qty, self.qty_producing,
+            new_quantity, move_line.quantity,
+        )
+
         if new_quantity != move_line.quantity:
             move_line.quantity = new_quantity
 
@@ -153,8 +173,17 @@ class MrpProduction(models.Model):
         El move que genera un stock.scrap nunca trae picking_type_id ni
         group_id, así que no se puede detectar con el mismo dominio que el
         resto de movimientos: se vincula por raw_material_production_id,
-        que es el campo que Odoo sí setea siempre para el scrap de un
-        componente de fabricación."""
+        que es el campo que Odoo debería setear siempre para el scrap de un
+        componente de fabricación (cuando el Desecho se origina desde la
+        propia orden de fabricación, p.ej. el botón "Desechos" del
+        formulario de la MO).
+
+        Si no se encuentra nada por ese vínculo, se deja un log de
+        diagnóstico buscando desechos "sueltos" del mismo producto (sin
+        vincular a ninguna MO), para poder distinguir "no hubo desecho" de
+        "hubo desecho pero no quedó vinculado a esta MO" (por ejemplo, si
+        se desechó desde Inventario > Operaciones > Desechos en vez de
+        desde el botón de la orden de fabricación)."""
         self.ensure_one()
         scrap_moves = self.env['stock.move'].search([
             ('raw_material_production_id', '=', self.id),
@@ -162,7 +191,32 @@ class MrpProduction(models.Model):
             ('state', '=', 'done'),
             ('scrapped', '=', True),
         ])
-        return sum(scrap_moves.mapped('quantity'))
+        qty = sum(scrap_moves.mapped('quantity'))
+
+        if scrap_moves:
+            _logger.info(
+                "mrp_update_consumed: MO %s producto %s - %s movimiento(s) de "
+                "desecho vinculados (raw_material_production_id), total=%s (moves: %s)",
+                self.display_name, product_id, len(scrap_moves), qty, scrap_moves.ids,
+            )
+        else:
+            loose_scraps = self.env['stock.move'].search([
+                ('product_id', '=', product_id),
+                ('state', '=', 'done'),
+                ('scrapped', '=', True),
+            ], limit=20, order="date desc")
+            if loose_scraps:
+                _logger.warning(
+                    "mrp_update_consumed: MO %s producto %s - no hay desechos "
+                    "vinculados via raw_material_production_id, pero SÍ existen %s "
+                    "movimiento(s) de desecho de este producto sin vincular a "
+                    "ninguna MO (revisar si se desecharon desde el botón 'Desechos' "
+                    "de la orden de fabricación): %s",
+                    self.display_name, product_id, len(loose_scraps),
+                    [(m.id, m.quantity, m.date, m.raw_material_production_id.display_name or '(vacío)',
+                      m.scrap_id.display_name) for m in loose_scraps],
+                )
+        return qty
 
     def button_mark_done(self):
         if self.qty_producing == 0:
