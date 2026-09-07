@@ -15,7 +15,7 @@ Métodos para liquidación definitiva de contratos (recibo independiente):
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': "19.0.1.0.2",
+    'version': '19.0.2.0.0',
     'depends': ['l10n_co_hr_payroll_enterprise'],
     'data': [],
     'installable': True,

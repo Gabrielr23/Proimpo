@@ -20,7 +20,7 @@ def dias360(d1, d2):
 
 
 class HrContract(models.Model):
-    _inherit = 'hr.contract'
+    _inherit = 'hr.version'  # Odoo 19: hr.contract -> hr.version
 
     def _proimpo_promedios(self, date_end):
         """Promedio mensual de los 12 meses previos a date_end (solo meses con devengo)."""
@@ -66,11 +66,11 @@ class HrContract(models.Model):
 
     def _proimpo_vac_pagadas(self, hasta):
         self.ensure_one()
-        if not self.date_start:
+        if not self.contract_date_start:
             return 0.0
         slips = self.env['hr.payslip'].search([
             ('employee_id', '=', self.employee_id.id), ('state', 'in', ('done', 'paid')),
-            ('date_from', '>=', self.date_start), ('date_to', '<=', hasta)])
+            ('date_from', '>=', self.contract_date_start), ('date_to', '<=', hasta)])
         return sum(slips.mapped('line_ids').filtered(
             lambda l: l.salary_rule_id.code in COD_VAC_PAG).mapped('total'))
 
@@ -81,10 +81,10 @@ class HrContract(models.Model):
         ct = self
         cero = {'ces': 0., 'int': 0., 'prima': 0., 'vac': 0., 'base_ces': 0., 'base_vac': 0.,
                 'dias_ano': 0, 'dias_sem': 0, 'dias_tot': 0}
-        if ct.integral_salary or not ct.date_start or ct.date_start > corte:
+        if ct.integral_salary or not ct.contract_date_start or ct.contract_date_start > corte:
             return cero
         y = corte.year
-        ini = ct.date_start
+        ini = ct.contract_date_start
         d_ces = max(date(y, 1, 1), ini)
         d_pri = max(date(y, 1 if corte.month <= 6 else 7, 1), ini)
         base_prest = self._proimpo_base('prest', corte)

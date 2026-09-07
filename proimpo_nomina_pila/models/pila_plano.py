@@ -255,8 +255,8 @@ class HrPayslip(models.Model):
             ct = d['contract']
             total_ibc = int(round(d['ibc']))
             # Novedad de ingreso / retiro en el mes
-            ing = bool(ct and ct.date_start and ct.date_start.year == y and ct.date_start.month == m)
-            ret = bool(ct and ct.date_end and ct.date_end.year == y and ct.date_end.month == m)
+            ing = bool(ct and ct.contract_date_start and ct.contract_date_start.year == y and ct.contract_date_start.month == m)
+            ret = bool(ct and ct.contract_date_end and ct.contract_date_end.year == y and ct.contract_date_end.month == m)
 
             # Segmentacion de dias por novedad
             seg = d['slip']._pila_segmentos(d['emp'], ct, mes_ini, last)

@@ -2,11 +2,11 @@
 <odoo>
     <record id="hr_contract_view_form_pila" model="ir.ui.view">
         <field name="name">hr.contract.form.pila</field>
-        <field name="model">hr.contract</field>
-        <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="PILA / Seguridad Social">
+                <page string="PILA / Seguridad Social" name="proimpo_pila" groups="hr.group_hr_user">
                     <group>
                         <group string="Entidades (afiliaciones)">
                             <field name="pila_eps_code"/>

@@ -20,11 +20,11 @@ class HrPayslip(models.Model):
         self.ensure_one()
         c = self.contract_id
         ini = self.date_from
-        if c.date_start and c.date_start > ini:
-            ini = c.date_start
+        if c.contract_date_start and c.contract_date_start > ini:
+            ini = c.contract_date_start
         fin = self.date_to
-        if c.date_end and c.date_end < fin:
-            fin = c.date_end
+        if c.contract_date_end and c.contract_date_end < fin:
+            fin = c.contract_date_end
         if not ini or not fin or fin < ini:
             return 0
 
@@ -111,7 +111,7 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _liq_desde(self, tipo):
         """Fecha desde la que se acumula cada concepto (recortada al inicio del contrato)."""
-        ini = self.contract_id.date_start
+        ini = self.contract_id.contract_date_start
         ret = self.date_to
         if tipo == 'cesantias':
             base = datetime.date(ret.year, 1, 1)
@@ -262,7 +262,7 @@ class HrPayslip(models.Model):
 
         if tipo == 'fijo':
             # Salarios que faltan hasta la fecha pactada de terminación
-            fin = contract.date_end
+            fin = contract.contract_date_end
             if fin and fin > ret:
                 dias_faltan = self._liq_dias360(ret, fin) - 1
                 return dia * max(dias_faltan, 0)
@@ -273,7 +273,7 @@ class HrPayslip(models.Model):
             return dia * 15.0
 
         # Indefinido: tabla Art. 64
-        antig = self._liq_dias360(contract.date_start, ret)
+        antig = self._liq_dias360(contract.contract_date_start, ret)
         menor = contract.wage < 10.0 * smmlv
         if antig <= 360:
             dias_indem = 30.0 if menor else 20.0

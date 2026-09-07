@@ -23,12 +23,13 @@ class Cert220Report(models.AbstractModel):
     def _cesantias_consignadas(self, emp, anio, smmlv, aux):
         ini = date(anio, 1, 1); fin = date(anio, 12, 31)
         total = 0.0
-        for ct in emp.contract_ids:
-            if ct.integral_salary or ct.state not in ('open', 'close'):
+        # Odoo 19: una version por contrato del empleado (hr.version)
+        for ct in self.env['hr.version']._proimpo_contratos(ini, fin, employees=emp):
+            if ct.integral_salary:
                 continue
-            if ct.date_start > fin or (ct.date_end and ct.date_end < ini):
+            if ct.contract_date_start > fin or (ct.contract_date_end and ct.contract_date_end < ini):
                 continue
-            d1 = max(ct.date_start, ini); d2 = min(ct.date_end or fin, fin)
+            d1 = max(ct.contract_date_start, ini); d2 = min(ct.contract_date_end or fin, fin)
             dias = _dias360(d1, d2)
             base = ct.wage + (aux if ct.wage <= 2 * smmlv else 0)
             total += base * dias / 360.0

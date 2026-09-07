@@ -25,7 +25,7 @@ from odoo import fields, models, api
 
 
 class HrContract(models.Model):
-    _inherit = 'hr.contract'
+    _inherit = 'hr.version'  # Odoo 19: hr.contract se fusiono en hr.version
 
     type_worker_id = fields.Many2one(comodel_name="l10n_co_edi_jorels.type_workers", string="Type worker")
     subtype_worker_id = fields.Many2one(comodel_name="l10n_co_edi_jorels.subtype_workers", string="Subtype worker")
@@ -46,3 +46,31 @@ class HrContract(models.Model):
             }
             # Default to 'Other' (6) if not found in the mapping
             rec.payroll_period_id = values.get(rec.schedule_pay, 6)
+
+    # ------------------------------------------------------------------
+    # Odoo 19: un contrato puede tener varias versiones (hr.version). Los
+    # procesos de PROIMPO (cesantias, prestaciones, certificado 220) trabajan
+    # por contrato, por eso este helper devuelve UNA version por
+    # (empleado, fecha inicio contrato): la mas reciente.
+    # ------------------------------------------------------------------
+    @api.model
+    def _proimpo_contratos(self, date_from=None, date_to=None, domain=None, employees=None):
+        dom = [('employee_id', '!=', False), ('contract_date_start', '!=', False)]
+        if date_to:
+            dom.append(('contract_date_start', '<=', date_to))
+        if date_from:
+            dom += ['|', ('contract_date_end', '=', False), ('contract_date_end', '>=', date_from)]
+        if employees is not None:
+            dom.append(('employee_id', 'in', employees.ids))
+        versions = self.with_context(active_test=False).search(
+            dom + (domain or []), order='employee_id, date_version desc')
+        vistos, out = set(), self.browse()
+        for v in versions:
+            if not v.employee_id.active:
+                continue
+            k = (v.employee_id.id, v.contract_date_start)
+            if k in vistos:
+                continue
+            vistos.add(k)
+            out |= v
+        return out

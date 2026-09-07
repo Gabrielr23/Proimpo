@@ -6,7 +6,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': '19.0.2.3.6',
+    'version': '19.0.2.0.0',
     'depends': ['l10n_co_hr_payroll_enterprise', 'proimpo_nomina_liquidacion'],
     'data': [
         'views/hr_contract_views.xml',

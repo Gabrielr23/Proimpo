@@ -3,7 +3,7 @@
     <!-- Desplegables en la pestaña PILA del contrato -->
     <record id="hr_contract_view_form_pila_catalogos" model="ir.ui.view">
         <field name="name">hr.contract.form.pila.catalogos</field>
-        <field name="model">hr.contract</field>
+        <field name="model">hr.employee</field>
         <field name="inherit_id" ref="proimpo_nomina_pila.hr_contract_view_form_pila"/>
         <field name="arch" type="xml">
             <field name="pila_eps_code" position="before"><field name="pila_eps_id"/></field>

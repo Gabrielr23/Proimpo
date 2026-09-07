@@ -72,12 +72,9 @@ class CesantiasConsignacionWizard(models.TransientModel):
         y = self.anio
         ini_ano = date(y, 1, 1)
         fin_ano = date(y, 12, 31)
-        Contract = self.env['hr.contract']
-        contratos = Contract.search([
-            ('date_start', '<=', fin_ano),
-            '|', ('date_end', '=', False), ('date_end', '>=', ini_ano),
-            ('state', 'in', ('open', 'close')),
-        ] + _dom_empresa_propia(self.env))
+        # Odoo 19: una version (hr.version) por contrato vigente en el ano
+        contratos = self.env['hr.version']._proimpo_contratos(
+            ini_ano, fin_ano, domain=_dom_empresa_propia(self.env))
         res = []
         for ct in contratos:
             if ct.integral_salary:
@@ -87,7 +84,7 @@ class CesantiasConsignacionWizard(models.TransientModel):
                 res.append({'ct': ct, 'emp': emp, 'error': 'Sin fondo de cesantias'})
                 continue
             # MOTOR UNICO: cesantias causadas del ano (incluye promedio de variables)
-            corte = min(ct.date_end or fin_ano, fin_ano)
+            corte = min(ct.contract_date_end or fin_ano, fin_ano)
             aux = self.aux_transporte if self.incluir_transporte else 0.0
             p = ct._proimpo_prestaciones_causadas(corte, self.smmlv, aux)
             base = round(p['base_ces'])
@@ -95,7 +92,7 @@ class CesantiasConsignacionWizard(models.TransientModel):
             ces = round(p['ces'])
             # provision acumulada (comparacion)
             slips = self.env['hr.payslip'].search([
-                ('contract_id', '=', ct.id), ('state', 'in', ('done', 'paid')),
+                ('employee_id', '=', ct.employee_id.id), ('state', 'in', ('done', 'paid')),
                 ('date_from', '>=', ini_ano), ('date_to', '<=', fin_ano),
             ])
             prov = 0.0

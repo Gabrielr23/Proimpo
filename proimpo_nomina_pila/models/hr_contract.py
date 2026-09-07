@@ -3,7 +3,7 @@ from odoo import models, fields
 
 
 class HrContract(models.Model):
-    _inherit = 'hr.contract'
+    _inherit = 'hr.version'  # Odoo 19: hr.contract -> hr.version
 
     pila_eps_code = fields.Char(
         string="Código EPS (salud)",

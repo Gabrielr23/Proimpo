@@ -8,7 +8,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': "19.0.1.4.3",
+    'version': '19.0.2.0.0',
     'depends': ['l10n_co_hr_payroll_enterprise', 'proimpo_nomina_liquidacion', 'proimpo_nomina_contabilidad'],
     'data': [
         'security/ir.model.access.csv',

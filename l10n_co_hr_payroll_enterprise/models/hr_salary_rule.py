@@ -121,7 +121,7 @@ class HrSalaryRule(models.Model):
                     #----------------------
                     # payslip: object containing the payslips
                     # employee: hr.employee object
-                    # contract: hr.contract object
+                    # contract: hr.version object
                     # inputs: object containing the computed inputs.
 
                     # Note: returned value have to be set in the variable 'percent'
@@ -148,7 +148,7 @@ class HrSalaryRule(models.Model):
         # ----------------------
         # payslip: object containing the payslips
         # employee: hr.employee object
-        # contract: hr.contract object
+        # contract: hr.version object
         # inputs: object containing the computed inputs.
         
         # Note: returned id value have to be set in the variable 'partner_id'
@@ -170,7 +170,7 @@ class HrSalaryRule(models.Model):
         for input_line in payslip.input_line_ids:
             inputs_dict[input_line.code] = input_line
         inputs = BrowsableObject(inputs_dict, self.env)
-        contract = payslip.contract_id
+        contract = payslip.version_id
         employee = contract.employee_id
 
         local_dict = {'payslip': payslip, 'inputs': inputs, 'employee': employee, 'contract': contract, 'result': None}
@@ -200,7 +200,7 @@ class HrSalaryRule(models.Model):
         for input_line in payslip.input_line_ids:
             inputs_dict[input_line.code] = input_line
         inputs = BrowsableObject(inputs_dict, self.env)
-        contract = payslip.contract_id
+        contract = payslip.version_id
         employee = contract.employee_id
 
         local_dict = {'payslip': payslip, 'inputs': inputs, 'employee': employee, 'contract': contract, 'result': None}

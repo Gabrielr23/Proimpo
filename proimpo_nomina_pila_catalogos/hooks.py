@@ -3,7 +3,7 @@ def post_init_hook(env):
     """Mapea los contratos existentes: del codigo Char que ya tienen, encuentra la
     entidad/municipio/clase del catalogo y llena el desplegable. Sin recaptura."""
     Ent = env['pila.entidad']; Mun = env['pila.municipio']; Cla = env['pila.arl.clase']
-    for ct in env['hr.contract'].search([]):
+    for ct in env['hr.version'].with_context(active_test=False).search([('employee_id', '!=', False)]):
         vals = {}
         pairs = [
             ('pila_eps_code', 'pila_eps_id', Ent, 'eps'),

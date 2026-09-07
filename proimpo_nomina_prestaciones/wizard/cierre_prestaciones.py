@@ -69,7 +69,7 @@ class CierrePrestacionesWizard(models.TransientModel):
     # -------- helpers --------
     def _slips(self, ct, d1, d2):
         return self.env['hr.payslip'].search([
-            ('contract_id', '=', ct.id), ('state', 'in', ('done', 'paid')),
+            ('employee_id', '=', ct.employee_id.id), ('state', 'in', ('done', 'paid')),
             ('date_from', '>=', d1), ('date_to', '<=', d2),
         ])
 
@@ -102,11 +102,9 @@ class CierrePrestacionesWizard(models.TransientModel):
         y = corte.year
         ene1 = date(y, 1, 1)
         sem1 = date(y, 7, 1) if corte.month >= 7 else date(y, 1, 1)
-        contratos = self.env['hr.contract'].search([
-            ('date_start', '<=', corte),
-            '|', ('date_end', '=', False), ('date_end', '>=', ene1),
-            ('state', 'in', ('open', 'close')),
-        ] + _dom_empresa_propia(self.env))
+        # Odoo 19: una version (hr.version) por contrato vigente en el periodo
+        contratos = self.env['hr.version']._proimpo_contratos(
+            ene1, corte, domain=_dom_empresa_propia(self.env))
         res = []
         for ct in contratos:
             if ct.integral_salary:
@@ -116,7 +114,7 @@ class CierrePrestacionesWizard(models.TransientModel):
             p = ct._proimpo_prestaciones_causadas(corte, self.smmlv, self.aux_transporte)
 
             slips_ano = self._slips(ct, ene1, corte)
-            slips_tot = self._slips(ct, ct.date_start, corte)
+            slips_tot = self._slips(ct, ct.contract_date_start, corte)
             slips_sem = self._slips(ct, sem1, corte)
             p_ces = self._suma_codigos(slips_ano, PROV['ces'])
             p_int = self._suma_codigos(slips_ano, PROV['int'])

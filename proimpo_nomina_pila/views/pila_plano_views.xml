@@ -17,7 +17,7 @@
     <!-- Campos adicionales de PILA en el contrato -->
     <record id="hr_contract_view_form_pila_gen" model="ir.ui.view">
         <field name="name">hr.contract.form.pila.gen</field>
-        <field name="model">hr.contract</field>
+        <field name="model">hr.employee</field>
         <field name="inherit_id" ref="proimpo_nomina_pila.hr_contract_view_form_pila"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='pila_municipio_code']" position="after">

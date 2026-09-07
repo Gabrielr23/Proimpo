@@ -3,7 +3,7 @@ from odoo import models, fields
 
 
 class HrContract(models.Model):
-    _inherit = 'hr.contract'
+    _inherit = 'hr.version'  # Odoo 19: hr.contract -> hr.version
 
     fondo_cesantias = fields.Selection(
         [('PORVENIR', 'Porvenir'), ('PROTECCION', 'Proteccion'),

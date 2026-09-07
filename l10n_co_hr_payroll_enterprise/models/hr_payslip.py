@@ -43,6 +43,18 @@ class HrPayslip(models.Model):
 
     origin_payslip_id = fields.Many2one(comodel_name="hr.payslip", string="Origin payslip", readonly=True, copy=False)
 
+    # Odoo 19: hr.payslip.contract_id (hr.contract) paso a version_id (hr.version).
+    # Se conserva contract_id como alias para el codigo del motor y de los modulos PROIMPO.
+    contract_id = fields.Many2one(comodel_name='hr.version', string='Contract', related='version_id', readonly=False)
+
+    def _get_localdict(self):
+        # Odoo 19 expone 'version' en las reglas salariales; se mantiene 'contract'
+        # para las reglas escritas con contract.wage, contract.company_id, etc.
+        res = super()._get_localdict()
+        if 'contract' not in res:
+            res['contract'] = self.version_id
+        return res
+
     # Edi fields
     date = fields.Date('Date Account', readonly=True,
                        help="Keep empty to use the period of the validation(Payslip) date.")
@@ -171,8 +183,7 @@ class HrPayslip(models.Model):
                     'input_type_id': res_item['input_type_id'],
                     'payslip_id': rec.id,
                     'sequence': res_item['sequence'],
-                    'amount': abs(total),
-                    'contract_id': rec.contract_id.id
+                    'amount': abs(total)
                 }))
 
                 # Search or create work entry type for code
@@ -224,8 +235,7 @@ class HrPayslip(models.Model):
                         'payslip_id': rec.id,
                         'sequence': res_item['sequence'],
                         'number_of_days': abs(quantity),
-                        'number_of_hours': 0,
-                        'contract_id': rec.contract_id.id
+                        'number_of_hours': 0
                     }))
                 elif res_item['category'] in (
                         'daily_overtime',
@@ -242,8 +252,7 @@ class HrPayslip(models.Model):
                         'payslip_id': rec.id,
                         'sequence': res_item['sequence'],
                         'number_of_days': 0,
-                        'number_of_hours': abs(quantity),
-                        'contract_id': rec.contract_id.id
+                        'number_of_hours': abs(quantity)
                     }))
 
             # Prepare deduction input lines
@@ -259,8 +268,7 @@ class HrPayslip(models.Model):
                     'input_type_id': res_item['input_type_id'],
                     'payslip_id': rec.id,
                     'sequence': res_item['sequence'],
-                    'amount': -abs(amount),
-                    'contract_id': rec.contract_id.id
+                    'amount': -abs(amount)
                 }))
 
             # Add lines
@@ -362,13 +370,11 @@ class HrPayslip(models.Model):
                 raise UserError(_("Employee does not have a postal municipality"))
             if not rec.employee_id.private_street:
                 raise UserError(_("Employee does not have an address."))
-            if not rec.contract_id.name:
-                raise UserError(_("Contract does not have a name"))
             if rec.contract_id.wage <= 0:
                 raise UserError(_("The contract must have the 'Wage' field configured"))
             if not rec.contract_id.type_contract_id:
                 raise UserError(_("The contract must have the 'Type contract' field configured"))
-            if not rec.contract_id.date_start:
+            if not rec.contract_id.contract_date_start:
                 raise UserError(_("The contract must have the 'Start Date' field configured"))
             if not rec.date_from:
                 raise UserError(_("The payroll must have a period"))
@@ -443,22 +449,22 @@ class HrPayslip(models.Model):
             if rec.employee_id.private_second_surname:
                 employee['second_surname'] = rec.employee_id.private_second_surname
 
-            if rec.contract_id.date_end:
-                amount_time = self.calculate_time_worked(rec.contract_id.date_start, rec.contract_id.date_end)
+            if rec.contract_id.contract_date_end:
+                amount_time = self.calculate_time_worked(rec.contract_id.contract_date_start, rec.contract_id.contract_date_end)
             else:
-                amount_time = self.calculate_time_worked(rec.contract_id.date_start, rec.date_to)
+                amount_time = self.calculate_time_worked(rec.contract_id.contract_date_start, rec.date_to)
 
             rec.date = fields.Date.context_today(rec)
 
             period = {
-                "admission_date": fields.Date.to_string(rec.contract_id.date_start),
+                "admission_date": fields.Date.to_string(rec.contract_id.contract_date_start),
                 "settlement_start_date": fields.Date.to_string(rec.date_from),
                 "settlement_end_date": fields.Date.to_string(rec.date_to),
                 "amount_time": amount_time,
                 "date_issue": fields.Date.to_string(rec.date)
             }
-            if rec.contract_id.date_end:
-                period['withdrawal_date'] = fields.Date.to_string(rec.contract_id.date_end)
+            if rec.contract_id.contract_date_end:
+                period['withdrawal_date'] = fields.Date.to_string(rec.contract_id.contract_date_end)
 
             payment = {
                 "code": rec.payment_form_id.id,

@@ -41,7 +41,7 @@ class HrPayslipEdi(models.Model):
     _description = "Payslip Edi"
 
     note = fields.Text(string='Internal Note', readonly=True)
-    contract_id = fields.Many2one('hr.contract', string='Contract', readonly=True)
+    contract_id = fields.Many2one('hr.version', string='Contract', readonly=True)
     credit_note = fields.Boolean(string='Adjustment note', readonly=True,
                                  help="Indicates this edi payslip has a refund of another")
     origin_payslip_id = fields.Many2one(comodel_name="hr.payslip.edi", string="Origin Edi payslip", readonly=True,
@@ -189,13 +189,11 @@ class HrPayslipEdi(models.Model):
                 raise UserError(_("Employee does not have a postal municipality"))
             if not rec.employee_id.private_street:
                 raise UserError(_("Employee does not have an address."))
-            if not rec.contract_id.name:
-                raise UserError(_("Contract does not have a name"))
             if rec.contract_id.wage <= 0:
                 raise UserError(_("The contract must have the 'Wage' field configured"))
             if not rec.contract_id.type_contract_id:
                 raise UserError(_("The contract must have the 'Type contract' field configured"))
-            if not rec.contract_id.date_start:
+            if not rec.contract_id.contract_date_start:
                 raise UserError(_("The contract must have the 'Start Date' field configured"))
             # if not rec.date_from:
             #     raise UserError(_("The payroll must have a period"))

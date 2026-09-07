@@ -404,8 +404,8 @@ class HrPayslip(models.Model):
 
         dias_trab = self._ne_dias_trabajados()
         tiempo_lab = dias_trab
-        if ct and ct.date_start and self.date_to:
-            tiempo_lab = max(0, (self.date_to - ct.date_start).days)
+        if ct and ct.contract_date_start and self.date_to:
+            tiempo_lab = max(0, (self.date_to - ct.contract_date_start).days)
 
         return {
             'tipo_documento': '103' if nota else '102',
@@ -413,10 +413,10 @@ class HrPayslip(models.Model):
             'ambiente': '2' if company.l10n_co_dian_test_environment else '1',
             'fecha_gen': fecha_gen, 'hora_gen': hora_gen,
             'periodo': {
-                'ingreso': str(ct.date_start) if ct and ct.date_start else str(self.date_from or ''),
+                'ingreso': str(ct.contract_date_start) if ct and ct.contract_date_start else str(self.date_from or ''),
                 # v4.4.0: FechaRetiro cuando es liquidacion o el contrato termina dentro del periodo
-                'retiro': (str(ct.date_end) if ct and ct.date_end and self.date_to
-                           and (self._ne_es_liquidacion() or ct.date_end <= self.date_to) else ''),
+                'retiro': (str(ct.contract_date_end) if ct and ct.contract_date_end and self.date_to
+                           and (self._ne_es_liquidacion() or ct.contract_date_end <= self.date_to) else ''),
                 'inicio': str(self.date_from or ''), 'fin': str(self.date_to or ''),
                 'tiempo': str(tiempo_lab),
             },

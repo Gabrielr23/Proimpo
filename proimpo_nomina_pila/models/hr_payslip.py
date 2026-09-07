@@ -39,10 +39,10 @@ class HrPayslip(models.Model):
     def _pila_segmentos(self, e, ct, first, last):
         """Divide los dias del mes por novedad PILA a partir de las ausencias de Odoo.
         Devuelve {'total':d, 'worked':d, 'VAC':d, 'LR':d, 'IGE':d, 'IRL':d, 'LMA':d, 'SLN':d}."""
-        ini = max(ct.date_start, first) if (ct and ct.date_start) else first
+        ini = max(ct.contract_date_start, first) if (ct and ct.contract_date_start) else first
         fin = last
-        if ct and ct.date_end and ct.date_end < last:
-            fin = ct.date_end
+        if ct and ct.contract_date_end and ct.contract_date_end < last:
+            fin = ct.contract_date_end
         d_fin = 30 if fin == last else min(fin.day, 30)
         dias_mes = max(0, min(30, d_fin - min(ini.day, 30) + 1))
         leaves = self.env['hr.leave'].search([

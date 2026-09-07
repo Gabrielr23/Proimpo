@@ -3,7 +3,7 @@ from odoo import models, fields, api
 
 
 class HrContract(models.Model):
-    _inherit = 'hr.contract'
+    _inherit = 'hr.version'  # Odoo 19: hr.contract -> hr.version
 
     # Desplegables (Many2one). Al elegirlos, rellenan el codigo Char que YA usa el plano.
     pila_eps_id = fields.Many2one('pila.entidad', string='EPS (salud)',
