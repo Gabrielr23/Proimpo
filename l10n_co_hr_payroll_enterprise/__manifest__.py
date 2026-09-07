@@ -27,7 +27,7 @@
     'author': 'PROIMPO SAS',
     'license': 'LGPL-3',
     'category': 'Human Resources',
-    'version': '19.0.24.01.310120',
+    'version': '19.0.24.01.310121',
     'website': 'https://www.proimpo.com',
     'images': ['static/images/main_screenshot.png'],
     'support': 'info@proimpo.com',

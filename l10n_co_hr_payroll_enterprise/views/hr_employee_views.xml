@@ -29,7 +29,9 @@
                 <field name="private_postal_department_id" invisible="1"/>
                 <field name="private_postal_municipality_id"/>
             </xpath>
-            <xpath expr="//sheet/group/group" position="before">
+            <!-- Odoo 19: el formulario de empleado ya no tiene //sheet/group/group;
+                 los nombres DIAN se muestran debajo del titulo (nombre/correo/telefono) -->
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
                 <group>
                     <field name="private_first_name" readonly="0"/>
                     <field name="private_other_names" readonly="0"/>
