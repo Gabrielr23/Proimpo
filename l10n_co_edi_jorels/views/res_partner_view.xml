@@ -34,11 +34,10 @@
                         </div>
                     </button>
                 </div>
-                <!-- Odoo 19: el campo name ya no lleva id='individual'; se ancla al bloque de titulo -->
-                <xpath expr="//div[hasclass('oe_title')]" position="inside">
-                    <field name="trade_name" placeholder="Trade name"/>
-                </xpath>
+                <!-- Odoo 19: ni name@id='individual' ni div.oe_title existen en el formulario de
+                     contacto; el nombre comercial y la matricula mercantil se ubican junto al NIT (vat). -->
                 <xpath expr="//field[@name='vat']" position="after">
+                    <field name="trade_name" placeholder="Trade name"/>
                     <field name="merchant_registration" placeholder="Merchant registration"/>
                 </xpath>
                 <xpath expr="//page[@name='accounting']" position="after">
