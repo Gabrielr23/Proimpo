@@ -72,6 +72,24 @@ PARAM_CORREO_COPIA = 'alerta_inasistencia.correo_copia'
 # servidor de correo saliente que ya tienen configurado en Odoo.
 PARAM_CORREO_REMITENTE = 'alerta_inasistencia.correo_remitente'
 
+# Cédulas a EXCLUIR por completo del reporte (no aparecen en ninguna
+# categoría: Inasistencias, Aún no inicia turno, Con permiso, etc., ni se
+# cuentan en el total de empleados evaluados). Pensado para casos como
+# directivos o personal sin seguimiento de horario que de otra forma
+# generarían ruido/falsos positivos en el reporte a RH.
+#
+# Se guarda como Parámetro del Sistema (no en este archivo) por lo mismo
+# que los 3 correos de arriba: es un dato operativo (quién está exento)
+# que cambia con el tiempo y que RH/administración debe poder ajustar
+# desde Ajustes, sin pedir un despliegue de código. Un ir.config_parameter
+# se guarda como texto sin límite práctico de tamaño, así que no hay
+# problema en que la lista tenga 50 cédulas o más.
+#
+# Formato del valor: cédulas separadas por coma, p. ej. "123456,789012,...".
+# Se pueden escribir con o sin puntos/espacios (se normalizan a solo
+# dígitos antes de comparar contra la cédula del empleado).
+PARAM_CEDULAS_EXCLUIDAS = 'alerta_inasistencia.cedulas_excluidas'
+
 
 # ---------------------------------------------------------------------------
 # UTILIDADES DE FECHA/HORA
@@ -91,6 +109,30 @@ def _rango_dia_utc(fecha_objetivo):
     inicio_utc = TZ.localize(inicio_naive).astimezone(pytz.utc).replace(tzinfo=None)
     fin_utc = TZ.localize(fin_naive).astimezone(pytz.utc).replace(tzinfo=None)
     return inicio_utc, fin_utc
+
+
+def _normalizar_cedula(valor):
+    """Deja solo dígitos, para poder comparar cédulas sin importar puntos,
+    espacios o guiones con los que se hayan escrito en el Parámetro del
+    Sistema o en la ficha del empleado (p. ej. '1.020.123.456' == '1020123456')."""
+    if not valor:
+        return ''
+    return ''.join(ch for ch in str(valor) if ch.isdigit())
+
+
+def _parsear_lista_cedulas(texto):
+    if not texto:
+        return set()
+    return {
+        _normalizar_cedula(c) for c in texto.split(',') if _normalizar_cedula(c)
+    }
+
+
+def cedulas_excluidas(env):
+    """Lee el Parámetro del Sistema PARAM_CEDULAS_EXCLUIDAS y devuelve el
+    conjunto de cédulas (normalizadas a solo dígitos) a excluir del reporte."""
+    ConfigParam = env['ir.config_parameter'].sudo()
+    return _parsear_lista_cedulas(ConfigParam.get_param(PARAM_CEDULAS_EXCLUIDAS))
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +161,19 @@ def generar_reporte_inasistencias(env, fecha_objetivo=None):
     if COMPANY_IDS:
         domain_emp.append(('company_id', 'in', COMPANY_IDS))
     empleados = env['hr.employee'].sudo().search(domain_emp)
+
+    # -- Exclusión por cédula (Parámetro del Sistema) -------------------
+    excluidas = cedulas_excluidas(env)
+    if excluidas:
+        total_antes = len(empleados)
+        empleados = empleados.filtered(
+            lambda e: _normalizar_cedula(e.identification_id) not in excluidas
+        )
+        _logger.info(
+            "Exclusión por cédula activa (%s cédula(s) en el parámetro): "
+            "%s empleado(s) excluido(s) del reporte.",
+            len(excluidas), total_antes - len(empleados),
+        )
 
     # -- Precálculo de festivos y cierres generales para fecha_objetivo -
     PublicHolidayLine = env.get('hr.holidays.public.line')
@@ -502,8 +557,17 @@ def construir_cuerpo_html(reporte):
     fecha_txt = reporte['fecha_objetivo'].strftime('%Y-%m-%d')
     total = len(reporte['inasistencias'])
 
+    # Mismo criterio que el asunto del correo (ver enviar_correo_inasistencias):
+    # se distingue "Consolidado" (resumen de un día ya cerrado, ej. ayer a
+    # las 06:30) de las 3 alertas del día (hoy), para que no se confundan
+    # al leerlos sin entrar al detalle.
+    titulo = (
+        f"Reporte de Inasistencias — {fecha_txt}" if reporte['es_fecha_actual']
+        else f"Reporte de Inasistencias — Consolidado {fecha_txt}"
+    )
+
     encabezado = f"""
-    <h2 style="margin-bottom:4px;">Reporte de Inasistencias — {fecha_txt}</h2>
+    <h2 style="margin-bottom:4px;">{titulo}</h2>
     <p style="margin-top:0;">
       <strong>Total inasistencias: {total}</strong><br/>
       Generado: {reporte['fecha_hora_texto']} ({TZ.zone})
@@ -578,7 +642,13 @@ def enviar_correo_inasistencias(env, reporte, adjunto=None):
 
     fecha_txt = reporte['fecha_objetivo'].strftime('%Y-%m-%d')
     hora_txt = reporte['generado_en'].strftime('%H:%M')
-    asunto = f"Reporte de Inasistencias — {fecha_txt} {hora_txt}"
+    # ✅ Confirmado (2026-09-07): asuntos distintos para que RH no confunda
+    # una alerta del día (hoy) con el consolidado de un día ya cerrado
+    # (ayer, cron de las 06:30) sin tener que entrar al detalle del correo.
+    if reporte['es_fecha_actual']:
+        asunto = f"Reporte de Inasistencias — {fecha_txt} {hora_txt}"
+    else:
+        asunto = f"Reporte de Inasistencias — Consolidado {fecha_txt} {hora_txt}"
 
     valores_correo = {
         'subject': asunto,
