@@ -158,7 +158,10 @@ class PaymentExportWizard(models.TransientModel):
                 rec.file_status = 'generado'
                 
 
-        base_url = self.env['ir.config_parameter'].get_param('web.base.pay')
+        # MIGRACION 19.0: se agrega .sudo(). ir.config_parameter solo es
+        # legible por base.group_system; sin sudo() un usuario de
+        # contabilidad recibia AccessError al generar el plano.
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.pay')
         if not base_url:
             raise UserError('Falta el parametro web.base.pay en Parametros del Sistema')
 

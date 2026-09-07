@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <odoo>
-      <data>
-        <record id="group_enable_pay" model="res.groups">
-          <field name="name">Habilitar Pagos</field>
+<odoo>
+    <data>
+        <!-- MIGRACION 19.0: en Odoo 19 res.groups.category_id fue reemplazado
+             por privilege_id, que apunta al nuevo modelo res.groups.privilege
+             (odoo/addons/base/models/res_groups_privilege.py). Un grupo sin
+             privilege_id no aparece en la ficha de usuario, por lo que era
+             imposible asignarlo desde la interfaz. -->
+        <record id="res_groups_privilege_bank_file" model="res.groups.privilege">
+            <field name="name">Archivos planos bancos</field>
+            <field name="sequence">50</field>
+            <field name="category_id" ref="base.module_category_accounting_accounting"/>
         </record>
-      </data>
-    </odoo>
 
+        <record id="group_enable_pay" model="res.groups">
+            <field name="name">Habilitar Pagos</field>
+            <field name="privilege_id" ref="res_groups_privilege_bank_file"/>
+        </record>
+    </data>
+</odoo>

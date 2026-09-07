@@ -23,8 +23,11 @@ class SaleConfirmLimit(models.TransientModel):
 	def agent_exceed_limit(self):
 	    self.sale_order.need_approval=True
 	    _logger.debug(' \n\n \t Adding USers\n\n\n')
-	    group = self.env.ref('control_credit_limit.group_cartera') 
-	    for myu in group.users:
+	    group = self.env.ref('control_credit_limit.group_cartera')
+	    # MIGRACION 19.0: res.groups.users fue renombrado a user_ids
+	    # (odoo/addons/base/models/res_groups.py, rama 19.0). Sin este
+	    # cambio la solicitud de aprobacion levantaba AttributeError.
+	    for myu in group.user_ids:
 	        self.sale_order.message_subscribe([myu.partner_id.id])
 	        self.sale_order.message_post(body='Se solicita aprobación de pedido para un cliente con problema de límite de crédito')
                                               #subject='Order Approval is requested for a customer with Credit Limit issue')

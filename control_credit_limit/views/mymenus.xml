@@ -10,7 +10,7 @@
 				    <field name="date_order"/>
 				    <field name="partner_id"/>
 				    <field name="user_id"/>
-				    <field name="amount_total" sum="Total Tax Included" widget="monetary" eval=""></field>
+				    <field name="amount_total" sum="Total Tax Included" widget="monetary"/>
 				    <field name="customer_balance" string="Total Debt" widget="monetary"/>
 				    <field name="credit_limit" string="Credit Limit" widget="monetary" />
 				    <field name="currency_id" invisible="1"/>

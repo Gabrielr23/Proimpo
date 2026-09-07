@@ -26,7 +26,10 @@ class SaleOrder(models.Model):
 		all_so_notinv=self.env['sale.order'].search([
 				('partner_id', '=', partner.id),
 				('company_id', '=', self.company_id.id),
-				('state', 'in', ['sale','done']),
+				# MIGRACION 19.0: SALE_ORDER_STATE es
+				# ['draft','sent','sale','cancel'] (addons/sale/models/sale_order.py).
+				# El estado 'done' ya no existe.
+				('state', '=', 'sale'),
 				('invoice_status', 'in', ['to invoice']),
 			])
 
@@ -34,7 +37,7 @@ class SaleOrder(models.Model):
 		due_notinv = 0
 		for so in all_so_notinv:
 			#if so.invoice_status == 'to invoice':
-			if so.state in ('sale','done') and not so.invoice_status == 'invoiced':
+			if so.state == 'sale' and not so.invoice_status == 'invoiced':
 				due=so.amount_total
 				due_notinv+=due
 				_logger.debug('DUE_NOTINV -----------------------------------%s', due_notinv)

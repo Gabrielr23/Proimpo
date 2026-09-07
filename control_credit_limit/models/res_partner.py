@@ -14,7 +14,17 @@ class CreditPartner(models.Model):
 	over_limit = fields.Float('Debt over Limit', compute='compute_over_limit', search='search_over_limit')
 	credit_limit_days = fields.Integer(string="Limite de días", copy=False, default=0)
 
-	def search_over_limit(self, operation, operand):
+	# MIGRACION 19.0: el campo account.account.deprecated fue eliminado en
+	# Odoo 19 (addons/account/models/account_account.py). Su equivalente
+	# es 'active'. El SQL de abajo fallaba con
+	# 'column acc.deprecated does not exist'.
+	#
+	# REQUIERE VERIFICACION MANUAL: este metodo de busqueda ignora
+	# 'operator' y 'value', por lo que devuelve siempre los socios por
+	# encima del limite sin importar el operador del dominio. Se conserva
+	# tal cual porque cambiarlo alteraria el comportamiento del menu
+	# "Clientes por encima del limite".
+	def search_over_limit(self, operator, value):
 		_logger.debug(' \n\n \t Having a shitty time here  \n\n\n'+str(self.display_name)+'\n\n\n')
 		   #if operator not in ('<', '=', '>', '>=', '<='):
 			#return []
@@ -28,8 +38,8 @@ class CreditPartner(models.Model):
 			FROM res_partner partner
 			LEFT JOIN account_move_line aml ON aml.partner_id = partner.id
 			RIGHT JOIN account_account acc ON aml.account_id = acc.id
-			WHERE acc.account_type = 'asset_receivable' 
-			  AND NOT acc.deprecated
+			WHERE acc.account_type = 'asset_receivable'
+			  AND acc.active
 			GROUP BY partner.id
 			HAVING  COALESCE(SUM(aml.amount_residual), 0) > partner.my_credit_limit ''' )
 		res = self.env.cr.fetchall()

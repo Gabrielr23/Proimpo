@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <odoo>
-      <data>
-        <record id="group_cartera" model="res.groups">
-          <field name="name">Responsable cartera</field>
+<odoo>
+    <data>
+        <!-- MIGRACION 19.0: en Odoo 19 res.groups.category_id fue reemplazado
+             por privilege_id, que apunta al nuevo modelo res.groups.privilege
+             (odoo/addons/base/models/res_groups_privilege.py). Un grupo sin
+             privilege_id no se puede asignar desde la ficha de usuario. -->
+        <record id="res_groups_privilege_credit_limit" model="res.groups.privilege">
+            <field name="name">Limite de credito</field>
+            <field name="sequence">50</field>
+            <field name="category_id" ref="base.module_category_sales"/>
         </record>
-      </data>
-    </odoo>
 
+        <record id="group_cartera" model="res.groups">
+            <field name="name">Responsable cartera</field>
+            <field name="privilege_id" ref="res_groups_privilege_credit_limit"/>
+        </record>
+    </data>
+</odoo>
