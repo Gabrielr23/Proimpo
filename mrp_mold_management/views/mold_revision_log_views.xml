@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mold_revision_log_list" model="ir.ui.view">
+        <field name="name">mrp.mold.revision.log.list</field>
+        <field name="model">mrp.mold.revision.log</field>
+        <field name="arch" type="xml">
+            <list string="Bitácora de Revisión de Molde">
+                <field name="revision_date"/>
+                <field name="equipment_id"/>
+                <field name="cavity_count_verified"/>
+                <field name="cycle_time_verified"/>
+                <field name="responsible_id"/>
+                <field name="execution_date"/>
+                <field name="complies" widget="boolean_toggle"/>
+                <field name="applied"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mold_revision_log_form" model="ir.ui.view">
+        <field name="name">mrp.mold.revision.log.form</field>
+        <field name="model">mrp.mold.revision.log</field>
+        <field name="arch" type="xml">
+            <form string="Revisión de Molde">
+                <header>
+                    <button name="action_apply_to_mold" type="object"
+                            string="Aplicar al Molde" class="btn-primary"
+                            invisible="applied"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="not applied">
+                        Esta revisión ya actualizó las cavidades/ciclo vigentes del molde.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="equipment_id"/>
+                            <field name="revision_date"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group>
+                            <field name="cavity_count_verified"/>
+                            <field name="cycle_time_verified"/>
+                            <field name="execution_date"/>
+                            <field name="complies"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="analysis"/>
+                        <field name="action_to_take"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mold_revision_log" model="ir.actions.act_window">
+        <field name="name">Bitácora de Revisión de Moldes</field>
+        <field name="res_model">mrp.mold.revision.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Sin parent: el post_init_hook lo cuelga bajo la app Mantenimiento. -->
+    <menuitem id="menu_mold_revision_log"
+              name="Bitácora de Revisión de Moldes"
+              action="action_mold_revision_log"
+              sequence="16"/>
+
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_workorder_form_mold" model="ir.ui.view">
+        <field name="name">mrp.workorder.form.mold</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_workorder_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='duration_expected']" position="after">
+                <field name="mold_id"/>
+                <field name="mold_hourly_target" string="Objetivo/Hora"
+                       invisible="not mold_id"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
