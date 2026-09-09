@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_mrp_workorder_form_mold" model="ir.ui.view">
-        <field name="name">mrp.workorder.form.mold</field>
-        <field name="model">mrp.workorder</field>
-        <field name="inherit_id" ref="mrp.mrp_workorder_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='duration_expected']" position="after">
-                <field name="mold_id"/>
-                <field name="mold_hourly_target" string="Objetivo/Hora"
-                       invisible="not mold_id"/>
-            </xpath>
-        </field>
-    </record>
+    <!--
+        La vista de formulario de mrp.workorder en esta base está fuertemente
+        personalizada con Studio y el xml_id de la vista base varía entre
+        versiones/ediciones (mrp.mrp_workorder_view_form no existe en esta
+        instancia). En lugar de arriesgar la instalación completa del módulo
+        por una referencia incorrecta, los campos `mold_id` y
+        `mold_hourly_target` se crean igualmente por el modelo Python (ver
+        models/mrp_workorder.py) y se agregan a la vista manualmente desde
+        Studio, igual que el resto de campos de esta orden de trabajo.
+    -->
 
 </odoo>
