@@ -32,29 +32,73 @@ class MrpMoldRevisionLog(models.Model):
              'cavidades/ciclo vigentes del molde.')
 
     def action_apply_to_mold(self):
-        """Traslada los valores verificados al molde.
+        """Traslada los valores verificados al molde y, si corresponde,
+        empuja el nuevo ciclo a la operación de ruta vinculada.
 
-        Deliberadamente manual: el ajuste de un dato que afecta el objetivo
-        de producción de toda una línea no debe ocurrir solo porque alguien
-        guardó una fila de bitácora, sino porque un responsable confirmó
-        que el cambio es real.
+        Aplicar el molde es deliberadamente manual (un responsable confirma
+        que el cambio es real). Empujar a la ruta ocurre automáticamente en
+        ese mismo momento: es el punto donde ya tiene sentido corregir la
+        fuente, para que las órdenes nuevas nazcan bien sin un paso aparte.
         """
+        pending_count = 0
+        push_summary = {'updated': [], 'skipped_auto': [], 'unlinked': []}
+
         for log in self:
             vals = {}
             if log.cavity_count_verified:
                 vals['cavity_count'] = log.cavity_count_verified
             if log.cycle_time_verified:
                 vals['cycle_time_current'] = log.cycle_time_verified
-            if vals:
-                log.equipment_id.sudo().write(vals)
-                log.applied = True
+            if not vals:
+                continue
+
+            log.equipment_id.sudo().write(vals)
+            log.applied = True
+
+            pending_count += self.env['mrp.workorder'].sudo().search_count([
+                ('mold_id', '=', log.equipment_id.id),
+                ('state', 'in', ('pending', 'waiting', 'ready')),
+            ])
+
+            result = log.equipment_id._push_cycle_to_routing()
+            for k in push_summary:
+                push_summary[k].extend(result[k])
+
+        lines = ['Los valores verificados se aplicaron al molde.']
+
+        if push_summary['updated']:
+            lines.append('Operación(es) de LdM actualizada(s): %s.'
+                        % ', '.join(push_summary['updated']))
+        if push_summary['skipped_auto']:
+            lines.append(
+                'ATENCIÓN: %s está(n) en modo de tiempo automático — Odoo '
+                'recalcula ese ciclo solo desde el histórico, así que este '
+                'valor NO tuvo efecto. Cámbielas a modo manual si quiere que '
+                'el molde controle el ciclo.' % ', '.join(push_summary['skipped_auto'])
+            )
+        if push_summary['unlinked']:
+            lines.append(
+                'El molde %s no tiene ninguna operación de LdM vinculada '
+                '(campo "Operación de LdM"): las órdenes nuevas seguirán '
+                'naciendo con el ciclo anterior hasta que la vincule.'
+                % ', '.join(push_summary['unlinked'])
+            )
+        if pending_count:
+            lines.append(
+                'Hay %s orden(es) de trabajo ya creadas y aún no iniciadas '
+                'que usan este molde: no se recalculan solas, ábralas y use '
+                '"Aplicar duración del molde" si corresponde.' % pending_count
+            )
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Bitácora de molde',
-                'message': 'Los valores verificados se aplicaron al molde.',
-                'type': 'success',
-                'sticky': False,
+                'message': ' '.join(lines),
+                'type': 'warning' if (push_summary['skipped_auto']
+                                      or push_summary['unlinked']) else 'success',
+                'sticky': bool(pending_count or push_summary['skipped_auto']
+                              or push_summary['unlinked']),
             },
         }

@@ -34,7 +34,7 @@
                         </group>
                         <group string="Compatibilidad">
                             <field name="compatible_workcenter_ids" widget="many2many_tags"/>
-                            <field name="qualified_bom_ids" widget="many2many_tags"/>
+                            <field name="qualified_operation_ids" widget="many2many_tags"/>
                         </group>
                     </group>
                 </page>

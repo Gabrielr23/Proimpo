@@ -4,12 +4,25 @@
     <!--
         La vista de formulario de mrp.workorder en esta base está fuertemente
         personalizada con Studio y el xml_id de la vista base varía entre
-        versiones/ediciones (mrp.mrp_workorder_view_form no existe en esta
-        instancia). En lugar de arriesgar la instalación completa del módulo
-        por una referencia incorrecta, los campos `mold_id` y
-        `mold_hourly_target` se crean igualmente por el modelo Python (ver
-        models/mrp_workorder.py) y se agregan a la vista manualmente desde
-        Studio, igual que el resto de campos de esta orden de trabajo.
+        versiones/ediciones. En lugar de arriesgar la instalación completa
+        del módulo por una referencia incorrecta, estos campos y el botón se
+        crean por el modelo Python (ver models/mrp_workorder.py) y se agregan
+        a la vista manualmente desde Studio, igual que el resto de campos de
+        esta orden de trabajo.
+
+        Campos a arrastrar (aparecen en el buscador de campos de Studio
+        buscando "molde"):
+          - mold_id                  → "Molde"
+          - mold_hourly_target       → "Objetivo por Hora (Molde)"
+          - mold_duration_expected   → "Duración Según Molde (min)"
+
+        Botón (Studio no permite arrastrarlo desde la paleta porque llama a
+        un método del modelo; se agrega con el editor XML de Studio, mismo
+        procedimiento ya usado para el botón "Tipificar"):
+
+          <button name="action_apply_mold_duration" type="object"
+                  string="Aplicar duración del molde"
+                  invisible="not mold_id"/>
     -->
 
 </odoo>

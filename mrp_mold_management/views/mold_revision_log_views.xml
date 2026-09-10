@@ -56,14 +56,25 @@
     </record>
 
     <record id="action_mold_revision_log" model="ir.actions.act_window">
-        <field name="name">Bitácora de Revisión de Moldes</field>
+        <field name="name">Actualización de Especificaciones de Molde</field>
         <field name="res_model">mrp.mold.revision.log</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra la primera revisión de un molde
+            </p>
+            <p>
+                Esta bitácora no es un ticket de mantenimiento: registra
+                cambios en la línea base de cavidades y ciclo que usa la
+                planeación (por desgaste, ajuste de proceso, etc.). Para
+                reparaciones, use Mantenimiento → Solicitudes.
+            </p>
+        </field>
     </record>
 
-    <!-- Sin parent: el post_init_hook lo cuelga bajo la app Mantenimiento. -->
+    <!-- Sin parent: el post_init_hook lo cuelga bajo la raíz de Mantenimiento. -->
     <menuitem id="menu_mold_revision_log"
-              name="Bitácora de Revisión de Moldes"
+              name="Actualización de Especificaciones de Molde"
               action="action_mold_revision_log"
               sequence="16"/>
 

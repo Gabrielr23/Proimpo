@@ -52,12 +52,18 @@ class MaintenanceEquipment(models.Model):
              'de prioridad: el planeador decide según disponibilidad y fecha '
              'de entrega.',
     )
-    qualified_bom_ids = fields.Many2many(
-        'mrp.bom',
-        'maintenance_equipment_mold_bom_rel',
-        'equipment_id', 'bom_id',
-        string='LdM Calificadas',
-        help='Listas de materiales que este molde está calificado para producir.',
+    qualified_operation_ids = fields.Many2many(
+        'mrp.routing.workcenter',
+        'maintenance_equipment_mold_operation_rel',
+        'equipment_id', 'operation_id',
+        string='Operación de LdM (Inyección)',
+        help='Operación exacta de la ruta que usa este molde. No basta con '
+             'la LdM completa: se necesita la operación específica para '
+             'poder corregirle el tiempo de ciclo cuando el molde cambia. '
+             'Al aplicar una revisión de este molde, la operación aquí '
+             'listada recibe el nuevo tiempo automáticamente, así que las '
+             'órdenes nuevas nacen con el dato correcto sin intervención '
+             'manual.',
     )
 
     # ------------------------------------------------------------------
@@ -102,3 +108,51 @@ class MaintenanceEquipment(models.Model):
             'domain': [('equipment_id', '=', self.id)],
             'context': {'default_equipment_id': self.id},
         }
+
+    # ------------------------------------------------------------------
+    # Propagación a la LdM: corrige la FUENTE, no cada orden individual
+    # ------------------------------------------------------------------
+    PUSH_PARAM = 'mrp_mold_management.push_cycle_to_routing'
+
+    def _push_cycle_to_routing(self):
+        """Escribe el ciclo vigente del molde en la(s) operación(es) de ruta
+        vinculadas, para que TODA orden de trabajo creada de aquí en adelante
+        nazca con el tiempo correcto, sin depender de que alguien la corrija
+        a mano una por una.
+
+        Se apaga con el parámetro de sistema `mrp_mold_management
+        .push_cycle_to_routing` (por defecto activo). Apáguelo el día que
+        el ajuste de LdM pase a gestionarse por PLM, para que este mecanismo
+        no escriba por debajo de ese flujo de aprobación.
+
+        Devuelve un resumen para que quien aplicó el cambio sepa exactamente
+        qué se actualizó, qué se omitió por estar en modo automático (Odoo
+        recalcula ese tiempo solo y este valor no tendría efecto), y qué
+        molde no tiene ninguna operación vinculada todavía.
+        """
+        enabled = self.env['ir.config_parameter'].sudo().get_param(
+            self.PUSH_PARAM, 'True')
+        if str(enabled).lower() not in ('1', 'true'):
+            return {'updated': [], 'skipped_auto': [], 'unlinked': []}
+
+        updated, skipped_auto, unlinked = [], [], []
+
+        for mold in self:
+            if not mold.cycle_time_current or not mold.cavity_count:
+                continue
+
+            minutes_per_unit = (mold.cycle_time_current / mold.cavity_count) / 60.0
+
+            if not mold.qualified_operation_ids:
+                unlinked.append(mold.display_name)
+                continue
+
+            for op in mold.qualified_operation_ids:
+                etiqueta = '%s (%s)' % (op.name, op.bom_id.display_name or '')
+                if op.time_mode != 'manual':
+                    skipped_auto.append(etiqueta)
+                    continue
+                op.sudo().write({'time_cycle_manual': minutes_per_unit})
+                updated.append(etiqueta)
+
+        return {'updated': updated, 'skipped_auto': skipped_auto, 'unlinked': unlinked}
