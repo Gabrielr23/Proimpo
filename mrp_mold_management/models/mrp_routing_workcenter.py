@@ -9,7 +9,7 @@ class MrpRoutingWorkcenter(models.Model):
         'maintenance.equipment', string='Molde',
         domain="[('is_mold', '=', True), "
                "('compatible_workcenter_ids', '=', workcenter_id)]",
-        context="{'default_is_mold': True}",
+        context={"default_is_mold": True},
         help='Molde que ejecuta esta operación. Vínculo uno a uno: esta '
              'operación tiene un único molde, y su ciclo se corrige aquí '
              'automáticamente cuando se aplica una revisión del molde en '

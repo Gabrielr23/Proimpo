@@ -263,3 +263,18 @@ extensión se combina con ellas sin conflicto.
 **Si ya habías agregado el campo manualmente por Studio** mientras
 esperabas esta confirmación, revisa que no quede duplicado en la vista —
 quítalo desde Studio para que solo quede la versión que trae el módulo.
+
+---
+
+## Corrección v18.0.1.5.1
+
+El atributo `context` de un campo relacional en Python debe ser un
+**diccionario**; la forma de texto (`context="{'default_is_mold': True}"`)
+solo es válida como atributo en XML. Odoo intentaba expandir ese string con
+`**` y fallaba al abrir el formulario de Operaciones:
+
+    TypeError: with_context() argument after ** must be a mapping, not str
+
+Corregido a `context={"default_is_mold": True}` en `mrp.routing.workcenter`
+y en `mrp.workorder`. Mismo comportamiento previsto (el molde nuevo nace
+marcado como molde), ahora en la forma que el ORM espera.
