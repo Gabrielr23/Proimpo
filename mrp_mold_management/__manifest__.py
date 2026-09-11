@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.1.2.0',
+    'version': '18.0.1.3.0',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """
@@ -41,6 +41,7 @@ reclaman el mismo molde. Queda para una siguiente iteración.
         'security/ir.model.access.csv',
         'views/maintenance_equipment_views.xml',
         'views/mrp_workorder_views.xml',
+        'views/mrp_routing_workcenter_views.xml',
         'views/mold_revision_log_views.xml',
     ],
     'installable': True,

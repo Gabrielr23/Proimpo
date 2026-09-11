@@ -9,11 +9,11 @@ class MrpWorkorder(models.Model):
         'maintenance.equipment', string='Molde',
         domain="[('is_mold', '=', True), "
                "('compatible_workcenter_ids', '=', workcenter_id)]",
-        help='Molde instalado para esta orden de trabajo. Solo se listan '
-             'moldes marcados como compatibles con el centro de trabajo '
-             'seleccionado arriba. Se asigna solo cuando hay un único molde '
-             'candidato sin ambigüedad; si hay varios, queda en blanco para '
-             'que el planeador decida.',
+        help='Molde instalado para esta orden de trabajo. Se copia solo '
+             'desde el molde definido en la operación de la LdM de origen. '
+             'Editable a mano si esta ejecución usa un molde distinto al '
+             'estándar (por ejemplo, un respaldo mientras el habitual está '
+             'en mantenimiento).',
     )
     mold_hourly_target = fields.Float(
         string='Objetivo por Hora (Molde)', related='mold_id.hourly_target',
@@ -83,31 +83,20 @@ class MrpWorkorder(models.Model):
                 wo.mold_id = False
 
     def _auto_assign_mold(self):
-        """Asigna el molde solo. Nunca si hay ambigüedad.
+        """Copia el molde directo desde la operación de origen.
 
-        Candidato = molde activo, compatible con el centro de trabajo de la
-        orden, y calificado para la LdM del producto en fabricación. Si hay
-        exactamente un candidato, se asigna; si hay cero o varios, se deja en
-        blanco para que el planeador decida (criterio humano: disponibilidad,
-        fecha de entrega, o si el molde ya está montado).
+        Ya no hay que buscar candidatos ni resolver ambigüedad: como el
+        vínculo molde↔operación es uno a uno (se define en la LdM, en el
+        campo "Molde" de cada operación), cada orden de trabajo sabe
+        exactamente de qué operación viene (`operation_id`) y esa operación
+        sabe exactamente qué molde le corresponde. Si `operation_id` no
+        tiene molde asignado (o la orden no viene de una operación de LdM,
+        por ejemplo un paso agregado a mano), queda en blanco para que el
+        planeador lo asigne manualmente.
         """
-        Equipment = self.env['maintenance.equipment'].sudo()
         for wo in self:
-            if wo.mold_id or not wo.workcenter_id:
-                continue
-
-            bom = wo.production_id.bom_id
-            domain = [
-                ('is_mold', '=', True),
-                ('active', '=', True),
-                ('compatible_workcenter_ids', '=', wo.workcenter_id.id),
-            ]
-            if bom:
-                domain.append(('qualified_operation_ids.bom_id', '=', bom.id))
-
-            candidatos = Equipment.search(domain)
-            if len(candidatos) == 1:
-                wo.mold_id = candidatos.id
+            if not wo.mold_id and wo.operation_id and wo.operation_id.mold_id:
+                wo.mold_id = wo.operation_id.mold_id
 
     @api.model_create_multi
     def create(self, vals_list):

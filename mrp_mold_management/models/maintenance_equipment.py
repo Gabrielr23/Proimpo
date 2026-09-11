@@ -52,18 +52,13 @@ class MaintenanceEquipment(models.Model):
              'de prioridad: el planeador decide según disponibilidad y fecha '
              'de entrega.',
     )
-    qualified_operation_ids = fields.Many2many(
-        'mrp.routing.workcenter',
-        'maintenance_equipment_mold_operation_rel',
-        'equipment_id', 'operation_id',
-        string='Operación de LdM (Inyección)',
-        help='Operación exacta de la ruta que usa este molde. No basta con '
-             'la LdM completa: se necesita la operación específica para '
-             'poder corregirle el tiempo de ciclo cuando el molde cambia. '
-             'Al aplicar una revisión de este molde, la operación aquí '
-             'listada recibe el nuevo tiempo automáticamente, así que las '
-             'órdenes nuevas nacen con el dato correcto sin intervención '
-             'manual.',
+    qualified_operation_ids = fields.One2many(
+        'mrp.routing.workcenter', 'mold_id',
+        string='Operaciones que Usan este Molde',
+        help='Informativo, uno a uno: cada operación listada aquí tiene a '
+             'este molde asignado directamente en su ficha de LdM. Para '
+             'vincular o desvincular, edite el campo "Molde" en la '
+             'operación, no aquí.',
     )
 
     # ------------------------------------------------------------------

@@ -34,8 +34,18 @@
                         </group>
                         <group string="Compatibilidad">
                             <field name="compatible_workcenter_ids" widget="many2many_tags"/>
-                            <field name="qualified_operation_ids" widget="many2many_tags"/>
                         </group>
+                    </group>
+                    <group string="Operaciones que Usan este Molde">
+                        <field name="qualified_operation_ids" readonly="1" nolabel="1">
+                            <list editable="false" create="false" delete="false">
+                                <field name="name"/>
+                                <field name="bom_id"/>
+                                <field name="workcenter_id"/>
+                                <field name="time_cycle_manual" string="Ciclo (min/ud)"/>
+                                <field name="time_mode"/>
+                            </list>
+                        </field>
                     </group>
                 </page>
             </xpath>

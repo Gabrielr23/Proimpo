@@ -154,3 +154,44 @@ trabajo sigue siendo necesario para las órdenes que **ya existían** antes de
 la revisión y aún no han iniciado: esas nacieron con el dato viejo y no se
 autocorrigen solas. Es el único punto donde queda un paso manual, y es
 inevitable — el registro ya existe con un número guardado.
+
+---
+
+## Cambios v18.0.1.3.0 — vínculo uno a uno, sin búsqueda ambigua
+
+**Rediseño según caso real confirmado**: PR Mug X (padre, operación Soplar
+con su molde) + ST Inyectar Mug (hija, operación Inyectar con su propio
+molde) — cada operación de cada LdM tiene su propio molde, de forma directa.
+
+**Antes**: el molde declaraba una lista de operaciones calificadas
+(Many2many), y la orden de trabajo buscaba entre los moldes compatibles
+esperando encontrar exactamente uno sin ambigüedad.
+
+**Ahora**: cada operación de la LdM (`mrp.routing.workcenter`) tiene su
+propio campo **Molde** (`mold_id`), uno a uno. La orden de trabajo ya no
+busca nada — copia el molde directo de la operación de la que proviene
+(`operation_id.mold_id`). Cero ambigüedad posible, porque el diseño ya no
+permite que exista.
+
+**Bono**: al ser un campo Many2one normal, "Crear y editar..." para dar de
+alta un molde nuevo sin salir de la LdM ya viene incluido de fábrica — no
+hizo falta construir nada aparte para eso.
+
+**En el molde**, `qualified_operation_ids` pasa de lista editable a lista de
+solo lectura (qué operaciones lo usan hoy) — se edita desde la operación,
+no desde el molde, para que exista un solo lugar donde se establece el
+vínculo.
+
+**Sin cambios**: la propagación del ciclo al aplicar una revisión (botón
+"Aplicar al Molde") sigue funcionando igual — ahora lee la misma
+información, solo que a través del vínculo uno a uno en vez de la lista
+calificada.
+
+## Pendiente, confirmado como NO urgente (mismo campo, no otro modelo)
+
+Que el campo nativo de duración de la operación se vuelva de solo lectura y
+muestre el mismo ciclo en segundos por unidad cuando hay un molde vinculado.
+Es una mejora de vista sobre el mismo `mold_id` construido en esta versión,
+no un modelo nuevo — queda para una siguiente iteración, junto con el
+objetivo por turno y el ensamblaje de OEE (temas deliberadamente fuera de
+esta entrega para no mezclarlos).
