@@ -2,24 +2,24 @@
 <odoo>
 
     <!--
-        El formulario "Abrir: Operaciones" (la ficha de una operación dentro
-        de la pestaña Operaciones de una LdM) también varía su xml_id entre
-        instalaciones. Por la misma razón que en mrp_workorder_views.xml, el
-        campo se crea por el modelo Python (ver
-        models/mrp_routing_workcenter.py) y se agrega a la vista manualmente
-        desde Studio.
-
-        Pasos:
-          1. Fabricación → Productos → Listas de materiales → abrir una LdM.
-          2. Pestaña Operaciones → abrir (o crear) una operación.
-          3. Studio → arrastrar un campo → buscar "Molde" → seleccionar
-             `mold_id`.
-
-        El filtro que solo muestra moldes compatibles con el centro de
-        trabajo de esa operación ya viene incluido en la definición del
-        campo (no hace falta configurar dominio en Studio). Si el molde no
-        existe todavía, "Crear y editar..." en el desplegable lo da de alta
-        con sus cavidades y ciclo sin salir de la LdM.
+        Confirmado por diagnóstico en vivo (no una suposición): la vista
+        base del formulario de Operaciones de LdM es
+        mrp.mrp_routing_workcenter_form_view (sin padre — es la raíz). Las
+        extensiones de mrp_workorder y de Studio en esta instancia heredan
+        de esa misma base de forma independiente entre sí, así que agregar
+        una tercera extensión apoyada en la misma base es seguro: Odoo las
+        combina todas al renderizar, sin que compitan entre ellas.
     -->
+    <record id="view_mrp_routing_workcenter_form_mold" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.form.mold</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='workcenter_id']" position="after">
+                <field name="mold_id"/>
+            </xpath>
+        </field>
+    </record>
 
 </odoo>
+

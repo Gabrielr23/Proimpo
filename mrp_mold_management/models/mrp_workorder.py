@@ -9,6 +9,7 @@ class MrpWorkorder(models.Model):
         'maintenance.equipment', string='Molde',
         domain="[('is_mold', '=', True), "
                "('compatible_workcenter_ids', '=', workcenter_id)]",
+        context="{'default_is_mold': True}",
         help='Molde instalado para esta orden de trabajo. Se copia solo '
              'desde el molde definido en la operación de la LdM de origen. '
              'Editable a mano si esta ejecución usa un molde distinto al '

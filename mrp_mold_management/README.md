@@ -195,3 +195,71 @@ Es una mejora de vista sobre el mismo `mold_id` construido en esta versión,
 no un modelo nuevo — queda para una siguiente iteración, junto con el
 objetivo por turno y el ensamblaje de OEE (temas deliberadamente fuera de
 esta entrega para no mezclarlos).
+
+---
+
+## Cambios v18.0.1.4.0 — corrección de fondo del problema de menús
+
+**Causa raíz confirmada**: `post_init_hook` solo se ejecuta en la primera
+instalación de un módulo, nunca en una actualización. Como este módulo
+siempre se despliega reemplazando la carpeta y actualizando (nunca
+reinstalando desde cero), la lógica de reubicar menús jamás se había
+ejecutado en ninguna versión anterior — no era un bug puntual, era un
+mecanismo incompatible con la forma real de desplegar.
+
+**Corrección**: la misma lógica (buscar el submenú "Equipos" por nombre bajo
+la raíz de Mantenimiento, sin depender de ningún xml_id externo) ahora vive
+en un modelo abstracto (`models/setup.py`) invocado desde
+`data/menu_placement.xml` con un `<function>`. Los archivos de datos SIN
+`noupdate` se re-ejecutan en cada actualización del módulo, así que esto se
+corrige solo cada vez que actualices, sin depender de una reinstalación.
+
+Se quitó `post_init_hook` del manifest — ya no hace falta, el archivo de
+datos cubre tanto la instalación como cualquier actualización futura.
+
+## Pendiente, esta vez a propósito y explícito
+
+El campo `mold_id` de `mrp.routing.workcenter` sigue sin vista propia en el
+módulo. Ya hubo dos intentos fallidos de adivinar un xml_id de vista en este
+proyecto (uno de ellos tumbó el ambiente completo); antes de un tercer
+intento a ciegas, se solicitó el xml_id real de las vistas de
+`mrp.routing.workcenter` mediante un diagnóstico de solo lectura. La vista
+se construye en la siguiente versión, con el dato confirmado en vez de una
+suposición.
+
+---
+
+## Cambios v18.0.1.4.1
+
+`mold_id` (en la operación de LdM y en la orden de trabajo) ahora crea el
+equipo nuevo con `is_mold` marcado automáticamente desde "Crear y editar...".
+Sin esto, un molde creado desde ahí nacía con la pestaña de cavidades/ciclo
+oculta, porque esa pestaña solo se muestra si `is_mold` está tildado — la
+persona tendría que descubrir que hay que marcar la casilla antes de poder
+cargar los datos. Ahora aparece de inmediato.
+
+Cambio hecho a nivel de campo (Python), no de vista: no depende del xml_id
+de `mrp.routing.workcenter` que sigue pendiente de confirmar, así que no
+tiene el riesgo de las vistas heredadas y se puede desplegar ya.
+
+**Sigue pendiente**: la vista que efectivamente coloca `mold_id` en el
+formulario emergente de Operaciones de la LdM. Bloqueado hasta confirmar
+el xml_id real (diagnóstico solicitado, aún sin respuesta).
+
+---
+
+## Cambios v18.0.1.5.0 — campo Molde ya en la Lista de Materiales
+
+Con el xml_id confirmado por diagnóstico en vivo (no una suposición), el
+campo `mold_id` ahora aparece directamente en el formulario "Abrir:
+Operaciones" de la pestaña Operaciones de cualquier LdM, justo después de
+Centro de Trabajo. Ya no requiere ningún paso manual en Studio.
+
+Vista base confirmada: `mrp.mrp_routing_workcenter_form_view` (sin padre).
+Las extensiones de `mrp_workorder` y de Studio en esta instancia heredan de
+esa misma base de forma independiente entre sí, así que esta tercera
+extensión se combina con ellas sin conflicto.
+
+**Si ya habías agregado el campo manualmente por Studio** mientras
+esperabas esta confirmación, revisa que no quede duplicado en la vista —
+quítalo desde Studio para que solo quede la versión que trae el módulo.

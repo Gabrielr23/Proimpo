@@ -9,10 +9,12 @@ class MrpRoutingWorkcenter(models.Model):
         'maintenance.equipment', string='Molde',
         domain="[('is_mold', '=', True), "
                "('compatible_workcenter_ids', '=', workcenter_id)]",
+        context="{'default_is_mold': True}",
         help='Molde que ejecuta esta operación. Vínculo uno a uno: esta '
              'operación tiene un único molde, y su ciclo se corrige aquí '
              'automáticamente cuando se aplica una revisión del molde en '
              'Mantenimiento → Moldes. Si el molde no existe todavía, use '
-             '"Crear y editar..." en este mismo campo para darlo de alta '
-             'con sus cavidades y ciclo sin salir de la LdM.',
+             '"Crear y editar..." en este mismo campo: el nuevo registro '
+             'nace marcado como molde, así que la pestaña de cavidades y '
+             'ciclo aparece de inmediato, sin pasos ocultos.',
     )

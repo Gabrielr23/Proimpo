@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        A diferencia de post_init_hook (que solo corre en la primera
+        instalación), un <function> dentro de un archivo de datos SIN
+        noupdate se reejecuta cada vez que el módulo se actualiza — que es
+        como este módulo se despliega en la práctica (reemplazo de carpeta +
+        actualización, nunca reinstalación desde cero). Debe cargarse
+        DESPUÉS de los archivos que crean los menús (ver el orden en
+        __manifest__.py), porque busca esos menús por su xml_id.
+    -->
+    <function model="mrp.mold.management.setup" name="fix_menu_placement" eval="[]"/>
+
+</odoo>
