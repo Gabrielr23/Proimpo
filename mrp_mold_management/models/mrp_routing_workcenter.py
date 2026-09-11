@@ -8,6 +8,7 @@ class MrpRoutingWorkcenter(models.Model):
     mold_id = fields.Many2one(
         'maintenance.equipment', string='Molde',
         domain="[('is_mold', '=', True), "
+               "'|', ('compatible_workcenter_ids', '=', False), "
                "('compatible_workcenter_ids', '=', workcenter_id)]",
         context={"default_is_mold": True},
         help='Molde que ejecuta esta operación. Vínculo uno a uno: esta '

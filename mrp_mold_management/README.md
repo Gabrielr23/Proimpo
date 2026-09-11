@@ -278,3 +278,22 @@ solo es válida como atributo en XML. Odoo intentaba expandir ese string con
 Corregido a `context={"default_is_mold": True}` en `mrp.routing.workcenter`
 y en `mrp.workorder`. Mismo comportamiento previsto (el molde nuevo nace
 marcado como molde), ahora en la forma que el ORM espera.
+
+---
+
+## Corrección v18.0.1.5.2 — moldes invisibles en el desplegable
+
+El dominio exigía que el molde tuviera el centro de trabajo de la operación
+en su lista de Centros Compatibles. Consecuencia no prevista: un molde
+recién creado (que aún no tiene esa lista llena) quedaba invisible en el
+mismo desplegable desde donde se acababa de crear.
+
+Ahora el dominio también acepta moldes SIN compatibilidad definida:
+
+    [('is_mold','=',True),
+     '|', ('compatible_workcenter_ids','=',False),
+          ('compatible_workcenter_ids','=',workcenter_id)]
+
+Aplicado en `mrp.routing.workcenter` y en `mrp.workorder`. Una vez que se
+llenan los Centros Compatibles de un molde, el filtro vuelve a aplicar con
+normalidad para ese molde.
