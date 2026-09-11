@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.3.1',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """

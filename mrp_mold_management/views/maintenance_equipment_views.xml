@@ -38,7 +38,7 @@
                     </group>
                     <group string="Operaciones que Usan este Molde">
                         <field name="qualified_operation_ids" readonly="1" nolabel="1">
-                            <list editable="false" create="false" delete="false">
+                            <list create="false" delete="false">
                                 <field name="name"/>
                                 <field name="bom_id"/>
                                 <field name="workcenter_id"/>
