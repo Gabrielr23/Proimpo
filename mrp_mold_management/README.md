@@ -297,3 +297,102 @@ Ahora el dominio también acepta moldes SIN compatibilidad definida:
 Aplicado en `mrp.routing.workcenter` y en `mrp.workorder`. Una vez que se
 llenan los Centros Compatibles de un molde, el filtro vuelve a aplicar con
 normalidad para ese molde.
+
+---
+
+## Cambios v18.0.1.6.0
+
+**1. Ciclo Efectivo (respaldo automático).** `hourly_target` daba 0 cuando
+el molde tenía Ciclo Teórico informado pero Ciclo Actual en 0 — el caso de
+todo molde recién creado. Se añadió `cycle_time_effective`: usa el Ciclo
+Actual si está informado, y si no, el Ciclo Teórico. Todos los cálculos
+(objetivo por hora, duración por molde, propagación a la ruta) pasan a usar
+ese campo. Con cavidades 2 y ciclo teórico 30 seg: 240 unidades/hora.
+
+**2. La duración nativa de Odoo se actualiza al elegir molde.** `onchange`
+sobre `mold_id`: pone el modo de tiempo en manual y escribe
+`time_cycle_manual` = (ciclo efectivo / cavidades) / 60 — es decir, tiempo
+por UNA unidad. Si el molde se deja vacío, la duración nativa NO se toca
+(se respeta lo que el facilitador haya puesto a mano). No se dejó de solo
+lectura, como se acordó.
+
+**3. Datos del molde visibles en la operación.** Campos de solo lectura
+`mold_cavity_count`, `mold_cycle_time` y `mold_hourly_target`, para ver
+cavidades y ciclo sin abrir la ficha del molde.
+
+**4. Columna Molde en la tabla de Operaciones de la LdM.** El formulario
+emergente "Abrir: Operaciones" NO usa el formulario base del modelo — se
+comprobó en vivo que el campo aparece en Configuración → Operaciones pero
+no en el emergente, lo que indica que ese emergente se define en otro lugar
+aún sin identificar. Como alternativa funcional, la columna se agregó a la
+tabla misma (`mrp.mrp_routing_workcenter_bom_tree_view`, xml_id confirmado),
+con un ancla `//list` que no asume nada sobre las demás columnas.
+
+## IMPORTANTE: por qué el desplegable seguía vacío
+
+El molde "Molde Preforma 7543" tiene como Centros de Trabajo Compatibles
+**Inyectora7 e Inyectora8**, pero la operación de la LdM usa **Inyectora9**.
+El dominio filtra correctamente y por eso no aparece. La relajación de
+v1.5.2 solo cubre moldes con la lista VACÍA; una vez que la lista tiene
+valores, el filtro aplica.
+
+Para que ese molde aparezca en esa operación: agregar Inyectora9 a sus
+Centros de Trabajo Compatibles (o vaciar la lista si el molde sirve en
+cualquier inyectora).
+
+---
+
+## Cambios v18.0.1.7.0
+
+**Objetivo por hora universal (`hourly_target`).** Antes el objetivo estaba
+atado exclusivamente al molde, dejando sin objetivo a las operaciones que no
+lo usan (empaque, alistamiento, impresión). Ahora hay cadena de respaldo:
+
+| Nivel | Fuente | Fórmula |
+|---|---|---|
+| 1 | Molde | ciclo efectivo / cavidades |
+| 2 | Ciclo de la operación | 60 / time_cycle |
+| 3 | Duración esperada | qty_production / (duration_expected / 60) |
+
+Disponible en `mrp.routing.workcenter` (niveles 1-2) y en `mrp.workorder`
+(los tres niveles). Toda operación y toda orden tienen objetivo, con molde
+o sin él.
+
+## CAUSA RAÍZ del emergente "Abrir: Operaciones"
+
+Diagnóstico en vivo del arch de `mrp.bom`:
+
+- `mrp.mrp_bom_form_view` define `operation_ids` SIN subvistas propias, solo
+  con `list_view_ref` en contexto.
+- `studio_customization.odoo_studio_mrp_bom__df4d4a76-...` inyecta subvistas
+  EN LÍNEA dentro de ese campo (`position="inside"` con un `<list>`
+  completo).
+
+Cuando Studio edita un one2many, congela una copia del arch resuelto en ese
+momento y la guarda en línea. Esa copia deja de recibir herencia del modelo.
+De ahí que el emergente muestre la pestaña "Work Sheet" (existía al momento
+de la foto) pero nunca el campo Molde (añadido después).
+
+**Implicación**: la columna que v1.6.0 agregó a
+`mrp.mrp_routing_workcenter_bom_tree_view` tampoco se ve, porque el `<list>`
+en línea de Studio pisa el `list_view_ref`. Se deja en el módulo porque SÍ
+funciona en bases sin esa personalización de Studio.
+
+**Por qué NO se resuelve desde el módulo**: el único punto donde se puede
+insertar el campo es la subvista en línea de Studio, cuyo xml_id contiene un
+UUID aleatorio distinto en cada base de datos. Un módulo que dependa de ese
+xml_id fallaría al instalarse en cualquier otra instancia (producción, la
+otra base de test), tumbando el registro completo — riesgo ya materializado
+una vez en este proyecto.
+
+**Solución**: agregar el campo desde Studio, una vez por base de datos, con
+el emergente abierto. Studio lo insertará en su propia subvista en línea,
+que es donde corresponde.
+
+## Pendiente: objetivo por turno
+
+Requiere definir la duración del turno. El calendario existente
+("Horario CT Inyectoras L-S") tiene turnos de distinta duración: T1 6:00-13:00
+(7 h), T2 13:00-21:30 (8,5 h), T3 21:30-6:00 (8,5 h). Sin decidir si el
+objetivo por turno debe ser por turno específico o con una duración única
+parametrizada, cualquier implementación sería una suposición.

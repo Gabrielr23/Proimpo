@@ -23,6 +23,37 @@ class MrpWorkorder(models.Model):
         help='Objetivo teórico de piezas por hora, según el ciclo y las '
              'cavidades vigentes del molde seleccionado.',
     )
+    hourly_target = fields.Float(
+        string='Objetivo por Hora', compute='_compute_hourly_target',
+        digits=(10, 2),
+        help='Unidades esperadas por hora. Si la orden tiene molde, se '
+             'calcula con su ciclo y cavidades; si no, con el ciclo de la '
+             'operación; y si tampoco hay operación, se deriva de la '
+             'duración esperada y la cantidad a producir. Así toda orden '
+             'tiene objetivo, use molde o no.',
+    )
+
+    @api.depends('mold_id', 'mold_id.cycle_time_effective', 'mold_id.cavity_count',
+                 'operation_id', 'operation_id.time_cycle',
+                 'duration_expected', 'qty_production')
+    def _compute_hourly_target(self):
+        """Cadena de respaldo de tres niveles.
+
+        No todas las operaciones usan molde (empaque, alistamiento,
+        impresión), pero el supervisor necesita un objetivo por hora en
+        TODA orden para poder comparar avance real contra esperado.
+        """
+        for wo in self:
+            target = 0.0
+            if wo.mold_id and wo.mold_id.hourly_target:
+                target = wo.mold_id.hourly_target
+            elif wo.operation_id and wo.operation_id.time_cycle:
+                target = 60.0 / wo.operation_id.time_cycle
+            elif wo.duration_expected and wo.qty_production:
+                horas = wo.duration_expected / 60.0
+                if horas:
+                    target = wo.qty_production / horas
+            wo.hourly_target = target
     mold_duration_expected = fields.Float(
         string='Duración Según Molde (min)', compute='_compute_mold_duration_expected',
         digits=(10, 2),
@@ -33,18 +64,18 @@ class MrpWorkorder(models.Model):
              'Use el botón "Aplicar duración del molde" para corregirla.',
     )
 
-    @api.depends('mold_id', 'mold_id.cycle_time_current', 'mold_id.cavity_count',
+    @api.depends('mold_id', 'mold_id.cycle_time_effective', 'mold_id.cavity_count',
                  'qty_producing', 'qty_production',
                  'workcenter_id.time_start', 'workcenter_id.time_stop')
     def _compute_mold_duration_expected(self):
         for wo in self:
             mold = wo.mold_id
-            if not mold or not mold.cycle_time_current or not mold.cavity_count:
+            if not mold or not mold.cycle_time_effective or not mold.cavity_count:
                 wo.mold_duration_expected = 0.0
                 continue
 
             qty = wo.qty_production or wo.qty_producing or 0.0
-            seconds_per_unit = mold.cycle_time_current / mold.cavity_count
+            seconds_per_unit = mold.cycle_time_effective / mold.cavity_count
             production_minutes = (qty * seconds_per_unit) / 60.0
 
             wc = wo.workcenter_id

@@ -27,6 +27,7 @@
                             <field name="cavity_count"/>
                             <field name="cycle_time_theoretical"/>
                             <field name="cycle_time_current"/>
+                            <field name="cycle_time_effective" readonly="1"/>
                             <field name="hourly_target" readonly="1"/>
                             <field name="standard_weight_g"/>
                             <field name="mold_weight_kg"/>

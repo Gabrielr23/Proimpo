@@ -30,8 +30,22 @@ class MaintenanceEquipment(models.Model):
     cycle_time_current = fields.Float(
         string='Ciclo Actual (seg)', digits=(10, 2),
         help='Ciclo real vigente, en segundos por disparo. Se actualiza tras '
-             'una revisión que confirme un cambio.',
+             'una revisión que confirme un cambio. Si se deja en 0, todos '
+             'los cálculos usan el Ciclo Teórico como respaldo.',
     )
+    cycle_time_effective = fields.Float(
+        string='Ciclo Efectivo (seg)', compute='_compute_cycle_time_effective',
+        digits=(10, 2), store=True,
+        help='El ciclo que realmente se usa en los cálculos: el Ciclo Actual '
+             'si está informado, y si no, el Ciclo Teórico. Evita que el '
+             'objetivo por hora quede en cero solo porque nadie ha registrado '
+             'todavía una medición real.',
+    )
+
+    @api.depends('cycle_time_current', 'cycle_time_theoretical')
+    def _compute_cycle_time_effective(self):
+        for eq in self:
+            eq.cycle_time_effective = eq.cycle_time_current or eq.cycle_time_theoretical
     standard_weight_g = fields.Float(
         string='Peso Estándar Pieza (g)', digits=(10, 2),
         help='Peso de referencia por pieza, incluyendo el margen de tolerancia '
@@ -72,11 +86,11 @@ class MaintenanceEquipment(models.Model):
              'refleja cualquier ajuste por desgaste sin intervención manual.',
     )
 
-    @api.depends('cycle_time_current', 'cavity_count')
+    @api.depends('cycle_time_effective', 'cavity_count')
     def _compute_hourly_target(self):
         for eq in self:
-            if eq.cycle_time_current and eq.cavity_count:
-                eq.hourly_target = 3600.0 / (eq.cycle_time_current / eq.cavity_count)
+            if eq.cycle_time_effective and eq.cavity_count:
+                eq.hourly_target = 3600.0 / (eq.cycle_time_effective / eq.cavity_count)
             else:
                 eq.hourly_target = 0.0
 
@@ -133,10 +147,10 @@ class MaintenanceEquipment(models.Model):
         updated, skipped_auto, unlinked = [], [], []
 
         for mold in self:
-            if not mold.cycle_time_current or not mold.cavity_count:
+            if not mold.cycle_time_effective or not mold.cavity_count:
                 continue
 
-            minutes_per_unit = (mold.cycle_time_current / mold.cavity_count) / 60.0
+            minutes_per_unit = (mold.cycle_time_effective / mold.cavity_count) / 60.0
 
             if not mold.qualified_operation_ids:
                 unlinked.append(mold.display_name)

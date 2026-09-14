@@ -2,13 +2,9 @@
 <odoo>
 
     <!--
-        Confirmado por diagnóstico en vivo (no una suposición): la vista
-        base del formulario de Operaciones de LdM es
-        mrp.mrp_routing_workcenter_form_view (sin padre — es la raíz). Las
-        extensiones de mrp_workorder y de Studio en esta instancia heredan
-        de esa misma base de forma independiente entre sí, así que agregar
-        una tercera extensión apoyada en la misma base es seguro: Odoo las
-        combina todas al renderizar, sin que compitan entre ellas.
+        FORMULARIO BASE (confirmado por diagnóstico:
+        mrp.mrp_routing_workcenter_form_view, sin padre). Es el que se usa en
+        Fabricación → Configuración → Operaciones.
     -->
     <record id="view_mrp_routing_workcenter_form_mold" model="ir.ui.view">
         <field name="name">mrp.routing.workcenter.form.mold</field>
@@ -17,9 +13,45 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='workcenter_id']" position="after">
                 <field name="mold_id"/>
+                <field name="mold_cavity_count" invisible="not mold_id"/>
+                <field name="mold_cycle_time" invisible="not mold_id"/>
+                <field name="mold_hourly_target" invisible="not mold_id"/>
+                <field name="hourly_target" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        LISTA DE OPERACIONES DENTRO DE LA LdM (confirmado por diagnóstico:
+        mrp.mrp_routing_workcenter_bom_tree_view). Esta es la tabla que se ve
+        en la pestaña Operaciones de una Lista de Materiales.
+
+        Se agrega aquí porque el formulario emergente "Abrir: Operaciones"
+        que se despliega desde esa tabla NO usa el formulario base de arriba
+        (se comprobó en vivo: el campo aparece en Configuración → Operaciones
+        pero no en el emergente), así que su definición vive en otro lugar
+        todavía sin identificar. Poniendo la columna en la tabla, el molde se
+        puede asignar sin depender de ese emergente.
+
+        Ancla deliberadamente conservadora: `//list` position="inside" agrega
+        la columna al final sin asumir NADA sobre qué otras columnas existen
+        ni en qué orden. Un xpath más preciso podría fallar y abortar la
+        carga del módulo — riesgo que ya se materializó una vez en este
+        proyecto.
+    -->
+    <record id="view_mrp_routing_workcenter_bom_list_mold" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.bom.list.mold</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_bom_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="mold_id" optional="show"/>
+                <field name="mold_cavity_count" optional="hide"/>
+                <field name="mold_cycle_time" optional="hide"/>
+                <field name="mold_hourly_target" optional="hide"/>
+                <field name="hourly_target" optional="hide"/>
             </xpath>
         </field>
     </record>
 
 </odoo>
-
