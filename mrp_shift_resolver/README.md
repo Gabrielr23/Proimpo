@@ -74,3 +74,58 @@ quedarían sin turno identificado en los reportes de fases siguientes.
 Confirmar que todas las inyectoras de Fase 1 (`tag_ids='Inyectoras'` AND
 `x_studio_ct_externo=False`) tienen calendario asignado antes de construir
 la Fase B.
+
+---
+
+## Cambios v18.0.1.1.0 — campos almacenados + fecha operativa
+
+**1. `shift_name` y `shift_is_planned` pasan a almacenados (`store=True`).**
+Dos razones:
+- La Fase B (vista SQL de OEE) agrupa por turno, y SQL no puede leer
+  campos calculados no almacenados.
+- Integridad histórica: al quedar grabado, un cambio futuro de calendario
+  no reescribe el turno de registros ya cerrados.
+
+**2. Campo nuevo `shift_date` (Fecha Operativa).** Día en que ARRANCÓ el
+turno. Una línea de las 02:00 del martes que pertenece a "Lunes Turno 3"
+tiene fecha operativa del **lunes**. Sin este campo, el OEE diario del
+lunes perdería su propio turno nocturno y se lo sumaría al martes.
+
+Regla de detección, deliberadamente estructural (no parsea nombres de
+días): si la línea de asistencia encontrada empieza a las 00:00 y existe
+otra línea del mismo turno que termina a las 24:00, es la continuación
+tras medianoche → el turno arrancó el día anterior.
+
+Se evitó ordenar por `dayofweek` para deducirlo porque "Domingo Turno 3"
+abarca dayofweek 6 y 0: al cruzar de semana, el menor dayofweek daría el
+día equivocado. Verificado contra ese caso concreto.
+
+## ATENCIÓN al actualizar
+
+Al pasar los campos a almacenados, Odoo recalcula **todos** los registros
+históricos de `mrp.workcenter.productivity` durante la actualización del
+módulo. En una tabla con muchos miles de líneas esto puede tardar varios
+minutos, durante los cuales la base queda ocupada.
+
+**Recomendación**: actualizar en un momento de baja actividad y avisar a
+las otras personas que comparten el ambiente de test.
+
+## Validación posterior a la actualización
+
+Además de verificar el turno (script del apartado anterior), confirmar la
+fecha operativa en una línea de madrugada:
+
+```python
+Productivity = env['mrp.workcenter.productivity'].sudo()
+lineas = Productivity.search(
+    [('shift_name', 'like', 'Turno 3')], order='date_start desc', limit=15)
+out = []
+for rec in lineas:
+    out.append("%s | %s UTC | turno=%r | fecha_operativa=%s | planeado=%s" % (
+        rec.workcenter_id.name, rec.date_start, rec.shift_name,
+        rec.shift_date, rec.shift_is_planned))
+raise UserError("\n".join(out) or "Sin lineas de Turno 3.")
+```
+
+En una línea de madrugada, `fecha_operativa` debe ser el día ANTERIOR a la
+fecha del `date_start` en hora local.

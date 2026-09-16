@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Resolución de Turnos de Producción',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'summary': 'Determina a qué turno de producción pertenece una fecha/hora, '
                'según el calendario del centro de trabajo.',
     'description': """
