@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== LISTA CON SEMÁFOROS ==================== -->
+    <record id="view_mrp_oee_report_list" model="ir.ui.view">
+        <field name="name">mrp.oee.report.list</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <list string="OEE por Turno" create="false" edit="false" delete="false">
+                <field name="shift_date"/>
+                <field name="workcenter_id"/>
+                <field name="shift_name"/>
+                <field name="shift_is_planned" optional="show"/>
+                <field name="unidades_buenas" sum="Buenas"/>
+                <field name="unidades_averias" sum="Averías"/>
+                <field name="unidades_teoricas" sum="Teóricas" optional="hide"/>
+                <field name="minutos_total" sum="Min. totales" optional="hide"/>
+                <field name="minutos_productivos" sum="Min. productivos" optional="hide"/>
+                <field name="disponibilidad" widget="badge"
+                       decoration-success="disponibilidad >= 80"
+                       decoration-warning="disponibilidad >= 70 and disponibilidad &lt; 80"
+                       decoration-danger="disponibilidad &lt; 70"/>
+                <field name="rendimiento" widget="badge"
+                       decoration-success="rendimiento >= 80"
+                       decoration-warning="rendimiento >= 70 and rendimiento &lt; 80"
+                       decoration-danger="rendimiento &lt; 70"/>
+                <field name="calidad" widget="badge"
+                       decoration-success="calidad >= 80"
+                       decoration-warning="calidad >= 70 and calidad &lt; 80"
+                       decoration-danger="calidad &lt; 70"/>
+                <field name="oee" widget="badge"
+                       decoration-success="oee >= 80"
+                       decoration-warning="oee >= 70 and oee &lt; 80"
+                       decoration-danger="oee &lt; 70"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==================== PIVOT ==================== -->
+    <record id="view_mrp_oee_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.oee.report.pivot</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <pivot string="OEE por Turno" sample="1">
+                <field name="workcenter_id" type="row"/>
+                <field name="shift_name" type="col"/>
+                <field name="oee" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ==================== GRÁFICO ==================== -->
+    <record id="view_mrp_oee_report_graph" model="ir.ui.view">
+        <field name="name">mrp.oee.report.graph</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <graph string="OEE por Turno" type="bar" sample="1">
+                <field name="workcenter_id"/>
+                <field name="oee" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ==================== BÚSQUEDA ==================== -->
+    <record id="view_mrp_oee_report_search" model="ir.ui.view">
+        <field name="name">mrp.oee.report.search</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <search string="OEE por Turno">
+                <field name="workcenter_id"/>
+                <field name="shift_name"/>
+
+                <filter name="filter_shift_date" date="shift_date" string="Fecha Operativa"/>
+                <separator/>
+                <filter name="solo_planeados" string="Solo turnos planeados"
+                        domain="[('shift_is_planned', '=', True)]"/>
+                <filter name="turno_extra" string="Turno extra / no planeado"
+                        domain="[('shift_is_planned', '=', False)]"/>
+                <separator/>
+                <filter name="oee_bajo" string="OEE bajo objetivo (&lt;75%)"
+                        domain="[('oee', '&lt;', 75)]"/>
+                <filter name="rojo" string="En rojo (&lt;70%)"
+                        domain="[('oee', '&lt;', 70)]"/>
+
+                <group expand="1" string="Agrupar por">
+                    <filter name="group_workcenter" string="Centro de Trabajo"
+                            context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_shift" string="Turno"
+                            context="{'group_by': 'shift_name'}"/>
+                    <filter name="group_day" string="Fecha Operativa"
+                            context="{'group_by': 'shift_date:day'}"/>
+                    <filter name="group_week" string="Semana"
+                            context="{'group_by': 'shift_date:week'}"/>
+                    <filter name="group_month" string="Mes"
+                            context="{'group_by': 'shift_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ==================== ACCIÓN ==================== -->
+    <record id="action_mrp_oee_report" model="ir.actions.act_window">
+        <field name="name">OEE por Turno</field>
+        <field name="res_model">mrp.oee.report</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="search_view_id" ref="view_mrp_oee_report_search"/>
+        <field name="context">{'search_default_group_workcenter': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Todavía no hay datos de OEE
+            </p>
+            <p>
+                Este informe se alimenta del seguimiento de tiempo de las
+                órdenes de trabajo. Requiere que se registren cantidad y
+                averías hora a hora, y que el centro de trabajo tenga
+                calendario de turnos asignado.
+            </p>
+        </field>
+    </record>
+
+    <!-- ============ ACCIÓN DE SERVIDOR: REGENERAR VISTA ============ -->
+    <record id="action_server_rebuild_oee_view" model="ir.actions.server">
+        <field name="name">Regenerar informe de OEE</field>
+        <field name="model_id" ref="model_mrp_oee_report"/>
+        <field name="binding_model_id" ref="model_mrp_oee_report"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_rebuild_view()</field>
+    </record>
+
+    <!-- Sin parent: data/menu_placement.xml lo cuelga bajo Fabricación > Informes -->
+    <menuitem id="menu_mrp_oee_report"
+              name="OEE por Turno"
+              action="action_mrp_oee_report"
+              sequence="80"/>
+
+</odoo>

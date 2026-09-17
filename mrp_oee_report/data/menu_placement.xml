@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        <function> en archivo de datos SIN noupdate: se reejecuta en cada
+        actualización del módulo, a diferencia de post_init_hook (que solo
+        corre en la primera instalación). Debe cargarse DESPUÉS del archivo
+        que crea el menú.
+    -->
+    <function model="mrp.oee.report.setup" name="fix_menu_placement" eval="[]"/>
+</odoo>
