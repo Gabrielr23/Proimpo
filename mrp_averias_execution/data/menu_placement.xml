@@ -4,5 +4,5 @@
          igual que en mrp_mold_management. Debe cargarse DESPUÉS de
          views/mrp_averia_categoria_views.xml (el orden en el
          manifest importa: la acción tiene que existir primero). -->
-    <function model="mrp.averias.execution.setup" name="fix_menu_placement" eval="[]"/>
+    <function model="mrp.averias.execution.setup" name="fix_menu_placement" eval="[[]]"/>
 </odoo>
