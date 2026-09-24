@@ -24,3 +24,8 @@ class MrpAveriaCategoriaLinea(models.Model):
         domain="['|', ('tipo_centro_trabajo', '=', False), "
                "('tipo_centro_trabajo', '=', workcenter_tipo)]")
     cantidad = fields.Integer(string="Cantidad", default=1)
+    descripcion = fields.Text(
+        string="Descripción",
+        help="Texto libre, igual que en la hoja anterior -- la "
+             "categoría es lo que se reporta/agrupa, esto es solo "
+             "nota adicional del operador.")

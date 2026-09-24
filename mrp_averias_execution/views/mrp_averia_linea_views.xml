@@ -17,6 +17,7 @@
                         <list editable="bottom">
                             <field name="categoria_id"/>
                             <field name="cantidad"/>
+                            <field name="descripcion"/>
                         </list>
                     </field>
                     <group>
@@ -33,7 +34,8 @@
         <field name="name">mrp.averia.linea.list</field>
         <field name="model">mrp.averia.linea</field>
         <field name="arch" type="xml">
-            <list>
+            <list default_order="create_date desc">
+                <field name="create_date" string="Creado"/>
                 <field name="workcenter_id"/>
                 <field name="product_id"/>
                 <field name="production_id"/>
@@ -43,9 +45,16 @@
         </field>
     </record>
 
-    <!-- Sin <ir.actions.act_window> propia: esta hoja se abre siempre
-         desde el botón "Tipificar" (action_tipificar_averia en
-         mrp_workcenter_productivity.py), que arma la acción con
-         res_id ya resuelto. -->
+    <!-- Acción para VER la lista completa (menú "Registro de Averías",
+         ubicado en tiempo de ejecución por setup.py). Cada hoja
+         individual se sigue abriendo desde el botón "Tipificar"
+         (action_tipificar_averia en mrp_workcenter_productivity.py,
+         que arma la acción con res_id ya resuelto); esta es solo para
+         consultar/filtrar el histórico. -->
+    <record id="action_mrp_averia_linea" model="ir.actions.act_window">
+        <field name="name">Registro de Averías</field>
+        <field name="res_model">mrp.averia.linea</field>
+        <field name="view_mode">list,form</field>
+    </record>
 
 </odoo>

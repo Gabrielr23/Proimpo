@@ -2,20 +2,273 @@
 <odoo>
     <data noupdate="1">
         <!--
-            PENDIENTE: aquí van las categorías de avería reales de la
-            hoja de trabajo unificada "Registro Averías" (Fase 4).
-
-            Laura mencionó que las iba a adjuntar (mismo criterio de
-            "se pueden modificar" que usó para las Razones de pérdida
-            de la Fase 5), pero el archivo no llegó en el mensaje. En
-            cuanto llegue, se cargan aquí de la misma forma que las
-            ~91 Razones de pérdida en
-            mrp_workcenter_productivity_loss_data.xml: un record de
-            mrp.averia.categoria por categoría, con su name y su
-            tipo_centro_trabajo (o sin tipo si aplica a todos), y
-            noupdate="1" para que se puedan editar libremente después
-            desde Odoo sin que una actualización del módulo se las
-            pise.
+            Categorias de averia de la hoja de trabajo unificada
+            "Registro Averias" (Fase 4), cargadas desde el archivo
+            averias.xlsx que compartio Laura. Igual que las Razones
+            de perdida (Fase 5): noupdate="1" para que se puedan
+            editar/ajustar libremente desde Odoo sin que una
+            actualizacion del modulo las pise. Confirmado con Laura:
+            estan sujetas a cambio.
         -->
+        <record id="averia_categ_inyectoras_i01_setup_cambio_de_molde" model="mrp.averia.categoria">
+            <field name="name">I01 Setup (cambio de molde)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i02_ajuste_de_proceso" model="mrp.averia.categoria">
+            <field name="name">I02 Ajuste de proceso</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i03_ajuste_para_cambio_de_color" model="mrp.averia.categoria">
+            <field name="name">I03 Ajuste para cambio de color</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i04_betas" model="mrp.averia.categoria">
+            <field name="name">I04 Betas</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i05_burbujas_grumos" model="mrp.averia.categoria">
+            <field name="name">I05 Burbujas / Grumos</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i06_contaminacion_impurezas" model="mrp.averia.categoria">
+            <field name="name">I06 Contaminación / Impurezas</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i07_deformacion" model="mrp.averia.categoria">
+            <field name="name">I07 Deformación</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i08_desprendimiento_de_material" model="mrp.averia.categoria">
+            <field name="name">I08 Desprendimiento de material</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i09_destellos_nubosidad" model="mrp.averia.categoria">
+            <field name="name">I09 Destellos / Nubosidad</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i10_filtracion" model="mrp.averia.categoria">
+            <field name="name">I10 Filtración</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i11_fisuras" model="mrp.averia.categoria">
+            <field name="name">I11 Fisuras</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i12_golpes_rayones" model="mrp.averia.categoria">
+            <field name="name">I12 Golpes / Rayones</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i13_llenado_incompleto" model="mrp.averia.categoria">
+            <field name="name">I13 Llenado incompleto</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i14_producto_no_funcional" model="mrp.averia.categoria">
+            <field name="name">I14 Producto no funcional</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i15_punto_de_inyeccion" model="mrp.averia.categoria">
+            <field name="name">I15 Punto de inyección</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i16_quemado" model="mrp.averia.categoria">
+            <field name="name">I16 Quemado</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i17_rebaba" model="mrp.averia.categoria">
+            <field name="name">I17 Rebaba</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i18_tonalidad" model="mrp.averia.categoria">
+            <field name="name">I18 Tonalidad</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i19_desmoldantes_x_556" model="mrp.averia.categoria">
+            <field name="name">I19 Desmoldantes (X 556)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i20_mal_posicionamiento_ei" model="mrp.averia.categoria">
+            <field name="name">I20 Mal posicionamiento (EI)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i21_burbuja_ei" model="mrp.averia.categoria">
+            <field name="name">I21 Burbuja (EI)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i22_raya_marcacion_ei" model="mrp.averia.categoria">
+            <field name="name">I22 Raya-Marcacion (EI)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i23_etiqueta_sin_estatica_esi" model="mrp.averia.categoria">
+            <field name="name">I23  Etiqueta sin estatica (ESI)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_inyectoras_i24_etiqueta_con_marcaciones_esi" model="mrp.averia.categoria">
+            <field name="name">I24 Etiqueta con marcaciones (ESI)</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp01_setup_cambio_de_molde" model="mrp.averia.categoria">
+            <field name="name">SP01 Setup (cambio de molde)</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp02_ajuste_de_proceso" model="mrp.averia.categoria">
+            <field name="name">SP02 Ajuste de proceso</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp03_golpes_rayones" model="mrp.averia.categoria">
+            <field name="name">SP03 Golpes / Rayones</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp04_contaminacion_impurezas" model="mrp.averia.categoria">
+            <field name="name">SP04 Contaminación / Impurezas</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp05_conformacion_de_la_rosca" model="mrp.averia.categoria">
+            <field name="name">SP05 Conformación de la rosca</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp06_conformacion_de_la_botella" model="mrp.averia.categoria">
+            <field name="name">SP06 Conformación de la botella</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp07_estabilidad_de_la_base" model="mrp.averia.categoria">
+            <field name="name">SP07 Estabilidad de la base</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp08_deformacion_rota_blandita" model="mrp.averia.categoria">
+            <field name="name">SP08 Deformación/Rota/Blandita</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp09_grumos" model="mrp.averia.categoria">
+            <field name="name">SP09 Grumos</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp10_burbujas" model="mrp.averia.categoria">
+            <field name="name">SP10 Burbujas</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp11_humedad_x_556" model="mrp.averia.categoria">
+            <field name="name">SP11 Humedad (X 556)</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp12_tonalidad" model="mrp.averia.categoria">
+            <field name="name">SP12 Tonalidad</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp13_linea_de_selle" model="mrp.averia.categoria">
+            <field name="name">SP13 Linea de selle</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp14_cortinas" model="mrp.averia.categoria">
+            <field name="name">SP14 Cortinas</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_sopladoras_sp15_otro" model="mrp.averia.categoria">
+            <field name="name">SP15 Otro</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+        </record>
+        <record id="averia_categ_impresion_im01_setup_cambio_herramental_prealistamiento" model="mrp.averia.categoria">
+            <field name="name">IM01 Setup (cambio herramental/ Prealistamiento</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im02_ajuste_de_proceso" model="mrp.averia.categoria">
+            <field name="name">IM02 Ajuste de proceso</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im03_ajuste_para_cambio_de_color" model="mrp.averia.categoria">
+            <field name="name">IM03 Ajuste para cambio de color</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im04_repise_embotamiento" model="mrp.averia.categoria">
+            <field name="name">IM04 Repise / Embotamiento</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im05_textos_incompletos" model="mrp.averia.categoria">
+            <field name="name">IM05 Textos incompletos</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im06_sombras_marcaciones" model="mrp.averia.categoria">
+            <field name="name">IM06 Sombras Marcaciones</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im07_tonalidad" model="mrp.averia.categoria">
+            <field name="name">IM07 Tonalidad</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im08_desprendimiento" model="mrp.averia.categoria">
+            <field name="name">IM08 Desprendimiento</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im09_descase" model="mrp.averia.categoria">
+            <field name="name">IM09 Descase</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im10_adherencia" model="mrp.averia.categoria">
+            <field name="name">IM10 Adherencia</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im11_frote" model="mrp.averia.categoria">
+            <field name="name">IM11 Frote</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im12_golpes_rayones" model="mrp.averia.categoria">
+            <field name="name">IM12 Golpes / Rayones</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im13_contaminacion_impurezas" model="mrp.averia.categoria">
+            <field name="name">IM13 Contaminación / Impurezas</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im14_quemado" model="mrp.averia.categoria">
+            <field name="name">IM14 Quemado</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im15_arrugas" model="mrp.averia.categoria">
+            <field name="name">IM15 Arrugas</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im16_deformacion_blanda_estabilidad" model="mrp.averia.categoria">
+            <field name="name">IM16 Deformación (Blanda - Estabilidad)</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_impresion_im17_otro" model="mrp.averia.categoria">
+            <field name="name">IM17 Otro</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+        </record>
+        <record id="averia_categ_sellado_sl01_setup_cambio_molde" model="mrp.averia.categoria">
+            <field name="name">SL01 Setup Cambio Molde</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl02_ajuste_de_proceso" model="mrp.averia.categoria">
+            <field name="name">SL02 Ajuste de proceso</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl03_sombras_rayones" model="mrp.averia.categoria">
+            <field name="name">SL03 Sombras / Rayones</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl04_contaminacion_impurezas" model="mrp.averia.categoria">
+            <field name="name">SL04 Contaminación / impurezas</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl05_tonalidad" model="mrp.averia.categoria">
+            <field name="name">SL05 Tonalidad</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl06_inserto" model="mrp.averia.categoria">
+            <field name="name">SL06 Inserto</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl07_funcionalidad" model="mrp.averia.categoria">
+            <field name="name">SL07 Funcionalidad</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl08_filtracion" model="mrp.averia.categoria">
+            <field name="name">SL08 Filtración</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
+        <record id="averia_categ_sellado_sl09_otro" model="mrp.averia.categoria">
+            <field name="name">SL09 Otro</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+        </record>
     </data>
 </odoo>

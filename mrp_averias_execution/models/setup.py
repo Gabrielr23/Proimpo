@@ -55,3 +55,28 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
             'action': f'ir.actions.act_window,{action.id}',
             'sequence': 50,
         })
+
+        # Registro de Averías -- lista de las hojas de trabajo (Fase 4).
+        # Va directo bajo Calidad, no bajo Configuración, porque es
+        # consulta operativa, no un catálogo a mantener.
+        action_linea = self.env.ref(
+            'mrp_averias_execution.action_mrp_averia_linea',
+            raise_if_not_found=False)
+        if not action_linea:
+            return
+
+        existente_linea = Menu.search([
+            ('name', '=', "Registro de Averías"),
+            ('parent_id', '=', raiz_calidad.id),
+        ], limit=1)
+        if existente_linea:
+            existente_linea.write({
+                'action': f'ir.actions.act_window,{action_linea.id}'})
+            return
+
+        Menu.create({
+            'name': "Registro de Averías",
+            'parent_id': raiz_calidad.id,
+            'action': f'ir.actions.act_window,{action_linea.id}',
+            'sequence': 20,
+        })
