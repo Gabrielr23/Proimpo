@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--
+            PENDIENTE: aquí van las categorías de avería reales de la
+            hoja de trabajo unificada "Registro Averías" (Fase 4).
+
+            Laura mencionó que las iba a adjuntar (mismo criterio de
+            "se pueden modificar" que usó para las Razones de pérdida
+            de la Fase 5), pero el archivo no llegó en el mensaje. En
+            cuanto llegue, se cargan aquí de la misma forma que las
+            ~91 Razones de pérdida en
+            mrp_workcenter_productivity_loss_data.xml: un record de
+            mrp.averia.categoria por categoría, con su name y su
+            tipo_centro_trabajo (o sin tipo si aplica a todos), y
+            noupdate="1" para que se puedan editar libremente después
+            desde Odoo sin que una actualización del módulo se las
+            pise.
+        -->
+    </data>
+</odoo>

@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Fase 5: catalogo de Razones de perdida cargado desde
+             losst_09-2026.xlsx (hoja "Paradas maquina"), agrupado por
+             tipo de Centro de Trabajo. noupdate="1": se crea una sola
+             vez en la instalacion; de ahi en adelante Laura los edita
+             libremente desde Configuracion -> Perdidas de productividad
+             sin que una actualizacion del modulo se los pise. -->
+        <record id="loss_inyectoras_setup_cambio_de_molde_max_3_h" model="mrp.workcenter.productivity.loss">
+            <field name="name">Setup / cambio de molde (máx. 3 h)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_setup_cambio_de_molde_preformas_max_5_h" model="mrp.workcenter.productivity.loss">
+            <field name="name">Setup / cambio de molde preformas (máx. 5 h)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_cambio_de_color_max_1_h" model="mrp.workcenter.productivity.loss">
+            <field name="name">Cambio de color (máx. 1 h)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_purga_colada_caliente_max_30_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Purga Colada Caliente (máx. 30 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_parada_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">Parada Programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_mantenimiento_preventivo_de_molde_maquin" model="mrp.workcenter.productivity.loss">
+            <field name="name">Mantenimiento Preventivo de Molde / Máquina (Agregada)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_pruebas_de_desarrollo_nuevos_productos_a" model="mrp.workcenter.productivity.loss">
+            <field name="name">Pruebas de Desarrollo / Nuevos Productos (Agregada)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_inyectoras_p01_setup_cambio_de_molde_tiempo_superio" model="mrp.workcenter.productivity.loss">
+            <field name="name">P01 Setup / cambio de molde (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p02_cambio_de_color_tiempo_superior_al_e" model="mrp.workcenter.productivity.loss">
+            <field name="name">P02 Cambio de color (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p03_ajuste_de_proceso_proceso_inestable_" model="mrp.workcenter.productivity.loss">
+            <field name="name">P03 Ajuste de proceso / Proceso inestable (P10)</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p04_falla_de_maquina_mecanica_hidraulica" model="mrp.workcenter.productivity.loss">
+            <field name="name">P04 Falla de máquina (Mecánica/Hidráulica)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p05_falla_del_molde_canal_caliente" model="mrp.workcenter.productivity.loss">
+            <field name="name">P05 Falla del molde / Canal caliente</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p06_falla_electrica_zonas_de_calentamien" model="mrp.workcenter.productivity.loss">
+            <field name="name">P06 Falla eléctrica / Zonas de calentamiento</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p07_falta_de_personal_tecnico" model="mrp.workcenter.productivity.loss">
+            <field name="name">P07 Falta de personal técnico</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p08_falta_de_material_por_sobreconsumo" model="mrp.workcenter.productivity.loss">
+            <field name="name">P08 Falta de material por sobreconsumo</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p09_falta_de_material_mezclado_presecado" model="mrp.workcenter.productivity.loss">
+            <field name="name">P09 Falta de material mezclado/presecado</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p11_falta_de_energia_servicios_periferic" model="mrp.workcenter.productivity.loss">
+            <field name="name">P11 Falta de energía / Servicios periféricos</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p12_aguardando_liberacion_de_maquina_mue" model="mrp.workcenter.productivity.loss">
+            <field name="name">P12 Aguardando liberación de maquina (muestra aprobada)</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p13_falta_de_operario" model="mrp.workcenter.productivity.loss">
+            <field name="name">P13 Falta de operario</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p14_falta_de_componentes_etiquetas" model="mrp.workcenter.productivity.loss">
+            <field name="name">P14 Falta de componentes / etiquetas</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p15_falta_de_materia_prima" model="mrp.workcenter.productivity.loss">
+            <field name="name">P15 Falta de materia prima</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p16_capacitacion_no_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">P16 Capacitación NO programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p17_falla_en_la_bom_lista_de_materiales" model="mrp.workcenter.productivity.loss">
+            <field name="name">P17 Falla en la BOM (Lista de Materiales)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p18_error_operativo" model="mrp.workcenter.productivity.loss">
+            <field name="name">P18 Error operativo</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p19_materia_prima_no_conforme" model="mrp.workcenter.productivity.loss">
+            <field name="name">P19 Materia Prima no conforme</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_p20_otros" model="mrp.workcenter.productivity.loss">
+            <field name="name">P20 Otros</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_falla_de_chiller_agua_de_enfriamiento_ag" model="mrp.workcenter.productivity.loss">
+            <field name="name">Falla de Chiller / Agua de enfriamiento (Agregada)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_inyectoras_atascamiento_en_alimentacion_tolva_vacio" model="mrp.workcenter.productivity.loss">
+            <field name="name">Atascamiento en alimentación / Tolva vacío (Agregada)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">inyectoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_setup_cambio_de_molde_max_2_h" model="mrp.workcenter.productivity.loss">
+            <field name="name">Setup / cambio de molde (máx. 2 h)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sopladoras_despeje_de_linea_max_15_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Despeje de línea (máx. 15 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sopladoras_parada_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">Parada Programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sopladoras_ps01_setup_herramental_tiempo_superior_a" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS01 Setup / Herramental (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps02_despeje_de_linea_tiempo_superior_al" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS02 Despeje de línea (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps03_ajuste_de_proceso" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS03 Ajuste de proceso</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps04_falla_de_maquina_sistema_de_estirad" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS04 Falla de máquina / Sistema de estirado</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps05_falla_molde_mecanismo_de_apertura" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS05 Falla Molde / Mecanismo de apertura</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps06_falla_electrica" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS06 Falla eléctrica</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps07_falla_neumatica_fuga_de_aire_alta_p" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS07 Falla Neumática / Fuga de aire alta presión</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps08_falta_de_personal_tecnico" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS08 Falta de personal técnico</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps09_falta_de_energia" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS09 Falta de energía</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps10_aprobacion_de_muestra" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS10 Aprobación de muestra</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps11_falta_de_operario" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS11 Falta de operario</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps12_falta_de_materia_prima_preformas" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS12 Falta de materia prima / Preformas</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps13_cambio_de_prioridad" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS13 Cambio de prioridad</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps14_capacitacion_no_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS14 Capacitación NO programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps15_refrigerio_almuerzo" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS15 Refrigerio / Almuerzo</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_ps16_otros" model="mrp.workcenter.productivity.loss">
+            <field name="name">PS16 Otros</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_falla_de_compresor_de_alta_presion_agreg" model="mrp.workcenter.productivity.loss">
+            <field name="name">Falla de Compresor de alta presión (Agregada)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sopladoras_parada_por_defectos_de_calidad_cuello_de" model="mrp.workcenter.productivity.loss">
+            <field name="name">Parada por defectos de Calidad (Cuello deforme/Pared) (Agregada)</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">sopladoras</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_setup_prealistamiento_max_90_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Setup / Prealistamiento (máx. 90 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_impresion_despeje_de_linea_max_15_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Despeje de línea (máx. 15 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_impresion_parada_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">Parada Programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_impresion_pim01_setup_herramental_tiempo_superior_" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM01 Setup / Herramental (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim02_despeje_de_linea_tiempo_superior_a" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM02 Despeje de línea (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim03_ajuste_de_proceso" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM03 Ajuste de proceso</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim04_falla_de_maquina" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM04 Falla de máquina</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim05_falla_herramental_plancha_pantalla" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM05 Falla Herramental / Plancha / Pantalla</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim06_falla_electrica_lamparas_uv_curado" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM06 Falla eléctrica / Lámparas UV / Curado</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim07_falta_de_personal_tecnico" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM07 Falta de personal técnico</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim08_falta_de_energia" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM08 Falta de energía</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim09_aprobacion_de_muestra" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM09 Aprobación de muestra</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim10_falta_de_operario" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM10 Falta de operario</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim11_falta_falla_de_flameo_tratamiento" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM11 Falta / Falla de Flameo (Tratamiento)</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim12_falta_de_materia_prima_tinta_solve" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM12 Falta de materia prima / Tinta / Solventes</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim13_falta_de_etiquetas_papel_transfer" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM13 Falta de etiquetas / Papel / Transfer</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim14_falta_de_revelado_positivo_cliche" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM14 Falta de revelado (Positivo / Cliché)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim15_cambio_de_prioridad" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM15 Cambio de prioridad</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim16_capacitacion_no_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM16 Capacitación NO programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim17_refrigerio_almuerzo" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM17 Refrigerio / Almuerzo</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_impresion_pim18_liberacion_de_tono_color" model="mrp.workcenter.productivity.loss">
+            <field name="name">PIM18 Liberación de tono / Color</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">impresion</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_setup_prealistamiento_max_60_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Setup / Prealistamiento (máx. 60 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sellado_despeje_de_linea_max_15_min" model="mrp.workcenter.productivity.loss">
+            <field name="name">Despeje de línea (máx. 15 min)</field>
+            <field name="loss_type">productive</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sellado_parada_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">Parada Programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="True"/>
+        </record>
+        <record id="loss_sellado_psl01_setup_herramental_tiempo_superior_" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL01 Setup / Herramental (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl02_despeje_de_linea_tiempo_superior_a" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL02 Despeje de línea (tiempo superior al estandar)</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl03_ajuste_de_proceso_temperatura_pres" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL03 Ajuste de proceso (Temperatura/Presión)</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl04_falla_de_maquina" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL04 Falla de máquina</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl05_falla_herramental_cuchillas_mordaz" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL05 Falla Herramental / Cuchillas / Mordazas</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl06_falla_electrica" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL06 Falla eléctrica</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl07_falta_de_personal_tecnico" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL07 Falta de personal técnico</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl08_falta_de_energia" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL08 Falta de energía</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl09_aprobacion_de_muestra" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL09 Aprobación de muestra</field>
+            <field name="loss_type">quality</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl10_falta_de_operario" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL10 Falta de operario</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl11_falta_de_materia_prima" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL11 Falta de materia prima</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl12_falta_de_inserto_liner_foils" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL12 Falta de inserto / Liner / Foils</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl13_cambio_de_prioridad" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL13 Cambio de prioridad</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl14_capacitacion_no_programada" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL14 Capacitación NO programada</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl15_refrigerio_almuerzo" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL15 Refrigerio / Almuerzo</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+        <record id="loss_sellado_psl16_otros" model="mrp.workcenter.productivity.loss">
+            <field name="name">PSL16 Otros</field>
+            <field name="loss_type">availability</field>
+            <field name="tipo_centro_trabajo">sellado</field>
+            <field name="es_programada" eval="False"/>
+        </record>
+    </data>
+</odoo>

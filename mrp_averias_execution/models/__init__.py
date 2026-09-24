@@ -1,0 +1,7 @@
+from . import setup
+from . import mrp_workcenter
+from . import mrp_workorder
+from . import mrp_workcenter_productivity
+from . import mrp_workcenter_productivity_loss
+from . import mrp_averia_categoria
+from . import mrp_averia_linea

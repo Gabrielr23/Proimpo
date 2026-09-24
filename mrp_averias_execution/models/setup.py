@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+from odoo import models
+
+
+class MrpAveriasExecutionSetup(models.AbstractModel):
+    """Reemplaza un post_init_hook, que en esta base nunca se ejecuta
+    en la práctica porque el despliegue siempre es "actualizar" un
+    módulo ya instalado, nunca "instalar de cero" (mismo motivo
+    documentado en mrp_mold_management). Por eso la ubicación del menú
+    se corrige acá, invocada desde un archivo de datos sin noupdate
+    (se re-ejecuta en cada actualización del módulo).
+
+    No se hardcodea ningún xml_id de menú ajeno -- se busca por nombre
+    en vivo, con reintentos, para no arriesgar una caída del ambiente
+    de prueba compartido por un xml_id adivinado mal.
+    """
+    _name = 'mrp.averias.execution.setup'
+    _description = "Setup de mrp_averias_execution (ubicación de menús)"
+
+    def fix_menu_placement(self):
+        Menu = self.env['ir.ui.menu'].sudo()
+
+        raiz_calidad = Menu.search([
+            ('name', 'in', ['Calidad', 'Quality']),
+            ('parent_id', '=', False),
+        ], limit=1)
+        if not raiz_calidad:
+            # No se encontró el menú raíz de Calidad -- no se crea nada
+            # para no adivinar mal. Laura puede ubicarlo a mano desde
+            # Studio si esto llega a pasar.
+            return
+
+        padre = Menu.search([
+            ('name', 'in', ['Configuración', 'Configuration']),
+            ('parent_id', '=', raiz_calidad.id),
+        ], limit=1) or raiz_calidad
+
+        action = self.env.ref(
+            'mrp_averias_execution.action_mrp_averia_categoria',
+            raise_if_not_found=False)
+        if not action:
+            return
+
+        existente = Menu.search([
+            ('name', '=', "Categorías de Avería"),
+            ('parent_id', '=', padre.id),
+        ], limit=1)
+        if existente:
+            existente.write({'action': f'ir.actions.act_window,{action.id}'})
+            return
+
+        Menu.create({
+            'name': "Categorías de Avería",
+            'parent_id': padre.id,
+            'action': f'ir.actions.act_window,{action.id}',
+            'sequence': 50,
+        })
