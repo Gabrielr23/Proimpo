@@ -56,4 +56,12 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         wo.button_pending()
         wo.button_start()
 
+        if self.reporta_averia:
+            # En esa hora puede haber 1 o varios tipos de avería
+            # (confirmado con Laura): en vez de cerrar el wizard, se
+            # reusa el mismo método del botón "Tipificar" para abrir de
+            # una vez la hoja de trabajo y que el operador cargue ahí
+            # cada categoría con su cantidad.
+            return linea_abierta.action_tipificar_averia()
+
         return {'type': 'ir.actions.act_window_close'}

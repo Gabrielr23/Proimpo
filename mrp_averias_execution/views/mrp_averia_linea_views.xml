@@ -8,16 +8,19 @@
             <form string="Registro Averías">
                 <sheet>
                     <group>
-                        <group>
+                        <field name="workcenter_id" readonly="1"/>
+                        <field name="product_id" readonly="1"/>
+                        <field name="production_id" readonly="1"/>
+                        <field name="operacion_id" readonly="1"/>
+                    </group>
+                    <field name="detalle_ids">
+                        <list editable="bottom">
                             <field name="categoria_id"/>
-                            <field name="cantidad_averias"/>
-                        </group>
-                        <group>
-                            <field name="workcenter_id" readonly="1"/>
-                            <field name="product_id" readonly="1"/>
-                            <field name="production_id" readonly="1"/>
-                            <field name="operacion_id" readonly="1"/>
-                        </group>
+                            <field name="cantidad"/>
+                        </list>
+                    </field>
+                    <group>
+                        <field name="cantidad_averias_total" readonly="1"/>
                     </group>
                     <field name="quality_check_id" invisible="1"/>
                     <field name="workcenter_tipo" invisible="1"/>
@@ -35,8 +38,7 @@
                 <field name="product_id"/>
                 <field name="production_id"/>
                 <field name="operacion_id"/>
-                <field name="categoria_id"/>
-                <field name="cantidad_averias"/>
+                <field name="cantidad_averias_total"/>
             </list>
         </field>
     </record>
