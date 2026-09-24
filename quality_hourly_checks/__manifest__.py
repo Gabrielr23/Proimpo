@@ -29,7 +29,7 @@ aditiva:
 
 Agregar un nuevo control por horas (p. ej. para otro producto
 semi-terminado) es exactamente igual de simple que crear cualquier
-Punto de Control hoy: no requiere tocar código ni la Acción Programada.
+Punto de Control hoy: no requiere tocar código ni la Acción Programada
     """,
     'category': 'Manufacturing/Quality',
     'author': 'PROIMPO S.A.S.',
