@@ -3,3 +3,4 @@ access_mrp_averia_categoria_user,mrp.averia.categoria.user,model_mrp_averia_cate
 access_mrp_averia_linea_user,mrp.averia.linea.user,model_mrp_averia_linea,base.group_user,1,1,1,0
 access_mrp_averia_categoria_linea_user,mrp.averia.categoria.linea.user,model_mrp_averia_categoria_linea,base.group_user,1,1,1,1
 access_mrp_workorder_progress_wizard_user,mrp.workorder.progress.wizard.user,model_mrp_workorder_progress_wizard,base.group_user,1,1,1,1
+access_mrp_averia_report_user,mrp.averia.report.user,model_mrp_averia_report,base.group_user,1,0,0,0

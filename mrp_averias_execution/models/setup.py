@@ -80,3 +80,33 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
             'action': f'ir.actions.act_window,{action_linea.id}',
             'sequence': 20,
         })
+
+        # Averías Tipificadas -- reemplaza el reporte viejo (mismo
+        # nombre y misma ubicación que tenía: Calidad -> Informes),
+        # ahora sobre datos propios de este módulo.
+        action_report = self.env.ref(
+            'mrp_averias_execution.action_mrp_averia_report',
+            raise_if_not_found=False)
+        if not action_report:
+            return
+
+        padre_informes = Menu.search([
+            ('name', 'in', ['Informes', 'Reporting']),
+            ('parent_id', '=', raiz_calidad.id),
+        ], limit=1) or raiz_calidad
+
+        existente_report = Menu.search([
+            ('name', '=', "Averías Tipificadas"),
+            ('parent_id', '=', padre_informes.id),
+        ], limit=1)
+        if existente_report:
+            existente_report.write({
+                'action': f'ir.actions.act_window,{action_report.id}'})
+            return
+
+        Menu.create({
+            'name': "Averías Tipificadas",
+            'parent_id': padre_informes.id,
+            'action': f'ir.actions.act_window,{action_report.id}',
+            'sequence': 30,
+        })

@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class QualityCheck(models.Model):
-    """Expone el detalle de averías directamente en el control de
-    calidad (Fase 4, ajuste post-prueba).
+    """Expone el detalle de averías desde el control de calidad, vía
+    botón inteligente (Fase 4, ajuste post-prueba nº2).
 
-    Laura desvinculó su hoja de trabajo (Studio) del punto de control
-    QCP00017 y cambió su Tipo a "Registrar cantidad" -- con eso, el
-    control de calidad ya no muestra ningún dato de averías, y sin esa
-    data no se puede aprobar/fallar con criterio. En vez de depender
-    del mecanismo nativo de plantillas de hoja de trabajo (frágil,
-    ligado al Tipo del punto de control), este módulo embebe su propio
-    detalle -- vía mrp.averia.categoria.linea.quality_check_id, que es
-    un related/store hacia acá -- para que quede visible sin importar
-    cómo esté configurado el punto de control.
+    Primer intento: embeber la tabla de averías directo en el
+    formulario -- Laura reportó que aparecía en TODOS los controles de
+    calidad (peso, dimensiones, etc.), no solo en los que tienen
+    averías, porque el xpath apuntaba al formulario base compartido
+    por todos los tipos de control. Corregido: ahora es un botón
+    inteligente que solo se muestra cuando el control tiene averías
+    (averia_cantidad_total > 0) y abre la hoja correspondiente -- igual
+    de independiente del Tipo del punto de control que el intento
+    anterior (no depende del mecanismo nativo de plantillas de hoja de
+    trabajo), pero ya no ensucia los controles que no aplican.
     """
     _inherit = 'quality.check'
 
@@ -32,3 +33,20 @@ class QualityCheck(models.Model):
         for rec in self:
             rec.averia_cantidad_total = sum(
                 rec.averia_detalle_ids.mapped('cantidad'))
+
+    def action_ver_averias(self):
+        """Botón inteligente: abre la hoja de averías de ESTE control
+        (y solo de este -- no la lista completa)."""
+        self.ensure_one()
+        linea = self.averia_linea_ids[:1]
+        if not linea:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Registro Averías"),
+            'res_model': 'mrp.averia.linea',
+            'res_id': linea.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+        }

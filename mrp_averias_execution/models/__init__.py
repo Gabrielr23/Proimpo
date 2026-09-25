@@ -7,3 +7,4 @@ from . import mrp_averia_categoria
 from . import mrp_averia_linea
 from . import mrp_averia_categoria_linea
 from . import quality_check
+from . import mrp_averia_report
