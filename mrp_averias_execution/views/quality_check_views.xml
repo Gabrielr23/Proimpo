@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Agrega el detalle de averías al final del formulario de control
+        de calidad (xpath genérico sobre //sheet, a propósito: no se
+        asume notebook/página específica de este modelo, para no
+        repetir el problema de vistas frágiles que ya tuvimos con
+        Studio; esto sí es una vista propia del módulo, así que se
+        actualiza sola si algo cambia).
+    -->
+    <record id="view_quality_check_form_averias" model="ir.ui.view">
+        <field name="name">quality.check.form.averias</field>
+        <field name="model">quality.check</field>
+        <field name="inherit_id" ref="quality_control.quality_check_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Averías">
+                    <field name="averia_cantidad_total" readonly="1"/>
+                </group>
+                <field name="averia_detalle_ids">
+                    <list editable="bottom">
+                        <field name="categoria_id"/>
+                        <field name="cantidad"/>
+                        <field name="descripcion"/>
+                    </list>
+                </field>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

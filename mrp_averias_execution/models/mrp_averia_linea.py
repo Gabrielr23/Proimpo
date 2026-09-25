@@ -18,20 +18,16 @@ class MrpAveriaLinea(models.Model):
     (detalle_ids, modelo mrp.averia.categoria.linea), una fila por
     categoría encontrada.
 
-    El campo quality_check_id es el que la vuelve una hoja de trabajo
-    válida para el módulo de Calidad (quality_control_worksheet).
-
-    PASO MANUAL PENDIENTE (no se hace por XML de datos, a propósito):
-    después de instalar el módulo, registra este modelo como plantilla
-    de hoja de trabajo desde Calidad -> Configuración -> Hojas de
-    trabajo (el mismo camino con el que se crearon las dos plantillas
-    anteriores), eligiendo el modelo "Registro Averías", y asígnala al
-    único punto de control de averías. No se hizo por datos XML porque
-    no tengo confirmado en vivo el nombre técnico exacto del modelo de
-    plantillas de hoja de trabajo en esta instancia, y un dato XML mal
-    apuntado puede tumbar la instalación para todo el ambiente de
-    prueba compartido. No es bloqueante: el botón "Tipificar" ya abre
-    esta hoja directamente, sin pasar por el flujo estándar de Calidad.
+    El campo quality_check_id la enlaza al control de calidad que la
+    originó (m2o obligatorio). NO se registra como plantilla de hoja
+    de trabajo nativa de Odoo (quality_control_worksheet) -- se probó
+    ese camino y quedó frágil: dependía del Tipo del punto de control,
+    y al cambiarlo se perdía la visibilidad de la data. En su lugar,
+    el detalle de averías se embebe directamente en el formulario del
+    control de calidad vía quality_check.py + la vista
+    quality_check_views.xml, sin importar cómo esté configurado el
+    punto de control. El botón "Tipificar" sigue abriendo esta hoja
+    directamente, como ventana emergente.
     """
     _name = 'mrp.averia.linea'
     _description = "Registro Averías"
@@ -68,4 +64,24 @@ class MrpAveriaLinea(models.Model):
     @api.depends('detalle_ids.cantidad')
     def _compute_cantidad_averias_total(self):
         for rec in self:
-            rec.cantidad_averias_total = sum(rec.detalle_ids.mapped('cantidad'))
+            total = sum(rec.detalle_ids.mapped('cantidad'))
+            rec.cantidad_averias_total = total
+            rec._sync_averias_a_seguimiento(total)
+
+    def _sync_averias_a_seguimiento(self, total):
+        """Escribe el total de vuelta en la línea de Seguimiento de
+        tiempo que originó el control de calidad (campo técnico Studio
+        x_studio_linea_tiempo en quality.check -- mismo nombre que
+        MrpWorkcenterProductivity.LINEA_FIELD).
+
+        Antes la cantidad se cargaba en el wizard ANTES de abrir la
+        hoja; ahora se carga DENTRO de la hoja (una fila por
+        categoría), así que el camino se invirtió: la hoja es la que
+        manda el total hacia Seguimiento de tiempo, no al revés.
+        Confirmado con Laura: "agrego averias y no las totaliza en el
+        seguimiento de tiempo" -- este es el arreglo.
+        """
+        self.ensure_one()
+        linea_tiempo = self.quality_check_id.x_studio_linea_tiempo
+        if linea_tiempo and linea_tiempo.x_studio_averias != total:
+            linea_tiempo.sudo().write({'x_studio_averias': total})

@@ -6,3 +6,4 @@ from . import mrp_workcenter_productivity_loss
 from . import mrp_averia_categoria
 from . import mrp_averia_linea
 from . import mrp_averia_categoria_linea
+from . import quality_check

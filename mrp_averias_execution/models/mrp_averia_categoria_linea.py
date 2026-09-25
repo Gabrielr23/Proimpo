@@ -16,6 +16,13 @@ class MrpAveriaCategoriaLinea(models.Model):
 
     averia_linea_id = fields.Many2one(
         'mrp.averia.linea', required=True, ondelete='cascade')
+    quality_check_id = fields.Many2one(
+        'quality.check', related='averia_linea_id.quality_check_id',
+        store=True, string="Control de calidad",
+        help="Guardado (store=True) a propósito para poder exponer el "
+             "detalle de averías directamente en el control de calidad "
+             "-- ver quality_check.py -- sin depender del mecanismo de "
+             "plantillas de hoja de trabajo de Odoo.")
     workcenter_tipo = fields.Selection(
         related='averia_linea_id.workcenter_tipo',
         store=True, readonly=True, string="Tipo de CT (interno)")

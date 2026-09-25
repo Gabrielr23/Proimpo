@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -16,7 +16,11 @@ agrega:
   * Fase 4: catálogo de categorías de avería (mrp.averia.categoria)
     filtrado por tipo de Centro de Trabajo, para la hoja de trabajo
     unificada "Registro Averías" (varias líneas por hora, cada una con
-    categoría, cantidad y descripción libre).
+    categoría, cantidad y descripción libre). La hoja se abre al
+    marcar ¿Avería? (ya no depende de una cantidad previa) y su total
+    se sincroniza de vuelta a Seguimiento de tiempo. El detalle de
+    averías también queda embebido directamente en el control de
+    calidad, sin depender de plantillas de hoja de trabajo.
   * Fase 5: extensión del catálogo nativo de Razones de pérdida
     (mrp.workcenter.productivity.loss) con etiqueta de Centro de Trabajo
     e indicador Programada/No programada, cargado con las razones de
@@ -40,6 +44,7 @@ queda deliberadamente fuera de este módulo por ahora.
         'views/mrp_workorder_progress_wizard_views.xml',
         'views/mrp_averia_categoria_views.xml',
         'views/mrp_averia_linea_views.xml',
+        'views/quality_check_views.xml',
         'data/mrp_averia_categoria_data.xml',
         'data/mrp_workcenter_productivity_loss_data.xml',
         'data/menu_placement.xml',

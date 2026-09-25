@@ -23,12 +23,6 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         help="Cantidad producida en la línea que se está cerrando "
              "(esta hora) -- no es un acumulado.")
     reporta_averia = fields.Boolean(string="¿Avería?")
-    cantidad_averias = fields.Integer(string="Averías")
-
-    @api.onchange('reporta_averia')
-    def _onchange_reporta_averia(self):
-        if not self.reporta_averia:
-            self.cantidad_averias = 0
 
     def action_confirmar(self):
         self.ensure_one()
@@ -44,11 +38,14 @@ class MrpWorkorderProgressWizard(models.TransientModel):
                 "No hay una línea de Seguimiento de tiempo abierta en "
                 "esta orden -- usa \"Iniciar\" primero."))
 
+        # x_studio_averias YA NO se escribe desde aca -- simplificado a
+        # pedido de Laura: la cantidad de averias se carga dentro de la
+        # hoja (una fila por categoria) y de ahi se sincroniza de vuelta
+        # a este campo (ver mrp_averia_linea.py). Aca solo se marca el
+        # check ¿Averia?, que es lo que dispara la creacion de la hoja.
         linea_abierta.write({
             'x_studio_cantidad': self.cantidad,
             'x_studio_reporta_averia': self.reporta_averia,
-            'x_studio_averias': (
-                self.cantidad_averias if self.reporta_averia else 0),
         })
 
         # Mismo método nativo que usa "Pausar" para cerrar la línea sin

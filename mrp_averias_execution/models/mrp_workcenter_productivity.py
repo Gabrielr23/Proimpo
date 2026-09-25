@@ -61,7 +61,13 @@ class MrpWorkcenterProductivity(models.Model):
         Linea = self.env['mrp.averia.linea'].sudo()
 
         for rec in self:
-            if (rec.x_studio_averias or 0) <= 0 or not rec.workorder_id:
+            # Antes se exigia x_studio_averias > 0 para crear el check.
+            # Eso obligaba a que la cantidad ya existiera ANTES de abrir
+            # la hoja -- pero la cantidad ahora se carga DENTRO de la
+            # hoja (ver mrp_averia_linea.py, sync de vuelta a este
+            # campo), asi que el disparador correcto es el check ¿Averia?
+            # (x_studio_reporta_averia), no la cantidad.
+            if not rec.x_studio_reporta_averia or not rec.workorder_id:
                 continue
             if rec.x_studio_quality_check_id:
                 continue

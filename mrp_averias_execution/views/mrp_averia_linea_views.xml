@@ -8,6 +8,7 @@
             <form string="Registro Averías">
                 <sheet>
                     <group>
+                        <field name="quality_check_id" readonly="1"/>
                         <field name="workcenter_id" readonly="1"/>
                         <field name="product_id" readonly="1"/>
                         <field name="production_id" readonly="1"/>
@@ -23,7 +24,6 @@
                     <group>
                         <field name="cantidad_averias_total" readonly="1"/>
                     </group>
-                    <field name="quality_check_id" invisible="1"/>
                     <field name="workcenter_tipo" invisible="1"/>
                 </sheet>
             </form>
@@ -45,16 +45,45 @@
         </field>
     </record>
 
+    <!-- Búsqueda/agrupación, para "verlos todos juntos" (Laura),
+         primer nivel de trazabilidad/analítica sin construir un
+         reporte nuevo todavía. -->
+    <record id="view_mrp_averia_linea_search" model="ir.ui.view">
+        <field name="name">mrp.averia.linea.search</field>
+        <field name="model">mrp.averia.linea</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="workcenter_id"/>
+                <field name="product_id"/>
+                <field name="production_id"/>
+                <filter string="Hoy" name="hoy"
+                        domain="[('create_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Centro de trabajo" name="group_ct"
+                            context="{'group_by': 'workcenter_id'}"/>
+                    <filter string="Producto" name="group_producto"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter string="Orden de fabricación" name="group_of"
+                            context="{'group_by': 'production_id'}"/>
+                    <filter string="Fecha (día)" name="group_fecha"
+                            context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <!-- Acción para VER la lista completa (menú "Registro de Averías",
          ubicado en tiempo de ejecución por setup.py). Cada hoja
          individual se sigue abriendo desde el botón "Tipificar"
          (action_tipificar_averia en mrp_workcenter_productivity.py,
          que arma la acción con res_id ya resuelto); esta es solo para
-         consultar/filtrar el histórico. -->
+         consultar/filtrar/agrupar el histórico: "verlos todos
+         juntos". -->
     <record id="action_mrp_averia_linea" model="ir.actions.act_window">
         <field name="name">Registro de Averías</field>
         <field name="res_model">mrp.averia.linea</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_mrp_averia_linea_search"/>
     </record>
 
 </odoo>

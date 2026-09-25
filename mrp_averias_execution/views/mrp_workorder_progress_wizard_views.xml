@@ -10,7 +10,6 @@
                 <group>
                     <field name="cantidad"/>
                     <field name="reporta_averia"/>
-                    <field name="cantidad_averias" invisible="not reporta_averia"/>
                 </group>
                 <footer>
                     <button name="action_confirmar" type="object"
