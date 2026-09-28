@@ -17,7 +17,7 @@
     # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Manufacturing/Manufacturing',
-    'version': '19.0.0.6',
+    'version': '19.0.0.7',
 
     # any module necessary for this one to work correctly
     'depends': ['mrp'],
@@ -29,10 +29,6 @@
         'views/stock_picking.xml',
         'views/stock_picking_type.xml',
         'views/mrp_production_actions.xml',
-    ],
-    # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
     ],
     'license': 'LGPL-3'
     
