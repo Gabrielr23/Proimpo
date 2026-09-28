@@ -21,11 +21,10 @@ if records:
     </record>
 
     <!-- Botón manual en el propio formulario de la orden, como respaldo por
-         si hace falta forzar el recálculo (por ejemplo tras editar datos
-         de movimientos directamente). El recálculo automático al escribir
-         la Cantidad (product_qty/qty_producing) ya no depende de este
-         botón: ver el override de write() en mrp_update_consumed.py. Sin
-         ventana de confirmación, para no interrumpir el flujo. -->
+         si hace falta forzar el recálculo. Deja el detalle en el chatter.
+         El recálculo automático (Cantidad, Pick Components, devoluciones,
+         desechos, producir) no depende de este botón: ver
+         models/mrp_production.py. Sin ventana de confirmación. -->
     <record id="view_mrp_production_form_inherit_recompute" model="ir.ui.view">
         <field name="name">mrp.production.form.inherit.recompute.consumed</field>
         <field name="model">mrp.production</field>
