@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+    <!-- Acción para recalcular la "Cantidad hecha" de los componentes de
+         una o varias Órdenes de fabricación con la lógica corregida.
+         Sirve para corregir órdenes que ya quedaron con la cantidad
+         inflada por el bug de Desecho/Devolución (antes de este fix).
+         Uso: en la vista de lista de Órdenes de fabricación, seleccionar
+         una o varias órdenes -> menú "Acciones" -> "Recalcular cantidad
+         consumida (Desecho/Devolución)". -->
+    <record id="action_recompute_consumed_quantities_server" model="ir.actions.server">
+        <field name="name">Recalcular cantidad consumida (Desecho/Devolución)</field>
+        <field name="model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_recompute_consumed_quantities()
+        </field>
+    </record>
+
+    <!-- Botón manual en el propio formulario de la orden, como respaldo por
+         si hace falta forzar el recálculo (por ejemplo tras editar datos
+         de movimientos directamente). El recálculo automático al escribir
+         la Cantidad (product_qty/qty_producing) ya no depende de este
+         botón: ver el override de write() en mrp_update_consumed.py. Sin
+         ventana de confirmación, para no interrumpir el flujo. -->
+    <record id="view_mrp_production_form_inherit_recompute" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.recompute.consumed</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_recompute_consumed_quantities"
+                        type="object"
+                        string="Recalcular consumo"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
