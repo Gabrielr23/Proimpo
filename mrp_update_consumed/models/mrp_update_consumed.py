@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # ------------------------------------------------------------------
-# VARIANTE ODOO 19 — NO PROBADA CONTRA UNA INSTANCIA REAL DE ODOO 19.
-# Preparada a partir de una comparación del código fuente oficial de Odoo
-# 18.0 vs 19.0 (github.com/odoo/odoo), no de una prueba en vivo. Validar
-# con cuidado en la rama de migración antes de confiar en ella.
+# VARIANTE ODOO 19 — corregida tras dos errores reales de instalación en la
+# rama de migración (import muerto de decimal_precision; manifest con
+# 'demo/demo.xml' inexistente) y un error real en vivo de dominio inválido
+# (ver punto 2 más abajo, corregido después de comparar el código fuente
+# real de stock.location en 18 vs 19, no solo el de stock.move). Aun así,
+# validar con cuidado los casos de prueba completos en la rama de
+# migración antes de confiar en ella en producción.
 #
-# Dos cambios de campo confirmados entre 18 y 19 que afectaban a este
-# módulo:
+# Cambios de campo confirmados entre 18 y 19 que afectaban a este módulo:
 #   1. `group_id` (Many2one a procurement.group) desapareció de
 #      stock.move en el núcleo de 'stock'. En 19 se usa
 #      `production_group_id` (Many2one a 'mrp.production.group',
@@ -15,16 +17,23 @@
 #      propósito de agrupar movimientos de una misma orden de
 #      fabricación.
 #   2. `scrapped` (antes related='location_dest_id.scrap_location',
-#      store=True) desapareció como campo propio de stock.move. Se
-#      reemplaza filtrando directamente por
-#      ('location_dest_id.scrap_location', '=', True), que es
-#      exactamente lo que ese campo calculaba.
+#      store=True) desapareció como campo propio de stock.move en 19.
+#      Ojo: el campo del que dependía, `scrap_location` (Boolean) en
+#      stock.location, TAMBIÉN desapareció en 19 (confirmado leyendo
+#      addons/stock/models/stock_location.py de la rama 19.0) — no basta
+#      con filtrar por 'location_dest_id.scrap_location'. En 19, "ser
+#      ubicación de desecho" se determina únicamente por
+#      `location.usage == 'inventory'` (así lo hace el propio
+#      `stock.scrap._compute_scrap_location_id()` nativo, con dominio
+#      `[('usage', '=', 'inventory')]`). Se reemplaza por tanto filtrando
+#      ('location_dest_id.usage', '=', 'inventory').
 #
 # Campos verificados SIN cambios entre 18 y 19: raw_material_production_id,
 # to_refund (ahora con default=True en vez de False — vigilar en pruebas
 # que esto no haga que movimientos normales caigan por error en la rama de
 # "resta"), picking_type_id, location_id, location_dest_id,
-# default_location_src_id/default_location_dest_id.
+# default_location_src_id/default_location_dest_id, usage (en
+# stock.location).
 # ------------------------------------------------------------------
 
 import logging
@@ -262,7 +271,7 @@ class MrpProduction(models.Model):
             ('raw_material_production_id', '=', self.id),
             ('product_id', '=', product_id),
             ('state', '=', 'done'),
-            ('location_dest_id.scrap_location', '=', True),
+            ('location_dest_id.usage', '=', 'inventory'),
         ])
         qty = sum(scrap_moves.mapped('quantity'))
 
@@ -276,7 +285,7 @@ class MrpProduction(models.Model):
             loose_scraps = self.env['stock.move'].search([
                 ('product_id', '=', product_id),
                 ('state', '=', 'done'),
-                ('location_dest_id.scrap_location', '=', True),
+                ('location_dest_id.usage', '=', 'inventory'),
             ], limit=20, order="date desc")
             if loose_scraps:
                 _logger.warning(
