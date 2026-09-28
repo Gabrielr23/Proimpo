@@ -2,8 +2,11 @@
 
 import logging
 
+from markupsafe import Markup
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+from odoo.tools import html_escape
 
 _logger = logging.getLogger(__name__)
 
@@ -70,15 +73,34 @@ class MrpProduction(models.Model):
                     production._update_move_raw_quantity(move_line)
         return res
 
-    def _update_move_raw_quantity(self, move_line):
+    def _update_move_raw_quantity(self, move_line, diag=None):
         """Recalcula move_line.quantity ("Cantidad hecha") para un
         componente de esta MO, sumando los Pick Components transferidos y
         restando Devoluciones, Desechos y el consumo ya registrado en la
-        propia MO."""
+        propia MO.
+
+        `diag`, si se pasa una lista, se le agrega una línea de texto por
+        componente con el desglose del cálculo (para publicarla en el
+        chatter de la orden vía action_recompute_consumed_quantities, ya
+        que en este entorno no hay acceso a los logs del servidor).
+
+        IMPORTANTE (corregido): 'Cantidad hecha' es una cantidad física
+        ABSOLUTA (kg, g, unidades) — lo realmente transferido menos lo
+        desechado/devuelto/consumido. NO se debe escalar por
+        qty_producing/product_qty: esa relación solo tiene sentido para la
+        demanda (cuánto se NECESITA para el lote que se está registrando),
+        no para lo que ya se picó. La versión anterior heredaba una fórmula
+        del módulo original que multiplicaba por (qty_producing /
+        product_qty), lo cual solo coincidía con el valor correcto cuando
+        ambos campos eran iguales (relación 1:1, el único caso probado
+        hasta ahora); con una orden real de producción por lotes (p.ej.
+        qty_producing=300 de product_qty=3.000) esa fórmula devolvía
+        exactamente el 10% de lo transferido."""
         self.ensure_one()
         move_line.ensure_one()
 
         product_id = move_line.product_id.id
+        product_name = move_line.product_id.display_name
         group_id = move_line.group_id.id
         if not product_id:
             return
@@ -93,13 +115,24 @@ class MrpProduction(models.Model):
         ], order="date desc", limit=1)
 
         if not last_pc_move.picking_id.totally_transferred:
-            _logger.info(
-                "mrp_update_consumed: MO %s producto %s - no se recalcula: no hay "
-                "ningún PC 'done' con 'Transferido totalmente' marcado (último PC "
-                "encontrado: %s, picking: %s).",
-                self.display_name, product_id, last_pc_move.ids,
-                last_pc_move.picking_id.display_name,
-            )
+            # Sin ningún Pick Components 'Terminado' marcado como
+            # "Transferido totalmente", no hay evidencia real de que se
+            # haya transferido nada para este componente. Se fuerza a 0 en
+            # vez de dejar la sugerencia nativa de Odoo (la cantidad
+            # proporcional del BOM), que de otro modo queda visible como si
+            # fuera un cálculo nuestro y da a entender que ya se consumió
+            # material que en realidad no se ha recibido.
+            if move_line.quantity:
+                move_line.quantity = 0.0
+            if diag is not None:
+                diag.append(
+                    "• %s: sin Pick Components 'Terminado' con 'Transferido "
+                    "totalmente' marcado → Cantidad hecha = 0 (última PC "
+                    "encontrada: %s)" % (
+                        product_name,
+                        last_pc_move.picking_id.display_name or '(ninguna)',
+                    )
+                )
             return
 
         move_stock_all = self.env['stock.move'].search([
@@ -127,22 +160,17 @@ class MrpProduction(models.Model):
 
         qty_consumed = self.move_stock_no_done(product_id, group_id) or 0.0
 
-        if not self.product_qty:
-            return
+        new_quantity = round(qty_all - qty_consumed, 2)
 
-        new_quantity = round(
-            ((qty_all - qty_consumed) / self.product_qty) * self.qty_producing, 2
-        )
-
-        _logger.info(
-            "mrp_update_consumed: MO %s producto %s - moves PC/Devolución=%s, "
-            "qty_all (antes de desecho)=%s, desechado=%s, qty_all final=%s, "
-            "qty_consumed(mrp_operation)=%s, product_qty=%s, qty_producing=%s -> "
-            "nueva cantidad hecha=%s (actual=%s)",
-            self.display_name, product_id, move_stock_all.ids, qty_before_scrap,
-            scrapped_qty, qty_all, qty_consumed, self.product_qty, self.qty_producing,
-            new_quantity, move_line.quantity,
-        )
+        if diag is not None:
+            diag.append(
+                "• %s: transferido/devuelto (PC-Devolución) = %.2f, "
+                "desechado = %.2f, consumo ya registrado (mrp_operation) = "
+                "%.2f → Cantidad hecha = %.2f (antes: %.2f) [moves: %s]" % (
+                    product_name, qty_before_scrap, scrapped_qty, qty_consumed,
+                    new_quantity, move_line.quantity, move_stock_all.ids,
+                )
+            )
 
         if new_quantity != move_line.quantity:
             move_line.quantity = new_quantity
@@ -253,15 +281,23 @@ class MrpProduction(models.Model):
 
     def action_recompute_consumed_quantities(self):
         """Recalcula 'Cantidad hecha' de los componentes con la lógica
-        corregida. Pensado para corregir órdenes ya afectadas por el bug de
-        Desecho/Devolución (por ejemplo WH/MO/45940 y WH/MO/45939).
+        corregida, y publica el desglose del cálculo en el chatter de cada
+        orden (no hay acceso a los logs del servidor en este entorno, así
+        que este es el canal de diagnóstico visible para el usuario).
 
-        Se puede ejecutar seleccionando una o varias Órdenes de fabricación
-        en la vista de lista y usando la acción "Recalcular cantidad
-        consumida (Desecho/Devolución)"."""
+        Se puede ejecutar desde el botón "Recalcular consumo" en el
+        formulario de la orden, o seleccionando una o varias Órdenes de
+        fabricación en la vista de lista y usando la acción "Recalcular
+        cantidad consumida (Desecho/Devolución)"."""
         for production in self:
+            diag = []
             for move_line in production.move_raw_ids:
-                production._update_move_raw_quantity(move_line)
+                production._update_move_raw_quantity(move_line, diag=diag)
+            if diag:
+                safe_lines = Markup("<br/>").join(Markup(html_escape(line)) for line in diag)
+                production.message_post(
+                    body=Markup("<b>Recalcular consumo — detalle:</b><br/>%s") % safe_lines
+                )
         return True
 
 
