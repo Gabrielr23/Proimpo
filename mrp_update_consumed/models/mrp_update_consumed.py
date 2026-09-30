@@ -1,14 +1,43 @@
 # -*- coding: utf-8 -*-
+"""Cantidad hecha de los componentes a partir de lo realmente transferido
+(Odoo 18) — v0.8.
 
-import logging
+Base: el comportamiento del módulo original (el que funcionaba en planta),
+más los arreglos y acuerdos con PROIMPO:
+
+Disponible de un componente para el grupo de la orden (orden + backorders)
+    = Pick Components enviados (a Pre-Production O a un taller externo; como
+      el original, no importa el destino)
+    - devoluciones de esos Pick Components (se reconocen por el destino, no
+      por la casilla "Actualizar cantidades en OV/OC")
+    - desechos de todas las órdenes del grupo
+    - lo ya consumido por órdenes anteriores del grupo (una sola vez)
+  Un Pick Components que solo mueve material que ya estaba en la zona de
+  producción (p. ej. taller -> Pre-Production) no se suma dos veces.
+
+Cantidad hecha:
+  * Cierre parcial (queda backorder): proporción de la lista de materiales de
+    la cantidad a producir (lo que Odoo pone de forma nativa), con tope en lo
+    disponible.
+  * Cierre final (se produce todo lo pendiente, o se elige "Sin backorder", o
+    el tipo de operación nunca crea backorder): TODO lo disponible. Así se
+    liquidan sobreconsumos, traslados adicionales, desechos y devoluciones.
+  * Nunca negativo.
+  * Condición: la última transferencia enviada del componente debe tener
+    "Transferido totalmente"; si no, Cantidad hecha = 0.
+"""
 
 from markupsafe import Markup
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from odoo.tools import html_escape
+from odoo.tools.float_utils import float_compare, float_round
 
-_logger = logging.getLogger(__name__)
+# Evita recalcular mientras Odoo cierra la orden (divide movimientos, crea
+# backorders): el valor ya quedó fijado justo antes de cerrar.
+MUC_SKIP = 'muc_skip_recompute'
+OPEN_STATES = ('confirmed', 'progress', 'to_close')
 
 
 class MrpProduction(models.Model):
@@ -16,289 +45,194 @@ class MrpProduction(models.Model):
     _description = 'Actualiza los valores consumidos desde los picking de transferencia'
 
     # ------------------------------------------------------------------
-    # NOTA DE LA CORRECCIÓN (Desecho / Devolución no se restaban bien)
-    # ------------------------------------------------------------------
-    # La versión anterior clasificaba cada stock.move como "suma" o "resta"
-    # usando dos señales indirectas: picking_type_id.code y to_refund.
-    # Eso rompía con dos procesos reales de esta base:
-    #
-    #   1. Desecho (stock.scrap): el move que genera un scrap NUNCA trae
-    #      picking_type_id ni group_id (así lo crea Odoo en
-    #      addons/stock/models/stock_scrap.py y en la extensión de mrp,
-    #      addons/mrp/models/stock_scrap.py). Como el query original
-    #      filtraba por ambos campos, el move de scrap era invisible para
-    #      el cálculo, sin importar cómo se ajustaran las ramas del
-    #      if/elif: nunca llegaba a evaluarse.
-    #
-    #   2. Devolución (botón "Devolver"): en esta base, la devolución de un
-    #      Pick Components reutiliza el MISMO picking_type_id ("PROIMPO:
-    #      Pick Components", code='internal', consumed=True) que el PC
-    #      original, solo que en sentido contrario (Pre-Production -> WH/
-    #      Stock en vez de WH/Stock -> Pre-Production). El campo to_refund
-    #      es un flag de facturación/costeo que el usuario marca a mano en
-    #      el asistente de devolución, no algo que Odoo active
-    #      automáticamente para señalar "esto es una devolución". Si no se
-    #      marcó, to_refund queda en False y la devolución caía en la misma
-    #      rama que un PC normal: se SUMABA en vez de restarse.
-    #
-    # La corrección reemplaza esas dos señales por datos que Odoo sí
-    # garantiza de forma consistente:
-    #   - Para los moves de tipo 'internal' (PC / Devolución): la dirección
-    #     real del movimiento (location_id -> location_dest_id) comparada
-    #     contra las ubicaciones por defecto del propio tipo de operación.
-    #   - Para el Desecho: raw_material_production_id (el campo que Odoo sí
-    #     setea siempre en el move de scrap de un componente) + scrapped.
+    # Disparadores
     # ------------------------------------------------------------------
 
     @api.onchange('qty_producing', 'product_qty')
     def _onchange_qty_producing(self):
-        """Vista previa en el formulario, antes de guardar. El campo
-        'Cantidad' que se ve/edita en el encabezado de la orden corresponde,
-        según el estado, a qty_producing (mientras se está produciendo) o a
-        product_qty (en borrador, o al abrir el asistente "Cambiar cantidad
-        a producir"). El onchange cubre la edición interactiva en el
-        formulario; como un onchange no persiste hasta que se guarda el
-        registro, el disparo que sí garantiza el recálculo pase lo que pase
-        (edición inline + guardar, o el asistente de cambio de cantidad,
-        que escribe el valor directamente por servidor sin pasar por un
-        onchange) es el override de write() más abajo."""
-        for move_line in self.move_raw_ids:
-            self._update_move_raw_quantity(move_line)
+        """Vista previa en el formulario (lo definitivo lo hace write)."""
+        self._muc_recompute()
 
     def write(self, vals):
         res = super().write(vals)
-        if 'product_qty' in vals or 'qty_producing' in vals:
-            for production in self:
-                for move_line in production.move_raw_ids:
-                    production._update_move_raw_quantity(move_line)
+        if ('product_qty' in vals or 'qty_producing' in vals) \
+                and not self.env.context.get(MUC_SKIP):
+            self._muc_recompute()
         return res
 
-    def _update_move_raw_quantity(self, move_line, diag=None):
-        """Recalcula move_line.quantity ("Cantidad hecha") para un
-        componente de esta MO, sumando los Pick Components transferidos y
-        restando Devoluciones, Desechos y el consumo ya registrado en la
-        propia MO.
-
-        `diag`, si se pasa una lista, se le agrega una línea de texto por
-        componente con el desglose del cálculo (para publicarla en el
-        chatter de la orden vía action_recompute_consumed_quantities, ya
-        que en este entorno no hay acceso a los logs del servidor).
-
-        IMPORTANTE (corregido): 'Cantidad hecha' es una cantidad física
-        ABSOLUTA (kg, g, unidades) — lo realmente transferido menos lo
-        desechado/devuelto/consumido. NO se debe escalar por
-        qty_producing/product_qty: esa relación solo tiene sentido para la
-        demanda (cuánto se NECESITA para el lote que se está registrando),
-        no para lo que ya se picó. La versión anterior heredaba una fórmula
-        del módulo original que multiplicaba por (qty_producing /
-        product_qty), lo cual solo coincidía con el valor correcto cuando
-        ambos campos eran iguales (relación 1:1, el único caso probado
-        hasta ahora); con una orden real de producción por lotes (p.ej.
-        qty_producing=300 de product_qty=3.000) esa fórmula devolvía
-        exactamente el 10% de lo transferido."""
-        self.ensure_one()
-        move_line.ensure_one()
-
-        product_id = move_line.product_id.id
-        product_name = move_line.product_id.display_name
-        group_id = move_line.group_id.id
-        if not product_id:
-            return
-
-        last_pc_move = self.env['stock.move'].search([
-            ('product_id', '=', product_id),
-            ('group_id', '=', group_id),
-            ('state', '=', 'done'),
-            ('picking_type_id.code', '=', 'internal'),
-            ('picking_type_id.consumed', '=', True),
-            ('to_refund', '=', False),
-        ], order="date desc", limit=1)
-
-        if not last_pc_move.picking_id.totally_transferred:
-            # Sin ningún Pick Components 'Terminado' marcado como
-            # "Transferido totalmente", no hay evidencia real de que se
-            # haya transferido nada para este componente. Se fuerza a 0 en
-            # vez de dejar la sugerencia nativa de Odoo (la cantidad
-            # proporcional del BOM), que de otro modo queda visible como si
-            # fuera un cálculo nuestro y da a entender que ya se consumió
-            # material que en realidad no se ha recibido.
-            if move_line.quantity:
-                move_line.quantity = 0.0
-            if diag is not None:
-                diag.append(
-                    "• %s: sin Pick Components 'Terminado' con 'Transferido "
-                    "totalmente' marcado → Cantidad hecha = 0 (última PC "
-                    "encontrada: %s)" % (
-                        product_name,
-                        last_pc_move.picking_id.display_name or '(ninguna)',
-                    )
-                )
-            return
-
-        move_stock_all = self.env['stock.move'].search([
-            ('product_id', '=', product_id),
-            ('picking_type_id.consumed', '=', True),
-            ('group_id', '=', group_id),
-            ('state', '=', 'done'),
-        ])
-
-        qty_all = 0.0
-        for move_all in move_stock_all:
-            picking_type = move_all.picking_type_id
-            if picking_type.code == 'internal':
-                qty_all += self._get_internal_move_signed_qty(move_all, picking_type)
-            elif picking_type.code == 'mrp_operation':
-                qty_all -= move_all.quantity
-            elif move_all.to_refund:
-                # Compatibilidad con otros tipos de operación (distintos de
-                # 'internal') marcados manualmente como to_refund.
-                qty_all -= move_all.quantity
-
-        qty_before_scrap = qty_all
-        scrapped_qty = self._get_scrapped_qty(product_id)
-        qty_all -= scrapped_qty
-
-        qty_consumed = self.move_stock_no_done(product_id, group_id) or 0.0
-
-        new_quantity = round(qty_all - qty_consumed, 2)
-
-        if diag is not None:
-            diag.append(
-                "• %s: transferido/devuelto (PC-Devolución) = %.2f, "
-                "desechado = %.2f, consumo ya registrado (mrp_operation) = "
-                "%.2f → Cantidad hecha = %.2f (antes: %.2f) [moves: %s]" % (
-                    product_name, qty_before_scrap, scrapped_qty, qty_consumed,
-                    new_quantity, move_line.quantity, move_stock_all.ids,
-                )
-            )
-
-        if new_quantity != move_line.quantity:
-            move_line.quantity = new_quantity
-
-    def _get_internal_move_signed_qty(self, move, picking_type=None):
-        """Cantidad de `move` con signo, para moves de tipo 'internal'.
-
-        Se determina por la dirección real del movimiento respecto de las
-        ubicaciones por defecto del tipo de operación:
-          - origen -> destino "normal" del tipo de operación (p.ej. WH/Stock
-            -> Pre-Production): PC normal o reposición -> suma.
-          - destino -> origen "normal" (p.ej. Pre-Production -> WH/Stock):
-            Devolución -> resta.
-        Si to_refund viene marcado explícitamente, se respeta y se resta,
-        sin importar la dirección (permite marcar a mano un caso especial).
-        Si no se puede determinar la dirección (el tipo de operación no
-        tiene ubicaciones por defecto configuradas), no se suma ni resta y
-        se deja un log para revisión manual, en vez de arriesgar el signo.
-        """
-        picking_type = picking_type or move.picking_type_id
-
-        if move.to_refund:
-            return -move.quantity
-
-        src = picking_type.default_location_src_id
-        dest = picking_type.default_location_dest_id
-
-        if src and dest and move.location_id.id == src.id and move.location_dest_id.id == dest.id:
-            return move.quantity
-        if src and dest and move.location_id.id == dest.id and move.location_dest_id.id == src.id:
-            return -move.quantity
-
-        _logger.warning(
-            "mrp_update_consumed: no se pudo determinar la dirección del movimiento "
-            "%s (%s -> %s) para el tipo de operación '%s' (revisar que tenga "
-            "configuradas sus ubicaciones origen/destino por defecto). No se sumó "
-            "ni restó en el cálculo de cantidad consumida.",
-            move.id, move.location_id.display_name, move.location_dest_id.display_name,
-            picking_type.display_name,
-        )
-        return 0.0
-
-    def _get_scrapped_qty(self, product_id):
-        """Cantidad desechada (Desecho/Scrap) de `product_id` para esta MO.
-
-        El move que genera un stock.scrap nunca trae picking_type_id ni
-        group_id, así que no se puede detectar con el mismo dominio que el
-        resto de movimientos: se vincula por raw_material_production_id,
-        que es el campo que Odoo debería setear siempre para el scrap de un
-        componente de fabricación (cuando el Desecho se origina desde la
-        propia orden de fabricación, p.ej. el botón "Desechos" del
-        formulario de la MO).
-
-        Si no se encuentra nada por ese vínculo, se deja un log de
-        diagnóstico buscando desechos "sueltos" del mismo producto (sin
-        vincular a ninguna MO), para poder distinguir "no hubo desecho" de
-        "hubo desecho pero no quedó vinculado a esta MO" (por ejemplo, si
-        se desechó desde Inventario > Operaciones > Desechos en vez de
-        desde el botón de la orden de fabricación)."""
-        self.ensure_one()
-        scrap_moves = self.env['stock.move'].search([
-            ('raw_material_production_id', '=', self.id),
-            ('product_id', '=', product_id),
-            ('state', '=', 'done'),
-            ('scrapped', '=', True),
-        ])
-        qty = sum(scrap_moves.mapped('quantity'))
-
-        if scrap_moves:
-            _logger.info(
-                "mrp_update_consumed: MO %s producto %s - %s movimiento(s) de "
-                "desecho vinculados (raw_material_production_id), total=%s (moves: %s)",
-                self.display_name, product_id, len(scrap_moves), qty, scrap_moves.ids,
-            )
-        else:
-            loose_scraps = self.env['stock.move'].search([
-                ('product_id', '=', product_id),
-                ('state', '=', 'done'),
-                ('scrapped', '=', True),
-            ], limit=20, order="date desc")
-            if loose_scraps:
-                _logger.warning(
-                    "mrp_update_consumed: MO %s producto %s - no hay desechos "
-                    "vinculados via raw_material_production_id, pero SÍ existen %s "
-                    "movimiento(s) de desecho de este producto sin vincular a "
-                    "ninguna MO (revisar si se desecharon desde el botón 'Desechos' "
-                    "de la orden de fabricación): %s",
-                    self.display_name, product_id, len(loose_scraps),
-                    [(m.id, m.quantity, m.date, m.raw_material_production_id.display_name or '(vacío)',
-                      m.scrap_id.display_name) for m in loose_scraps],
-                )
-        return qty
-
     def button_mark_done(self):
-        if self.qty_producing == 0:
-            raise ValidationError(_("Debe poner un valor mayor a 0 en cantidad."))
-        return super(MrpProduction, self).button_mark_done()
-
-    def move_stock_no_done(self, product_id, group_id):
-        move_stock = self.env['stock.move'].search([
-            ('product_id', '=', product_id),
-            ('group_id', '=', group_id),
-            ('state', '=', 'done'),
-            ('picking_type_id.code', '=', 'mrp_operation'),
-            ('to_refund', '=', False),
-        ])
-        return sum(move_stock.mapped('quantity'))
+        for production in self:
+            if production.qty_producing == 0:
+                raise ValidationError(_("Debe poner un valor mayor a 0 en cantidad."))
+        if not self.env.context.get(MUC_SKIP):
+            # Fijar la Cantidad hecha justo antes de cerrar: parcial o final
+            # según lo que se esté haciendo (incluye "Sin backorder").
+            for production in self:
+                production._muc_recompute(final=production._muc_is_final_close())
+        res = super(MrpProduction, self.with_context(**{MUC_SKIP: True})).button_mark_done()
+        # Si Odoo abre un asistente (backorder / consumo), que su contexto no
+        # arrastre la marca: al confirmarlo se debe recalcular de nuevo (p. ej.
+        # "Sin backorder" = cierre final).
+        if isinstance(res, dict) and isinstance(res.get('context'), dict):
+            res['context'] = {k: v for k, v in res['context'].items() if k != MUC_SKIP}
+        # Backorders que quedaron abiertos: recalcular con lo pendiente.
+        if self.procurement_group_id:
+            self.search([
+                ('procurement_group_id', 'in', self.procurement_group_id.ids),
+                ('state', 'in', OPEN_STATES),
+            ])._muc_recompute()
+        return res
 
     def action_recompute_consumed_quantities(self):
-        """Recalcula 'Cantidad hecha' de los componentes con la lógica
-        corregida, y publica el desglose del cálculo en el chatter de cada
-        orden (no hay acceso a los logs del servidor en este entorno, así
-        que este es el canal de diagnóstico visible para el usuario).
-
-        Se puede ejecutar desde el botón "Recalcular consumo" en el
-        formulario de la orden, o seleccionando una o varias Órdenes de
-        fabricación en la vista de lista y usando la acción "Recalcular
-        cantidad consumida (Desecho/Devolución)"."""
+        """Botón "Recalcular consumo" / acción de la lista: recalcula y deja
+        el detalle del cálculo en el chatter."""
         for production in self:
             diag = []
-            for move_line in production.move_raw_ids:
-                production._update_move_raw_quantity(move_line, diag=diag)
+            production._muc_recompute(diag=diag)
             if diag:
                 safe_lines = Markup("<br/>").join(Markup(html_escape(line)) for line in diag)
                 production.message_post(
-                    body=Markup("<b>Recalcular consumo — detalle:</b><br/>%s") % safe_lines
-                )
+                    body=Markup("<b>Recalcular consumo — detalle:</b><br/>%s") % safe_lines)
         return True
+
+    # ------------------------------------------------------------------
+    # Cálculo
+    # ------------------------------------------------------------------
+
+    def _muc_is_final_close(self):
+        """¿Este cierre termina la orden (no quedará backorder)?"""
+        self.ensure_one()
+        ctx = self.env.context
+        if ctx.get('skip_backorder') and self.id not in (ctx.get('mo_ids_to_backorder') or []):
+            return True  # eligieron "Sin backorder"
+        if self.picking_type_id.create_backorder == 'never':
+            return True
+        pending = self.product_qty - self.qty_produced
+        return float_compare(self.qty_producing, pending,
+                             precision_rounding=self.product_uom_id.rounding) >= 0
+
+    def _muc_recompute(self, final=None, diag=None):
+        for production in self:
+            if production.state not in OPEN_STATES:
+                continue
+            is_final = production._muc_is_final_close() if final is None else final
+            available_by_product = {}
+            for move in production.move_raw_ids:
+                if move.state in ('done', 'cancel') or not move.product_id:
+                    continue
+                key = move.product_id.id
+                if key not in available_by_product:
+                    available_by_product[key] = production._muc_available(move, diag)
+                available = available_by_product[key]
+                if available is None:  # sin "Transferido totalmente"
+                    qty = 0.0
+                elif is_final:
+                    qty = available
+                else:
+                    native = (production.qty_producing - production.qty_produced) * move.unit_factor
+                    qty = min(max(native, 0.0), available)
+                qty = production._muc_round(max(qty, 0.0), move.product_uom)
+                if available is not None:
+                    available_by_product[key] = max(available - qty, 0.0)
+                if diag is not None:
+                    diag.append("   → %s: %s → Cantidad hecha = %.2f %s (antes: %.2f)" % (
+                        move.product_id.display_name,
+                        "cierre final (todo lo disponible)" if is_final else "cierre parcial (proporción LdM)",
+                        qty, move.product_uom.name, move.quantity))
+                production._muc_apply(move, qty)
+
+    def _muc_available(self, raw_move, diag=None):
+        """Disponible del componente para el grupo, en la UdM del movimiento
+        de componente. None si no se cumple "Transferido totalmente"."""
+        self.ensure_one()
+        product = raw_move.product_id
+        uom = raw_move.product_uom
+        name = product.display_name
+        group = raw_move.group_id or self.procurement_group_id
+        if not group:
+            if diag is not None:
+                diag.append("• %s: la orden no tiene grupo de abastecimiento → 0" % name)
+            return None
+        Move = self.env['stock.move']
+
+        def qty(move):
+            return move.product_uom._compute_quantity(move.quantity, uom, round=False)
+
+        transfers = Move.search([
+            ('product_id', '=', product.id),
+            ('group_id', '=', group.id),
+            ('state', '=', 'done'),
+            ('picking_id', '!=', False),
+            '|',
+            ('picking_type_id.consumed', '=', True),
+            ('origin_returned_move_id.picking_type_id.consumed', '=', True),
+        ], order='date asc, id asc')
+
+        # Zona de producción = ubicación de componentes de la orden + todo
+        # destino de un Pick Components (Pre-Production o taller). Nunca la
+        # ubicación de origen del Pick Components (WH/Stock).
+        sources = transfers.picking_type_id.default_location_src_id
+        zone = raw_move.location_id | self.location_src_id
+        for t in transfers:
+            if not t.origin_returned_move_id and t.location_dest_id not in sources:
+                zone |= t.location_dest_id
+
+        def in_zone(loc):
+            return any(loc._child_of(z) for z in zone)
+
+        sent = returned = 0.0
+        last_sent = Move
+        for t in transfers:
+            src_in, dst_in = in_zone(t.location_id), in_zone(t.location_dest_id)
+            if dst_in and not src_in:
+                sent += qty(t)
+                last_sent = t
+            elif src_in and not dst_in:
+                returned += qty(t)
+            # dentro de la zona (taller -> Pre-Production): no cambia el total
+
+        if not last_sent or not last_sent.picking_id.totally_transferred:
+            if diag is not None:
+                diag.append("• %s: sin Pick Components hecho con 'Transferido totalmente' "
+                            "marcado → Cantidad hecha = 0 (último enviado: %s)" % (
+                                name, last_sent.picking_id.display_name or '(ninguno)'))
+            return None
+
+        group_mo_domain = [
+            ('product_id', '=', product.id),
+            ('state', '=', 'done'),
+            ('raw_material_production_id.procurement_group_id', '=', group.id),
+        ]
+        scrapped = sum(qty(m) for m in Move.search(group_mo_domain + [('scrapped', '=', True)]))
+        consumed = sum(qty(m) for m in Move.search(group_mo_domain + [('scrapped', '=', False)]))
+        available = max(sent - returned - scrapped - consumed, 0.0)
+        if diag is not None:
+            diag.append("• %s: enviado %.2f − devuelto %.2f − desechado %.2f − ya consumido %.2f "
+                        "= disponible %.2f %s" % (name, sent, returned, scrapped, consumed,
+                                                   available, uom.name))
+        return available
+
+    def _muc_round(self, qty, uom):
+        digits = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        return float_round(float_round(qty, precision_rounding=uom.rounding),
+                           precision_digits=digits, rounding_method='HALF-UP')
+
+    def _muc_apply(self, move, qty):
+        if not isinstance(move.id, int):  # vista previa en el formulario
+            if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
+                move.quantity = qty
+            return
+        if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
+            move.with_context(force_manual_consumption=True).quantity = qty
+        # Igual que cuando el usuario digita la cantidad: Odoo consume
+        # exactamente esto al producir y no lo cambia por la proporción LdM.
+        extra = {}
+        if not move.manual_consumption:
+            extra['manual_consumption'] = True
+        if qty:
+            extra['picked'] = True
+        if extra:
+            move.write(extra)
 
 
 class MrpProductionWorkcenterLine(models.Model):
