@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.1.7.0',
+    'version': '18.0.2.0.0',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """
@@ -9,26 +9,35 @@ Gestión de Moldes de Inyección
 ===============================
 
 Modela el molde como una extensión de `maintenance.equipment`, para heredar
-de forma nativa: calendario de mantenimiento preventivo, solicitudes
-correctivas, técnico asignado y categorías — sin reconstruir ese sistema
-en paralelo.
+de forma nativa el calendario de mantenimiento preventivo, las solicitudes
+correctivas, el técnico asignado y las categorías, sin reconstruir ese
+sistema en paralelo.
 
-Añade lo específico de producción:
+Qué aporta
+----------
+* Especificaciones: cavidades, ciclo teórico/actual, dimensiones, peso,
+  setup y objetivo por hora.
+* Situación calculada (esperando compra, disponible, en producción, en
+  reparación, dado de baja) separada de la decisión manual de habilitar o
+  inhabilitar el molde para producción.
+* Ubicación en dos capas: casa fija y ubicación actual derivada de hechos
+  (orden de trabajo en curso, solicitud de mantenimiento abierta), con
+  override manual y botón "Devolver a su casa".
+* Moldes alternativos por operación de LdM: el equivalente a los centros
+  de trabajo alternativos, pero para moldes.
+* Ocupación del molde en el tiempo y detección de conflictos entre órdenes.
+* Compra por orden de compra: llegada prevista y fecha real de recepción.
+* Alertas: fuera demasiado tiempo, fuera sin solicitud de mantenimiento,
+  llegada vencida.
+* Informe de días en reparación por taller externo.
 
-* Cavidades actuales, ciclo teórico y ciclo actual (cambian por desgaste)
-* Centros de trabajo compatibles (sin orden estricto: el planeador decide)
-* LdM para las que el molde está calificado
-* Objetivo de producción por hora, calculado en vivo desde ciclo y cavidades
-* Bitácora de revisión de molde (misma estructura que el control manual
-  existente: fecha, análisis, acción, responsable, fecha de ejecución,
-  cumple, observaciones), con botón para aplicar los valores verificados
-  al molde
-
-En la Orden de Trabajo: selección de molde (filtrada por centro de trabajo
-compatible) y visualización del objetivo por hora resultante.
-
-No incluye todavía: validación de choque de horario entre órdenes que
-reclaman el mismo molde. Queda para una siguiente iteración.
+Lo que NO hace, a propósito
+---------------------------
+Elegir el molde optimizando fecha de entrega, dependencias entre
+operaciones y carga de los centros. Eso es un planificador: necesita ver
+todas las órdenes a la vez, no una, y pertenece a un módulo aparte. Este
+módulo expone las restricciones y la consulta de disponibilidad
+(`get_available_molds`) que ese planificador consumiría.
 """,
     'author': 'PROIMPO S.A.S.',
     'category': 'Manufacturing',
@@ -36,6 +45,8 @@ reclaman el mismo molde. Queda para una siguiente iteración.
     'depends': [
         'mrp',
         'maintenance',
+        'purchase',
+        'stock',
     ],
     'data': [
         'security/ir.model.access.csv',
@@ -43,6 +54,9 @@ reclaman el mismo molde. Queda para una siguiente iteración.
         'views/mrp_workorder_views.xml',
         'views/mrp_routing_workcenter_views.xml',
         'views/mold_revision_log_views.xml',
+        'views/mold_zone_views.xml',
+        'views/mold_repair_report_views.xml',
+        'data/cron.xml',
         'data/menu_placement.xml',
     ],
     'installable': True,

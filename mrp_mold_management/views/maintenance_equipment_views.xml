@@ -14,14 +14,76 @@
                         invisible="not is_mold">
                     <field name="revision_count" widget="statinfo" string="Revisiones"/>
                 </button>
+                <button name="action_view_workorders" type="object"
+                        class="oe_stat_button" icon="fa-calendar"
+                        invisible="not is_mold">
+                    <span class="o_stat_text">Órdenes</span>
+                </button>
             </xpath>
 
             <xpath expr="//sheet" position="before">
                 <field name="is_mold" invisible="1"/>
+                <field name="mold_situation" invisible="1"/>
+                <field name="is_away_from_home" invisible="1"/>
             </xpath>
 
             <xpath expr="//notebook" position="inside">
                 <page string="Especificaciones de Molde" invisible="not is_mold">
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="is_enabled">
+                        Molde inhabilitado: no aparecerá para seleccionar en
+                        listas de materiales ni en órdenes de trabajo.
+                    </div>
+
+                    <group>
+                        <group string="Identificación">
+                            <field name="product_id"
+                                   options="{'no_quick_create': True}"/>
+                            <field name="mold_code"/>
+                            <field name="mold_situation" readonly="1"/>
+                            <field name="is_enabled"/>
+                        </group>
+                        <group string="Compra y Llegada">
+                            <field name="purchase_order_id"
+                                   options="{'no_create': True}"/>
+                            <field name="expected_arrival_date"/>
+                            <field name="arrival_date"/>
+                            <button name="action_sync_purchase" type="object"
+                                    string="Buscar compra y recepción"
+                                    class="btn-link" icon="fa-refresh"
+                                    invisible="arrival_date"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Casa (posición fija)">
+                            <field name="home_zone_id"
+                                   options="{'no_quick_create': True}"/>
+                            <field name="home_position"
+                                   placeholder="0-A, 1-B, 3-C..."/>
+                        </group>
+                        <group string="Ubicación Actual">
+                            <field name="location_display" readonly="1"/>
+                            <field name="days_away"
+                                   invisible="not is_away_from_home"/>
+                            <field name="current_zone_id"
+                                   options="{'no_quick_create': True}"/>
+                            <field name="current_position"
+                                   invisible="not current_zone_id"/>
+                            <field name="current_workcenter_id"
+                                   options="{'no_quick_create': True}"/>
+                            <field name="location_is_manual" readonly="1"/>
+                            <field name="location_manual_uid" readonly="1"
+                                   invisible="not location_is_manual"/>
+                            <field name="away_since" readonly="1" invisible="1"/>
+                            <button name="action_return_home" type="object"
+                                    string="Devolver a su casa"
+                                    class="btn-primary" icon="fa-undo"
+                                    invisible="not is_away_from_home"/>
+                        </group>
+                    </group>
+
                     <group>
                         <group string="Producción">
                             <field name="cavity_count"/>
@@ -30,13 +92,21 @@
                             <field name="cycle_time_effective" readonly="1"/>
                             <field name="hourly_target" readonly="1"/>
                             <field name="standard_weight_g"/>
-                            <field name="mold_weight_kg"/>
                             <field name="setup_hours"/>
                         </group>
-                        <group string="Compatibilidad">
-                            <field name="compatible_workcenter_ids" widget="many2many_tags"/>
+                        <group string="Dimensiones del Molde">
+                            <field name="width_mm"/>
+                            <field name="length_mm"/>
+                            <field name="height_mm"/>
+                            <field name="mold_weight_kg"/>
                         </group>
                     </group>
+
+                    <group string="Compatibilidad">
+                        <field name="compatible_workcenter_ids"
+                               widget="many2many_tags" nolabel="1"/>
+                    </group>
+
                     <group string="Operaciones que Usan este Molde">
                         <field name="qualified_operation_ids" readonly="1" nolabel="1">
                             <list create="false" delete="false">
@@ -48,13 +118,24 @@
                             </list>
                         </field>
                     </group>
+
+                    <group string="Operaciones donde es Molde Alternativo"
+                           invisible="not alternative_operation_ids">
+                        <field name="alternative_operation_ids" readonly="1" nolabel="1">
+                            <list create="false" delete="false">
+                                <field name="name"/>
+                                <field name="bom_id"/>
+                                <field name="workcenter_id"/>
+                            </list>
+                        </field>
+                    </group>
                 </page>
             </xpath>
 
         </field>
     </record>
 
-    <!-- ==================== LISTA (marca is_mold visible) ==================== -->
+    <!-- ==================== LISTA ==================== -->
     <record id="view_maintenance_equipment_list_mold" model="ir.ui.view">
         <field name="name">maintenance.equipment.list.mold</field>
         <field name="model">maintenance.equipment</field>
@@ -62,26 +143,62 @@
         <field name="arch" type="xml">
             <xpath expr="//list" position="inside">
                 <field name="is_mold" optional="hide"/>
+                <field name="mold_code" optional="show"/>
+                <field name="mold_situation" optional="show" widget="badge"
+                       decoration-success="mold_situation == 'disponible'"
+                       decoration-info="mold_situation == 'produccion'"
+                       decoration-warning="mold_situation in ('compra', 'reparacion')"
+                       decoration-danger="mold_situation == 'baja'"/>
+                <field name="is_enabled" optional="show" widget="boolean_toggle"/>
+                <field name="location_display" optional="show"/>
+                <field name="days_away" optional="hide"/>
+                <field name="home_zone_id" optional="hide"/>
+                <field name="home_position" optional="hide"/>
+                <field name="is_away_from_home" optional="hide"/>
+                <field name="product_id" optional="hide"/>
                 <field name="cavity_count" optional="hide"/>
                 <field name="cycle_time_current" optional="hide"/>
             </xpath>
         </field>
     </record>
 
-    <!-- ==================== BÚSQUEDA: filtro Moldes ==================== -->
+    <!-- ==================== BÚSQUEDA ==================== -->
     <record id="view_maintenance_equipment_search_mold" model="ir.ui.view">
         <field name="name">maintenance.equipment.search.mold</field>
         <field name="model">maintenance.equipment</field>
         <field name="inherit_id" ref="maintenance.hr_equipment_view_search"/>
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
+                <field name="mold_code"/>
+                <field name="product_id"/>
+                <field name="home_zone_id"/>
+                <field name="current_zone_id"/>
                 <filter name="filter_is_mold" string="Moldes"
                         domain="[('is_mold', '=', True)]"/>
+                <separator/>
+                <filter name="filter_enabled" string="Habilitados"
+                        domain="[('is_enabled', '=', True)]"/>
+                <filter name="filter_disabled" string="Inhabilitados"
+                        domain="[('is_enabled', '=', False)]"/>
+                <separator/>
+                <filter name="filter_away" string="Fuera de su casa"
+                        domain="[('is_away_from_home', '=', True)]"/>
+                <filter name="filter_sin_casa" string="Sin casa definida"
+                        domain="[('is_mold', '=', True), ('home_zone_id', '=', False)]"/>
+                <filter name="filter_esperando" string="Esperando compra"
+                        domain="[('mold_situation', '=', 'compra')]"/>
+                <separator/>
+                <filter name="group_situation" string="Situación"
+                        context="{'group_by': 'mold_situation'}"/>
+                <filter name="group_home_zone" string="Zona Casa"
+                        context="{'group_by': 'home_zone_id'}"/>
+                <filter name="group_current_zone" string="Zona Actual"
+                        context="{'group_by': 'current_zone_id'}"/>
             </xpath>
         </field>
     </record>
 
-    <!-- ==================== ACCIÓN Y MENÚ: Moldes ==================== -->
+    <!-- ==================== ACCIÓN Y MENÚ ==================== -->
     <record id="action_mold_equipment" model="ir.actions.act_window">
         <field name="name">Moldes</field>
         <field name="res_model">maintenance.equipment</field>
@@ -95,16 +212,37 @@
             <p>
                 Cada molde se gestiona como un equipo de mantenimiento: hereda
                 calendario preventivo, solicitudes correctivas y técnico
-                asignado, con sus cavidades, ciclo y centros de trabajo
-                compatibles.
+                asignado, con sus cavidades, ciclo, ubicación y situación.
             </p>
         </field>
     </record>
 
-    <!-- Sin parent: el post_init_hook lo cuelga bajo la app Mantenimiento. -->
+    <record id="action_mold_away" model="ir.actions.act_window">
+        <field name="name">Moldes Fuera de su Casa</field>
+        <field name="res_model">maintenance.equipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_mold', '=', True), ('is_away_from_home', '=', True)]</field>
+        <field name="context">{'search_default_group_situation': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Todos los moldes están en su sitio
+            </p>
+            <p>
+                Aquí aparecen los moldes montados en una máquina, en un taller
+                o en un tercero, con los días que llevan fuera.
+            </p>
+        </field>
+    </record>
+
+    <!-- Sin parent: data/menu_placement.xml los ubica -->
     <menuitem id="menu_mold_equipment"
               name="Moldes"
               action="action_mold_equipment"
               sequence="15"/>
+
+    <menuitem id="menu_mold_away"
+              name="Moldes Fuera de su Casa"
+              action="action_mold_away"
+              sequence="18"/>
 
 </odoo>

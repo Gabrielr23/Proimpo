@@ -1,3 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_mrp_mold_revision_log_user,mrp.mold.revision.log.user,model_mrp_mold_revision_log,base.group_user,1,1,1,0
 access_mrp_mold_revision_log_manager,mrp.mold.revision.log.manager,model_mrp_mold_revision_log,maintenance.group_equipment_manager,1,1,1,1
+access_mrp_mold_zone_user,mrp.mold.zone.user,model_mrp_mold_zone,base.group_user,1,0,0,0
+access_mrp_mold_zone_manager,mrp.mold.zone.manager,model_mrp_mold_zone,maintenance.group_equipment_manager,1,1,1,1
+access_mrp_mold_repair_report_user,mrp.mold.repair.report.user,model_mrp_mold_repair_report,base.group_user,1,0,0,0

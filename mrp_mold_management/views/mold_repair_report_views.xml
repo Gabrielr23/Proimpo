@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mold_repair_report_list" model="ir.ui.view">
+        <field name="name">mrp.mold.repair.report.list</field>
+        <field name="model">mrp.mold.repair.report</field>
+        <field name="arch" type="xml">
+            <list string="Reparaciones de Moldes" create="false" edit="false"
+                  delete="false">
+                <field name="request_date"/>
+                <field name="equipment_id"/>
+                <field name="repair_location_type"/>
+                <field name="repair_partner_id"/>
+                <field name="close_date" optional="show"/>
+                <field name="is_open" optional="show" widget="boolean_toggle"/>
+                <field name="repair_days" sum="Días"/>
+                <field name="request_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mold_repair_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.mold.repair.report.pivot</field>
+        <field name="model">mrp.mold.repair.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Reparaciones de Moldes" sample="1">
+                <field name="repair_partner_id" type="row"/>
+                <field name="repair_days" type="measure"/>
+                <field name="nbr" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_mold_repair_report_graph" model="ir.ui.view">
+        <field name="name">mrp.mold.repair.report.graph</field>
+        <field name="model">mrp.mold.repair.report</field>
+        <field name="arch" type="xml">
+            <graph string="Días en Reparación" type="bar" sample="1">
+                <field name="repair_partner_id"/>
+                <field name="repair_days" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_mold_repair_report_search" model="ir.ui.view">
+        <field name="name">mrp.mold.repair.report.search</field>
+        <field name="model">mrp.mold.repair.report</field>
+        <field name="arch" type="xml">
+            <search string="Reparaciones de Moldes">
+                <field name="equipment_id"/>
+                <field name="repair_partner_id"/>
+                <filter name="abiertas" string="Abiertas"
+                        domain="[('is_open', '=', True)]"/>
+                <filter name="externas" string="Taller externo"
+                        domain="[('repair_location_type', '=', 'externo')]"/>
+                <filter name="filter_date" date="request_date" string="Fecha"/>
+                <separator/>
+                <filter name="group_partner" string="Taller"
+                        context="{'group_by': 'repair_partner_id'}"/>
+                <filter name="group_equipment" string="Molde"
+                        context="{'group_by': 'equipment_id'}"/>
+                <filter name="group_tipo" string="Interno / Externo"
+                        context="{'group_by': 'repair_location_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mold_repair_report" model="ir.actions.act_window">
+        <field name="name">Reparaciones de Moldes</field>
+        <field name="res_model">mrp.mold.repair.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_mold_repair_report_search"/>
+        <field name="context">{'search_default_group_partner': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Todavía no hay reparaciones registradas
+            </p>
+            <p>
+                Días que cada molde pasa en reparación, agrupados por taller.
+                El promedio por taller externo es material de negociación:
+                permite comparar quién responde en doce días y quién en
+                cuarenta y cinco.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_mold_repair_report"
+              name="Reparaciones de Moldes"
+              action="action_mold_repair_report"
+              sequence="30"/>
+
+</odoo>

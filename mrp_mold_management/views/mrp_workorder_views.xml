@@ -2,27 +2,116 @@
 <odoo>
 
     <!--
-        La vista de formulario de mrp.workorder en esta base está fuertemente
-        personalizada con Studio y el xml_id de la vista base varía entre
-        versiones/ediciones. En lugar de arriesgar la instalación completa
-        del módulo por una referencia incorrecta, estos campos y el botón se
-        crean por el modelo Python (ver models/mrp_workorder.py) y se agregan
-        a la vista manualmente desde Studio, igual que el resto de campos de
-        esta orden de trabajo.
+        PANTALLA DE PLANIFICACIÓN DE MOLDES
 
-        Campos a arrastrar (aparecen en el buscador de campos de Studio
-        buscando "molde"):
-          - mold_id                  → "Molde"
-          - mold_hourly_target       → "Objetivo por Hora (Molde)"
-          - mold_duration_expected   → "Duración Según Molde (min)"
-
-        Botón (Studio no permite arrastrarlo desde la paleta porque llama a
-        un método del modelo; se agrega con el editor XML de Studio, mismo
-        procedimiento ya usado para el botón "Tipificar"):
-
-          <button name="action_apply_mold_duration" type="object"
-                  string="Aplicar duración del molde"
-                  invisible="not mold_id"/>
+        Vista nueva, sin heredar de nada. Se creó así a propósito: el
+        planeador no entra a la orden de trabajo —a lo sumo abre la orden de
+        fabricación— así que en vez de modificar el formulario de la OT (que
+        además está fuertemente personalizado con Studio y cuyo xml_id varía
+        entre instalaciones), se le da una lista propia donde ve y cambia el
+        molde de varias órdenes de una vez, sin navegar.
     -->
+    <record id="view_mrp_workorder_mold_planning_list" model="ir.ui.view">
+        <field name="name">mrp.workorder.mold.planning.list</field>
+        <field name="model">mrp.workorder</field>
+        <field name="arch" type="xml">
+            <list string="Planificación de Moldes" create="false" delete="false"
+                  editable="bottom" multi_edit="1">
+                <field name="production_id" readonly="1"/>
+                <field name="name" readonly="1"/>
+                <field name="product_id" readonly="1" optional="show"/>
+                <field name="workcenter_id"/>
+                <field name="mold_id"/>
+                <field name="mold_conflict" optional="show" widget="boolean_toggle"
+                       readonly="1"/>
+                <field name="mold_conflict_info" optional="hide" readonly="1"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_finished" optional="show"/>
+                <field name="duration_expected" readonly="1" optional="hide"/>
+                <field name="hourly_target" readonly="1" optional="hide"/>
+                <field name="state" readonly="1" widget="badge"
+                       decoration-info="state == 'progress'"
+                       decoration-muted="state in ('done', 'cancel')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mrp_workorder_mold_planning_search" model="ir.ui.view">
+        <field name="name">mrp.workorder.mold.planning.search</field>
+        <field name="model">mrp.workorder</field>
+        <field name="arch" type="xml">
+            <search string="Planificación de Moldes">
+                <field name="production_id"/>
+                <field name="workcenter_id"/>
+                <field name="mold_id"/>
+                <filter name="pendientes" string="No terminadas"
+                        domain="[('state', 'not in', ('done', 'cancel'))]"/>
+                <filter name="sin_molde" string="Sin molde asignado"
+                        domain="[('mold_id', '=', False),
+                                 ('state', 'not in', ('done', 'cancel'))]"/>
+                <filter name="con_conflicto" string="Con conflicto de molde"
+                        domain="[('mold_conflict', '=', True)]"/>
+                <separator/>
+                <filter name="group_mold" string="Molde"
+                        context="{'group_by': 'mold_id'}"/>
+                <filter name="group_wc" string="Centro de Trabajo"
+                        context="{'group_by': 'workcenter_id'}"/>
+                <filter name="group_prod" string="Orden de Fabricación"
+                        context="{'group_by': 'production_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mold_planning" model="ir.actions.act_window">
+        <field name="name">Planificación de Moldes</field>
+        <field name="res_model">mrp.workorder</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_mrp_workorder_mold_planning_list"/>
+        <field name="search_view_id" ref="view_mrp_workorder_mold_planning_search"/>
+        <field name="domain">[('state', 'not in', ('done', 'cancel'))]</field>
+        <field name="context">{'search_default_pendientes': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay órdenes de trabajo pendientes
+            </p>
+            <p>
+                Aquí se ve y se cambia el molde de varias órdenes a la vez,
+                sin abrir cada una. El molde se asigna solo cuando la
+                operación tiene una única opción compatible con el centro de
+                trabajo; cuando hay varias, la decisión se toma aquí.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_mold_occupancy" model="ir.actions.act_window">
+        <field name="name">Ocupación de Moldes</field>
+        <field name="res_model">mrp.workorder</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_mrp_workorder_mold_planning_list"/>
+        <field name="search_view_id" ref="view_mrp_workorder_mold_planning_search"/>
+        <field name="domain">[('mold_id', '!=', False),
+                              ('state', 'not in', ('done', 'cancel'))]</field>
+        <field name="context">{'search_default_group_mold': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Ningún molde está comprometido
+            </p>
+            <p>
+                Qué molde está comprometido por qué orden y en qué ventana.
+                Es la información que hoy no existe en ninguna parte y que
+                permite ver, antes de programar, si un molde ya está tomado.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_mold_planning"
+              name="Planificación de Moldes"
+              action="action_mold_planning"
+              sequence="20"/>
+
+    <menuitem id="menu_mold_occupancy"
+              name="Ocupación de Moldes"
+              action="action_mold_occupancy"
+              sequence="21"/>
 
 </odoo>

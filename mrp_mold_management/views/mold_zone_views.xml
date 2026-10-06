@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mold_zone_list" model="ir.ui.view">
+        <field name="name">mrp.mold.zone.list</field>
+        <field name="model">mrp.mold.zone</field>
+        <field name="arch" type="xml">
+            <list string="Zonas de Almacenamiento" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="zone_type"/>
+                <field name="has_positions"/>
+                <field name="mold_count" string="# Moldes"/>
+                <field name="note" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mold_zone_form" model="ir.ui.view">
+        <field name="name">mrp.mold.zone.form</field>
+        <field name="model">mrp.mold.zone</field>
+        <field name="arch" type="xml">
+            <form string="Zona de Almacenamiento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_molds" type="object"
+                                class="oe_stat_button" icon="fa-cubes">
+                            <field name="mold_count" widget="statinfo" string="Moldes"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archivado"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="RACK-0"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="zone_type"/>
+                            <field name="has_positions"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Observaciones..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mold_zone_search" model="ir.ui.view">
+        <field name="name">mrp.mold.zone.search</field>
+        <field name="model">mrp.mold.zone</field>
+        <field name="arch" type="xml">
+            <search string="Zonas">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="racks" string="Solo racks"
+                        domain="[('zone_type', '=', 'rack')]"/>
+                <filter name="talleres" string="Talleres"
+                        domain="[('zone_type', '=', 'taller')]"/>
+                <separator/>
+                <filter name="archivados" string="Archivados"
+                        domain="[('active', '=', False)]"/>
+                <filter name="group_type" string="Tipo"
+                        context="{'group_by': 'zone_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mold_zone" model="ir.actions.act_window">
+        <field name="name">Zonas de Almacenamiento de Moldes</field>
+        <field name="res_model">mrp.mold.zone</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea la primera zona
+            </p>
+            <p>
+                Los racks y talleres donde se guardan los moldes. Cada molde
+                tiene una zona "casa" fija, y el botón "Devolver a su casa"
+                lo regresa allí sin que nadie tenga que recordar la posición.
+            </p>
+        </field>
+    </record>
+
+    <!-- Sin parent: data/menu_placement.xml lo cuelga bajo Mantenimiento -->
+    <menuitem id="menu_mold_zone"
+              name="Zonas de Almacenamiento de Moldes"
+              action="action_mold_zone"
+              sequence="17"/>
+
+</odoo>

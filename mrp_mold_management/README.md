@@ -396,3 +396,226 @@ Requiere definir la duración del turno. El calendario existente
 (7 h), T2 13:00-21:30 (8,5 h), T3 21:30-6:00 (8,5 h). Sin decidir si el
 objetivo por turno debe ser por turno específico o con una duración única
 parametrizada, cualquier implementación sería una suposición.
+
+---
+
+## Cambios v18.0.1.8.0 — Ubicación física de moldes
+
+### El problema que resuelve
+
+El control en Excel mezclaba dos conceptos distintos en la misma fila: la
+posición fija del molde en bodega (`RACK-1 / 3-C`) y dónde está hoy
+(`LT NAL`). Por eso un molde aparecía simultáneamente en un rack propio y
+en el taller de un tercero. Separados, "devolver sin memorizar" funciona
+solo.
+
+### Modelo nuevo `mrp.mold.zone`
+
+Catálogo de zonas (RACK-0…RACK-13, TALLER ADENTRO, TALLER AFUERA,
+MATERIALES, PISO MOLINO, PISO TALLER, INDEFINIDO). Agregar un rack nuevo
+es crear un registro, no tocar el módulo.
+
+Menú: **Mantenimiento → Configuración → Zonas de Almacenamiento de Moldes**.
+
+### Campos nuevos en el molde
+
+| Campo | Qué guarda |
+|---|---|
+| `mold_code` | Referencia propia del molde. NO es el código PR del producto: un producto puede tener molde nuevo y viejo, y un molde puede hacer varios productos cambiando placas. |
+| `home_zone_id` / `home_position` | Su casa: posición fija. Se define una vez. |
+| `current_zone_id` / `current_position` | Dónde está ahora, si está guardado. |
+| `current_workcenter_id` | Si está montado en una máquina — propia o de un tercero. Los talleres externos ya existen como centros de trabajo marcados con `x_studio_ct_externo`, así que no se duplican como contactos. |
+| `location_reason` | En su casa · Producción propia · Producción en tercero · Reparación |
+| `location_display` | Resumen legible, almacenado, para buscar y agrupar sin abrir la ficha. |
+| `is_away_from_home` | Calculado: verdadero cuando no está en su posición fija. |
+
+### Botón "Devolver a su casa"
+
+Copia casa → actual en un clic, y limpia el centro de trabajo. Es el
+requisito operativo central: almacén no teclea rack ni posición, solo
+pulsa. Falla con mensaje claro si el molde no tiene casa definida.
+
+Visible solo cuando el molde está fuera de su casa.
+
+### Filtros añadidos
+
+Fuera de su casa · Sin casa definida · agrupación por Zona Casa, Zona
+Actual y Motivo.
+
+## Hallazgos del análisis de los datos (493 filas del control en Excel)
+
+| | |
+|---|---|
+| Filas con código | 337 (320 códigos distintos) |
+| Casillas vacías | 139 |
+| Filas con "OK" en vez de código | 17 — error de digitación, se excluyen |
+| **Códigos en más de una posición** | **15** — son molde nuevo y viejo del mismo producto |
+| Casillas con dos códigos PR | 4 — es UN molde que hace dos productos |
+| Capacidad por casilla | 144 casillas alojan 2 moldes; RACK-10 4-D llega a 8 |
+
+Las casillas NO son exclusivas: eso descarta modelarlas como ubicaciones
+de inventario, además de que el stock del producto-molde representa
+amortización (vida útil), no la herramienta física.
+
+Inconsistencias de nomenclatura detectadas: `1C`, `4C`, `4D` conviven con
+`1-C`, `4-C`, `4-D`. Por eso la zona es un catálogo y no texto libre.
+
+## Pendiente — Fases siguientes
+
+- **Fase 2**: enlace al producto de inventario para ver la amortización
+  restante en la ficha, y estado de vida útil (Activo / Amortizado /
+  Dado de baja) para que el molde siga existiendo aunque llegue a cero.
+- **Fase 3**: informe PDF de etiquetas con nombre, código, zona, posición
+  y código de barras. Va en el módulo y no en Studio para que viaje a
+  Odoo 19 y a producción sin rehacerse.
+
+---
+
+## Cambios v18.0.1.8.1 — Enlace al producto-molde
+
+`product_id` (Many2one a `product.product`): el producto de categoría
+`All / Materias Primas / Moldes` que representa este molde.
+
+`mold_code` pasa a calcularse desde la **Referencia Interna** de ese
+producto (ML-000403), almacenado y editable (`readonly=False`) para los
+moldes que no tengan producto asociado.
+
+### Por qué jalar del producto y no crear registros separados
+
+El producto ya mantiene nombre, referencia y costo. Duplicarlos en el
+equipo obligaría a sincronizarlos a mano para siempre. Además deja
+servida la Fase 2: la amortización restante se lee del stock de ese
+mismo producto, sin capturar nada nuevo.
+
+### ATENCIÓN: los códigos PR y ML no se cruzan directamente
+
+| Código | Qué identifica |
+|---|---|
+| `ML-000403` | El producto-molde |
+| `PR-283-2` | El producto fabricado (preforma) |
+
+La planilla de racks trae códigos **PR**. El puente entre ambos es la
+**lista de materiales**: el producto-molde aparece como componente en la
+LdM del producto PR. Por eso la asignación de rack/posición a cada molde
+requiere resolver ese mapeo contra la base real antes de importar.
+
+---
+
+# v18.0.2.0.0 — Situación, ubicación derivada, moldes alternativos y alertas
+
+Dependencias añadidas: `purchase`, `stock`.
+
+## 1. Situación vs. habilitación — dos conceptos separados
+
+| Campo | Qué es | Quién lo escribe |
+|---|---|---|
+| `mold_situation` | Hecho observable | Nadie: calculado |
+| `is_enabled` | Decisión de mantenimiento | Manual |
+
+`mold_situation` se calcula de: fecha de deshecho → solicitud de
+mantenimiento abierta → orden de trabajo en curso → OC sin recibir →
+disponible.
+
+`is_enabled` es lo único que controla si el molde aparece en los
+desplegables de LdM y orden de trabajo. **Con eso se resuelve el caso
+"molde viejo y molde nuevo"**: ambos existen como equipos con su propio
+ciclo y cavidades, ambos pueden estar en la lista de alternativos de la
+operación, y mantenimiento inhabilita el que no debe usarse. El día que
+el nuevo falle, se rehabilita el viejo y el sistema vuelve a considerarlo.
+
+Deliberadamente NO se deriva de la fecha de compra: un molde de 2015
+puede estar impecable y uno de 2024 con una cavidad rota.
+
+## 2. Moldes alternativos por operación
+
+`mrp.routing.workcenter.alternative_mold_ids` — el equivalente a los
+centros de trabajo alternativos, pero para moldes. `all_mold_ids`
+(principal + alternativos) es la lista que consultan la orden de trabajo
+y, en el futuro, el planificador.
+
+## 3. Ubicación en dos capas
+
+**Casa**: posición fija, se define una vez.
+**Actual**: derivada, con esta prioridad:
+
+1. Override manual (gana y queda marcado con quién y cuándo)
+2. Orden de trabajo en curso → su centro de trabajo
+3. Solicitud de mantenimiento abierta → el taller
+4. Lo último que registró almacén → o su casa
+
+Editar los campos de ubicación marca `location_is_manual`
+automáticamente; `action_return_home` lo limpia. `days_away` se cuenta
+desde el hecho que sacó el molde (fecha de la solicitud o inicio de la
+OT), no desde una fecha capturada a mano.
+
+## 4. Compra por orden de compra
+
+Un cron diario busca la OC del producto-molde y la recepción.
+**La llegada se detecta por cualquier movimiento de entrada validado**,
+sin depender de la cantidad: la OC puede registrarse por 1 unidad o por
+las unidades de amortización, y en ambos casos la recepción es la señal
+de que el molde está en planta.
+
+## 5. Ocupación y conflictos
+
+`_overlapping_workorders` y `get_available_molds(operation, workcenter,
+date_from, date_to)`. El segundo **devuelve la lista, no elige**: es la
+entrada que consumiría un planificador.
+
+El campo `mold_conflict` es buscable mediante `_search_mold_conflict`,
+que resuelve con una sola consulta en vez de calcular registro por
+registro.
+
+**Aviso, no bloqueo**: la decisión de cómo resolver un conflicto es del
+planeador.
+
+## 6. Alertas (cron diario)
+
+| Alerta | Umbral | Parámetro de sistema |
+|---|---|---|
+| Fuera demasiado tiempo (reparación) | 15 días | `mrp_mold_management.alerta_dias_reparacion` |
+| Fuera demasiado tiempo (maquila) | 60 días | `mrp_mold_management.alerta_dias_maquila` |
+| Fuera sin solicitud de mantenimiento | inmediata | — |
+| Llegada vencida | fecha prevista pasada | — |
+
+Las alertas se crean como **actividades**, no como correo, y solo una vez
+por situación: una alerta que se repite todos los días deja de leerse a
+la semana.
+
+## 7. Informe de reparaciones
+
+`mrp.mold.repair.report` — vista SQL sobre las solicitudes de
+mantenimiento de moldes. Da días por reparación, agrupables por taller.
+Se apoya en la solicitud, que ya es el registro de que el molde salió: no
+hace falta un histórico de ubicaciones aparte.
+
+Validado contra PostgreSQL con datos de prueba: dos talleres con 45,5 y
+12,5 días de promedio respectivamente, y detección de conflictos que
+descarta correctamente las órdenes terminadas, las de otro molde y las
+del mismo molde en ventana distinta.
+
+## 8. Pantalla de planificación
+
+Vista **nueva**, sin heredar de nada, porque el planeador no entra a la
+orden de trabajo. Lista editable en línea con molde, centro de trabajo,
+fechas y conflicto, filtrable por "sin molde asignado" y "con conflicto".
+
+## Lo que NO hace, a propósito
+
+La asignación automática cubre **solo el caso sin ambigüedad**: si la
+operación tiene una única opción compatible con el centro de trabajo, se
+asigna; si hay varias, se deja vacío para que la decisión sea visible.
+
+Eso no es planificación, es un valor por defecto. Elegir optimizando
+fecha de entrega, dependencias entre operaciones y carga de los centros
+requiere ver todas las órdenes a la vez: pertenece a un planificador,
+que es un módulo aparte.
+
+## Riesgo controlado: vista de solicitud de mantenimiento
+
+El xml_id del formulario de `maintenance.request` no está confirmado en
+esta instancia. En vez de referenciarlo en XML estático —que ya tumbó el
+ambiente dos veces en este proyecto— la vista se crea **en caliente**
+desde `setup.py`, probando varios candidatos. Si no encuentra ninguno,
+registra un aviso en el log y el módulo se instala igual: los campos
+siguen existiendo en el modelo y solo habría que colocarlos con Studio.
