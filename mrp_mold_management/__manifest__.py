@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.2.0.0',
+    'version': '18.0.2.1.0',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """
@@ -30,6 +30,10 @@ Qué aporta
 * Alertas: fuera demasiado tiempo, fuera sin solicitud de mantenimiento,
   llegada vencida.
 * Informe de días en reparación por taller externo.
+* Decisión A: todo producto de la categoría Moldes tiene su molde en
+  Mantenimiento; se crea solo al nacer el producto, y un asistente genera
+  los de los productos que ya existían.
+* Menú único "Moldes" y una sola pantalla de Ocupación de Moldes.
 
 Lo que NO hace, a propósito
 ---------------------------
@@ -56,6 +60,7 @@ módulo expone las restricciones y la consulta de disponibilidad
         'views/mold_revision_log_views.xml',
         'views/mold_zone_views.xml',
         'views/mold_repair_report_views.xml',
+        'views/mold_generate_wizard_views.xml',
         'data/cron.xml',
         'data/menu_placement.xml',
     ],

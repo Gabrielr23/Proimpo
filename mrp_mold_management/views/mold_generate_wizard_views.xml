@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mold_generate_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.mold.generate.wizard.form</field>
+        <field name="model">mrp.mold.generate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generar Moldes desde Productos">
+                <field name="state" invisible="1"/>
+
+                <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                    Crea un molde en Mantenimiento por cada producto de la
+                    categoría de moldes que todavía no lo tenga. Es seguro
+                    repetirlo: los productos que ya tienen molde no se tocan,
+                    y un molde creado a mano con la misma referencia se
+                    vincula en vez de duplicarse.
+                </div>
+
+                <group invisible="state != 'draft'">
+                    <field name="category_names"/>
+                    <field name="total_products"/>
+                    <field name="already_count"/>
+                    <field name="link_count"/>
+                    <field name="create_count"/>
+                </group>
+
+                <group invisible="state != 'done'">
+                    <field name="result_message" nolabel="1"/>
+                </group>
+
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="Generar moldes" class="btn-primary"
+                            invisible="state != 'draft'"
+                            confirm="Se crearán los moldes pendientes. ¿Continuar?"/>
+                    <button name="action_open_molds" type="object"
+                            string="Ver los moldes" class="btn-primary"
+                            invisible="state != 'done'"/>
+                    <button string="Cerrar" special="cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mold_generate_wizard" model="ir.actions.act_window">
+        <field name="name">Generar Moldes desde Productos</field>
+        <field name="res_model">mrp.mold.generate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_mold_generate_wizard"
+              name="Generar Moldes desde Productos"
+              parent="mrp_mold_management.menu_mold_root"
+              action="action_mold_generate_wizard"
+              groups="maintenance.group_equipment_manager"
+              sequence="7"/>
+
+</odoo>

@@ -3,7 +3,7 @@ import logging
 from datetime import date
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -21,8 +21,11 @@ class MaintenanceEquipment(models.Model):
     )
     product_id = fields.Many2one(
         'product.product', string='Producto Molde',
+        domain="[('categ_id.complete_name', 'ilike', '/ Moldes')]",
         help='Producto de inventario que representa este molde (categoría '
-             'Materias Primas / Moldes). Es la fuente de la referencia.',
+             'Materias Primas / Moldes). Es obligatorio al crear un molde: '
+             'el producto manda (decisión A) y de él salen el nombre y la '
+             'Referencia de Molde.',
     )
     mold_code = fields.Char(
         string='Referencia de Molde', index=True, copy=False,
@@ -39,6 +42,120 @@ class MaintenanceEquipment(models.Model):
                 eq.mold_code = eq.product_id.default_code
             elif not eq.mold_code:
                 eq.mold_code = False
+
+    # ==================================================================
+    # DECISIÓN A — el producto manda
+    #
+    # Todo producto de la categoría de moldes tiene su equipo-molde. Se
+    # crea solo al nacer el producto (models/product_sync.py) y, para los
+    # que ya existían, con el asistente de Moldes → Configuración.
+    # ==================================================================
+    MOLD_CATEGORY_PARAM = 'mrp_mold_management.mold_category_path'
+    MOLD_CATEGORY_DEFAULT = 'All / Materias Primas / Moldes'
+
+    @api.model
+    def _mold_categories(self):
+        """Categoría(s) raíz de moldes. La ruta se puede cambiar con el
+        parámetro de sistema `mrp_mold_management.mold_category_path`."""
+        Cat = self.env['product.category'].sudo()
+        ruta = self.env['ir.config_parameter'].sudo().get_param(
+            self.MOLD_CATEGORY_PARAM) or self.MOLD_CATEGORY_DEFAULT
+        cats = Cat.search([('complete_name', '=', ruta)])
+        if not cats:
+            cats = Cat.search([('complete_name', '=ilike', '%/ Moldes')])
+        return cats
+
+    @api.model
+    def _mold_category_ids(self):
+        """Ids de la categoría de moldes y sus hijas (conjunto)."""
+        cats = self._mold_categories()
+        if not cats:
+            return set()
+        return set(self.env['product.category'].sudo().search(
+            [('id', 'child_of', cats.ids)]).ids)
+
+    @api.model
+    def _create_from_products(self, products):
+        """Crea el equipo-molde de cada producto que aún no lo tenga.
+
+        - Si el producto ya tiene equipo (aunque esté archivado): no hace
+          nada.
+        - Si existe un molde creado a mano SIN producto cuya Referencia de
+          Molde es igual a la Referencia Interna del producto: lo vincula
+          en vez de duplicarlo.
+        - Si no: crea el equipo con el nombre del producto.
+        """
+        Equipment = self.sudo().with_context(
+            active_test=False, mold_allow_no_product=True)
+        existentes = Equipment.search([('product_id', 'in', products.ids)])
+        con_molde = existentes.mapped('product_id')
+        pendientes = products - con_molde
+
+        huerfanos = Equipment.search([
+            ('is_mold', '=', True),
+            ('product_id', '=', False),
+            ('mold_code', '!=', False),
+        ])
+        por_codigo = {}
+        for eq in huerfanos:
+            por_codigo.setdefault(eq.mold_code, eq)
+
+        vinculados = creados = 0
+        vals_list = []
+        for prod in pendientes:
+            eq = por_codigo.pop(prod.default_code, None) \
+                if prod.default_code else None
+            if eq:
+                eq.write({'product_id': prod.id})
+                vinculados += 1
+                continue
+            vals = {
+                'name': prod.name,
+                'is_mold': True,
+                'is_enabled': True,
+                'product_id': prod.id,
+                'mold_code': prod.default_code or False,
+            }
+            if prod.company_id:
+                vals['company_id'] = prod.company_id.id
+            vals_list.append(vals)
+        if vals_list:
+            Equipment.create(vals_list)
+            creados = len(vals_list)
+        _logger.info('Moldes desde productos: %s creados, %s vinculados, '
+                     '%s ya existían.', creados, vinculados, len(con_molde))
+        return {'creados': creados, 'vinculados': vinculados,
+                'existentes': len(con_molde)}
+
+    _NO_PRODUCT_MSG = (
+        'Un molde debe tener un producto de la categoría Moldes (decisión A: '
+        'el producto manda).\n\n'
+        'Si el producto aún no existe, créalo primero en Inventario con '
+        'categoría "All / Materias Primas / Moldes": el molde se crea solo. '
+        'Para los productos que ya existen, usa Moldes → Configuración → '
+        'Generar Moldes desde Productos.')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.context.get('mold_allow_no_product'):
+            for vals in vals_list:
+                es_molde = vals.get(
+                    'is_mold', self.env.context.get('default_is_mold'))
+                if es_molde and not vals.get('product_id'):
+                    raise UserError(self._NO_PRODUCT_MSG)
+        return super().create(vals_list)
+
+    @api.constrains('product_id')
+    def _check_unique_mold_product(self):
+        for eq in self.filtered('product_id'):
+            otro = self.with_context(active_test=False).search([
+                ('product_id', '=', eq.product_id.id),
+                ('id', '!=', eq.id),
+            ], limit=1)
+            if otro:
+                raise ValidationError(
+                    'El producto %s ya tiene un molde asociado: %s.' % (
+                        eq.product_id.display_name, otro.display_name))
 
     # ==================================================================
     # SITUACIÓN vs HABILITACIÓN
@@ -368,8 +485,13 @@ class MaintenanceEquipment(models.Model):
         """Marca la ubicación como manual cuando alguien la edita.
 
         Se excluye la escritura que hace `action_return_home`, que
-        justamente limpia el override.
+        justamente limpia el override. También impide convertir en molde un
+        equipo que no tiene producto (decisión A).
         """
+        if (vals.get('is_mold') and 'product_id' not in vals
+                and not self.env.context.get('mold_allow_no_product')):
+            if self.filtered(lambda e: not e.is_mold and not e.product_id):
+                raise UserError(self._NO_PRODUCT_MSG)
         if (any(f in vals for f in self._LOCATION_FIELDS)
                 and not self.env.context.get('mold_return_home')
                 and 'location_is_manual' not in vals):

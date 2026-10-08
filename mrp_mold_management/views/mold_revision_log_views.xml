@@ -72,10 +72,10 @@
         </field>
     </record>
 
-    <!-- Sin parent: el post_init_hook lo cuelga bajo la raíz de Mantenimiento. -->
     <menuitem id="menu_mold_revision_log"
-              name="Actualización de Especificaciones de Molde"
+              name="Actualización de Especificaciones"
+              parent="mrp_mold_management.menu_mold_root"
               action="action_mold_revision_log"
-              sequence="16"/>
+              sequence="4"/>
 
 </odoo>

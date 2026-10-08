@@ -619,3 +619,59 @@ ambiente dos veces en este proyecto— la vista se crea **en caliente**
 desde `setup.py`, probando varios candidatos. Si no encuentra ninguno,
 registra un aviso en el log y el módulo se instala igual: los campos
 siguen existiendo en el modelo y solo habría que colocarlos con Studio.
+
+---
+
+# v18.0.2.1.0 — Decisión A, menú único y pantalla única de ocupación
+
+## 1. Decisión A: el producto manda
+
+- **Creación automática.** Al crear un producto (o cambiarle la categoría) a
+  `All / Materias Primas / Moldes`, se crea su equipo-molde con el nombre y
+  la referencia del producto (`models/product_sync.py`). Si la creación
+  fallara, el producto se crea igual y queda un aviso en el log.
+- **Asistente** Moldes → Generar Moldes desde Productos
+  (`mrp.mold.generate.wizard`): crea los moldes de los productos que ya
+  existían. Idempotente. Un molde creado a mano SIN producto cuya
+  Referencia de Molde coincide con la Referencia Interna de un producto se
+  **vincula** en vez de duplicarse.
+- **Producto obligatorio.** No se puede crear un equipo-molde sin producto
+  (`create` y `write`), y en la ficha el campo está arriba, fuera de la
+  pestaña, y es obligatorio al crear. Los moldes viejos sin producto siguen
+  funcionando; se ven con el filtro "Sin producto asociado".
+- **Un producto, un molde:** restricción de unicidad (incluye archivados).
+  Solo se evalúa cuando cambia `product_id`, así que datos antiguos
+  duplicados no bloquean ediciones.
+- Parámetro `mrp_mold_management.mold_category_path` para cambiar la
+  categoría sin tocar código.
+
+## 2. Menú único
+
+Un solo padre **Moldes** (`menu_mold_root`) bajo Mantenimiento. Los demás
+cuelgan de él desde el XML, así que el post-update solo ubica el padre.
+*Zonas* y *Generar Moldes desde Productos* son solo para el grupo
+`maintenance.group_equipment_manager`.
+
+## 3. Planificación + Ocupación = Ocupación de Moldes
+
+Ambas eran la misma lista con distinto dominio. Queda una sola
+(`action_mold_occupancy`): órdenes no terminadas, editable en línea, filtro
+"Con molde asignado" por defecto, "Sin molde asignado" para asignar.
+Se eliminan `action_mold_planning` y `menu_mold_planning`.
+
+## 4. Preparado para el planificador (sin cambios)
+
+`get_available_molds`, `_overlapping_workorders`, `setup_hours`,
+`all_mold_ids`. El módulo sigue sin elegir entre varios moldes posibles.
+
+## 5. Parche de Studio
+
+Sin cambios de fondo. El script del manual ahora agrega `mold_id` con
+`no_quick_create`, porque crear un molde exige producto.
+
+## Archivos nuevos / cambiados
+
+Nuevos: `models/product_sync.py`, `models/mold_generate_wizard.py`,
+`views/mold_generate_wizard_views.xml`. Cambiados: `maintenance_equipment.py`,
+`setup.py`, `__init__.py`, `__manifest__.py`, `ir.model.access.csv` y las
+vistas de equipo, orden de trabajo, operación, zonas, revisión e informe.

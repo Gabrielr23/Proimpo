@@ -86,7 +86,8 @@
 
     <menuitem id="menu_mold_repair_report"
               name="Reparaciones de Moldes"
+              parent="mrp_mold_management.menu_mold_root"
               action="action_mold_repair_report"
-              sequence="30"/>
+              sequence="5"/>
 
 </odoo>

@@ -27,6 +27,20 @@
                 <field name="is_away_from_home" invisible="1"/>
             </xpath>
 
+            <xpath expr="//notebook" position="before">
+                <group name="mold_product_group" invisible="not is_mold">
+                    <group>
+                        <field name="product_id"
+                               required="is_mold and not id"
+                               options="{'no_create': True, 'no_quick_create': True}"
+                               placeholder="Producto de la categoría Moldes (ML-...)"/>
+                    </group>
+                    <group>
+                        <field name="mold_code"/>
+                    </group>
+                </group>
+            </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Especificaciones de Molde" invisible="not is_mold">
 
@@ -37,10 +51,7 @@
                     </div>
 
                     <group>
-                        <group string="Identificación">
-                            <field name="product_id"
-                                   options="{'no_quick_create': True}"/>
-                            <field name="mold_code"/>
+                        <group string="Estado">
                             <field name="mold_situation" readonly="1"/>
                             <field name="is_enabled"/>
                         </group>
@@ -155,7 +166,7 @@
                 <field name="home_zone_id" optional="hide"/>
                 <field name="home_position" optional="hide"/>
                 <field name="is_away_from_home" optional="hide"/>
-                <field name="product_id" optional="hide"/>
+                <field name="product_id" optional="show"/>
                 <field name="cavity_count" optional="hide"/>
                 <field name="cycle_time_current" optional="hide"/>
             </xpath>
@@ -185,6 +196,8 @@
                         domain="[('is_away_from_home', '=', True)]"/>
                 <filter name="filter_sin_casa" string="Sin casa definida"
                         domain="[('is_mold', '=', True), ('home_zone_id', '=', False)]"/>
+                <filter name="filter_sin_producto" string="Sin producto asociado"
+                        domain="[('is_mold', '=', True), ('product_id', '=', False)]"/>
                 <filter name="filter_esperando" string="Esperando compra"
                         domain="[('mold_situation', '=', 'compra')]"/>
                 <separator/>
@@ -234,15 +247,25 @@
         </field>
     </record>
 
-    <!-- Sin parent: data/menu_placement.xml los ubica -->
-    <menuitem id="menu_mold_equipment"
+    <!--
+        MENÚ ÚNICO "Moldes". El padre no lleva parent: data/menu_placement.xml
+        lo cuelga de la raíz de Mantenimiento en cada actualización. Todos
+        los demás menús del módulo cuelgan de este.
+    -->
+    <menuitem id="menu_mold_root"
               name="Moldes"
-              action="action_mold_equipment"
               sequence="15"/>
+
+    <menuitem id="menu_mold_equipment"
+              name="Todos los Moldes"
+              parent="menu_mold_root"
+              action="action_mold_equipment"
+              sequence="1"/>
 
     <menuitem id="menu_mold_away"
               name="Moldes Fuera de su Casa"
+              parent="menu_mold_root"
               action="action_mold_away"
-              sequence="18"/>
+              sequence="2"/>
 
 </odoo>

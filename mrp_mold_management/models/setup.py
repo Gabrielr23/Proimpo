@@ -44,12 +44,11 @@ class MrpMoldManagementSetup(models.AbstractModel):
 
     @api.model
     def fix_menu_placement(self):
-        """Ubica los menús del módulo bajo la app Mantenimiento.
+        """Cuelga el menú "Moldes" de la app Mantenimiento.
 
-        El submenú "Equipos" se busca por NOMBRE bajo la raíz, no por
-        xml_id, para no depender de nombres que cambian entre versiones.
+        La raíz se resuelve por varios xml_id candidatos y, si no, por
+        nombre, para no depender de nombres que cambian entre versiones.
         """
-        Menu = self.env['ir.ui.menu'].sudo()
         root = self._find_root()
         if not root:
             _logger.warning(
@@ -58,31 +57,12 @@ class MrpMoldManagementSetup(models.AbstractModel):
                 'Técnico > Elementos de menú.')
             return
 
-        equipos = Menu.search(
-            [('name', '=', 'Equipos'), ('parent_id', '=', root.id)], limit=1)
-        config = Menu.search([
-            ('name', 'in', ['Configuración', 'Configuration']),
-            ('parent_id', '=', root.id),
-        ], limit=1)
-        informes = Menu.search([
-            ('name', 'in', ['Informes', 'Reporting', 'Reportes']),
-            ('parent_id', '=', root.id),
-        ], limit=1)
-
-        ubicaciones = {
-            'menu_mold_equipment': equipos or root,
-            'menu_mold_away': root,
-            'menu_mold_planning': root,
-            'menu_mold_occupancy': root,
-            'menu_mold_revision_log': root,
-            'menu_mold_repair_report': informes or root,
-            'menu_mold_zone': config or root,
-        }
-        for nombre, padre in ubicaciones.items():
-            menu = self.env.ref('mrp_mold_management.%s' % nombre,
-                                raise_if_not_found=False)
-            if menu and padre:
-                menu.sudo().write({'parent_id': padre.id})
+        # Un único padre "Moldes" bajo la raíz de Mantenimiento; los demás
+        # menús cuelgan de él desde el XML.
+        menu = self.env.ref('mrp_mold_management.menu_mold_root',
+                            raise_if_not_found=False)
+        if menu and menu.sudo().parent_id != root:
+            menu.sudo().write({'parent_id': root.id})
 
         _logger.info('Menús de Moldes ubicados bajo %s.', root.complete_name)
 

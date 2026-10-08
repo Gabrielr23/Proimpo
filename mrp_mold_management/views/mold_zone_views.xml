@@ -91,10 +91,11 @@
         </field>
     </record>
 
-    <!-- Sin parent: data/menu_placement.xml lo cuelga bajo Mantenimiento -->
     <menuitem id="menu_mold_zone"
-              name="Zonas de Almacenamiento de Moldes"
+              name="Zonas de Almacenamiento"
+              parent="mrp_mold_management.menu_mold_root"
               action="action_mold_zone"
-              sequence="17"/>
+              groups="maintenance.group_equipment_manager"
+              sequence="6"/>
 
 </odoo>

@@ -13,7 +13,7 @@
         <field name="inherit_id" ref="mrp.mrp_routing_workcenter_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='workcenter_id']" position="after">
-                <field name="mold_id"/>
+                <field name="mold_id" options="{'no_quick_create': True}"/>
                 <field name="alternative_mold_ids" widget="many2many_tags"
                        options="{'no_quick_create': True}"/>
                 <field name="mold_cavity_count" invisible="not mold_id"/>
