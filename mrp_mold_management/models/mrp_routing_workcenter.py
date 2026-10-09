@@ -40,7 +40,8 @@ class MrpRoutingWorkcenter(models.Model):
 
     # --- Datos del molde principal, visibles sin abrir su ficha ---
     mold_cavity_count = fields.Integer(
-        string='Cavidades', related='mold_id.cavity_count', readonly=True)
+        string='Cavidades del Molde', related='mold_id.cavity_count',
+        readonly=True)
     mold_cycle_time = fields.Float(
         string='Ciclo del Molde (seg)', related='mold_id.cycle_time_effective',
         readonly=True, digits=(10, 2))

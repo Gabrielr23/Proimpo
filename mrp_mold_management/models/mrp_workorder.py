@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class MrpWorkorder(models.Model):
@@ -199,4 +203,42 @@ class MrpWorkorder(models.Model):
     def create(self, vals_list):
         workorders = super().create(vals_list)
         workorders._auto_assign_mold()
+        workorders._notify_disabled_principal()
         return workorders
+
+    def _notify_disabled_principal(self):
+        """Avisa al responsable de la orden de fabricación cuando el molde
+        principal de la operación está inhabilitado.
+
+        Es solo un aviso: la orden se crea y se puede planificar igual. La
+        actividad le pide ajustar el molde y el ciclo, porque la duración de
+        la operación sigue siendo la del molde que ya no se debe usar.
+        """
+        Alerts = self.env['mrp.mold.alerts']
+        for wo in self:
+            try:
+                op = wo.operation_id
+                prod = wo.production_id
+                if not (op and op.mold_id and not op.mold_id.is_enabled
+                        and prod):
+                    continue
+                if wo.mold_id:
+                    estado = ('Se asignó el molde alternativo %s, que tiene '
+                              'su propio ciclo y cavidades; la duración de '
+                              'la operación aún corresponde al molde '
+                              'principal.' % wo.mold_id.display_name)
+                else:
+                    estado = 'La orden quedó SIN molde.'
+                nota = (
+                    'En la operación "%s" el molde principal %s está '
+                    'inhabilitado. %s Ajusta el molde y el ciclo (o la LdM) '
+                    'antes de programar. La orden se puede planificar '
+                    'igual.' % (op.name, op.mold_id.display_name, estado))
+                with self.env.cr.savepoint():
+                    Alerts._crear_actividad(
+                        prod,
+                        'Molde inhabilitado en la operación %s' % op.name,
+                        nota, prod.user_id or self.env.user)
+            except Exception as e:  # noqa: BLE001 - nunca debe frenar la orden
+                _logger.warning('No se pudo avisar del molde inhabilitado: '
+                                '%s', e)

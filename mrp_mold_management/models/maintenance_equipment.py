@@ -35,6 +35,18 @@ class MaintenanceEquipment(models.Model):
              'NO es el código PR del producto fabricado.',
     )
 
+    # El nombre del molde ES el del producto: no se digita aparte.
+    name = fields.Char(
+        compute='_compute_name_from_product', store=True, readonly=False)
+
+    @api.depends('product_id', 'product_id.name')
+    def _compute_name_from_product(self):
+        for eq in self:
+            if eq.product_id:
+                eq.name = eq.product_id.name
+            elif not eq.name:
+                eq.name = False
+
     @api.depends('product_id', 'product_id.default_code')
     def _compute_mold_code(self):
         for eq in self:
@@ -137,6 +149,11 @@ class MaintenanceEquipment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # El nombre sale del producto, así que no hace falta digitarlo.
+        for vals in vals_list:
+            if vals.get('product_id') and not vals.get('name'):
+                vals['name'] = self.env['product.product'].browse(
+                    vals['product_id']).name
         if not self.env.context.get('mold_allow_no_product'):
             for vals in vals_list:
                 es_molde = vals.get(
@@ -175,6 +192,10 @@ class MaintenanceEquipment(models.Model):
              'aparecer para seleccionar en LdM y órdenes de trabajo, pero '
              'sigue existiendo con su historial y ubicación.',
     )
+    alert_flags = fields.Char(
+        string='Alertas Enviadas', copy=False, readonly=True,
+        help='Técnico: qué alertas ya se enviaron en la salida actual del '
+             'molde, para no repetirlas aunque la actividad se cierre.')
     mold_situation = fields.Selection([
         ('compra', 'Esperando compra'),
         ('disponible', 'Disponible'),
@@ -368,14 +389,15 @@ class MaintenanceEquipment(models.Model):
     # ==================================================================
     # UBICACIÓN
     #
-    # CASA: posición fija, se define una vez.
+    # ALMACENAMIENTO: posición fija, se define una vez.
     # ACTUAL: derivada de hechos (OT en curso, solicitud de mantenimiento),
     #         salvo que alguien la fije a mano — ese override gana y queda
     #         marcado con quién y cuándo.
     # ==================================================================
-    home_zone_id = fields.Many2one('mrp.mold.zone', string='Zona Casa')
+    home_zone_id = fields.Many2one(
+        'mrp.mold.zone', string='Zona de Almacenamiento')
     home_position = fields.Char(
-        string='Posición Casa', help='0-A, 1-B, 3-C...')
+        string='Posición de Almacenamiento', help='0-A, 1-B, 3-C...')
 
     current_zone_id = fields.Many2one('mrp.mold.zone', string='Zona Actual')
     current_position = fields.Char(string='Posición Actual')
@@ -385,7 +407,7 @@ class MaintenanceEquipment(models.Model):
     location_is_manual = fields.Boolean(
         string='Ubicación Fijada a Mano', readonly=True, copy=False,
         help='Alguien corrigió la ubicación manualmente, así que el cálculo '
-             'automático deja de pisarla hasta que se devuelva a su casa.')
+             'automático deja de pisarla hasta que se devuelva a su ubicación de almacenamiento.')
     location_manual_uid = fields.Many2one(
         'res.users', string='Fijada por', readonly=True, copy=False)
     location_manual_date = fields.Datetime(
@@ -396,15 +418,15 @@ class MaintenanceEquipment(models.Model):
         help='Resumen legible de dónde está el molde, para buscar, agrupar '
              'y ver en lista sin abrir la ficha.')
     is_away_from_home = fields.Boolean(
-        string='Fuera de su Casa', compute='_compute_location', store=True)
+        string='Fuera de su Ubicación', compute='_compute_location', store=True)
     away_since = fields.Date(
         string='Fuera Desde', compute='_compute_location', store=True,
-        help='Desde cuándo está fuera de su casa. Se toma del hecho que lo '
+        help='Desde cuándo está fuera de su ubicación de almacenamiento. Se toma del hecho que lo '
              'sacó: la fecha de la solicitud de mantenimiento o el inicio '
              'de la orden de trabajo.')
     days_away = fields.Integer(
         string='Días Fuera', compute='_compute_days_away',
-        help='Días transcurridos desde que salió de su casa.')
+        help='Días transcurridos desde que salió de su ubicación de almacenamiento.')
 
     @api.depends('home_zone_id', 'home_position', 'current_zone_id',
                  'current_position', 'current_workcenter_id',
@@ -424,7 +446,7 @@ class MaintenanceEquipment(models.Model):
         """Devuelve (etiqueta, está_fuera, desde_cuándo).
 
         Prioridad: override manual > OT en curso > solicitud de
-        mantenimiento abierta > ubicación registrada > casa.
+        mantenimiento abierta > ubicación registrada > ubicación de almacenamiento.
         """
         self.ensure_one()
 
@@ -448,6 +470,23 @@ class MaintenanceEquipment(models.Model):
             return etiqueta, True, sol.request_date
 
         return self._manual_location_label()
+
+    def _external_production_workcenter(self):
+        """Centro de trabajo EXTERNO (maquilador) donde está el molde para
+        producir, o vacío. Se reconoce por la marca `x_studio_ct_externo` del
+        centro de trabajo; si esa marca no existe en la base, nunca hay
+        coincidencia."""
+        self.ensure_one()
+        if self.location_is_manual:
+            wc = self.current_workcenter_id
+        else:
+            ot = self.workorder_ids.filtered(
+                lambda w: w.state == 'progress' and w.workcenter_id)
+            wc = ot.sorted('date_start')[:1].workcenter_id if ot else \
+                self.current_workcenter_id
+        if wc and 'x_studio_ct_externo' in wc._fields and wc.x_studio_ct_externo:
+            return wc
+        return self.env['mrp.workcenter']
 
     def _manual_location_label(self):
         self.ensure_one()
@@ -508,8 +547,8 @@ class MaintenanceEquipment(models.Model):
         sin_casa = self.filtered(lambda e: not e.home_zone_id)
         if sin_casa:
             raise UserError(
-                'Estos moldes no tienen Zona Casa definida, así que no hay '
-                'a dónde devolverlos:\n- %s'
+                'Estos moldes no tienen Zona de Almacenamiento definida, así que no '
+                'hay a dónde devolverlos:\n- %s'
                 % '\n- '.join(sin_casa.mapped('display_name')))
 
         for eq in self:
@@ -610,7 +649,7 @@ class MaintenanceEquipment(models.Model):
     # ==================================================================
     PUSH_PARAM = 'mrp_mold_management.push_cycle_to_routing'
 
-    def _push_cycle_to_routing(self):
+    def _push_cycle_to_routing(self, force=False):
         """Escribe el ciclo vigente en las operaciones de ruta vinculadas,
         para que TODA orden creada de aquí en adelante nazca con el tiempo
         correcto, sin corregirla a mano una por una.
@@ -621,7 +660,7 @@ class MaintenanceEquipment(models.Model):
         """
         enabled = self.env['ir.config_parameter'].sudo().get_param(
             self.PUSH_PARAM, 'True')
-        if str(enabled).lower() not in ('1', 'true'):
+        if not force and str(enabled).lower() not in ('1', 'true'):
             return {'updated': [], 'skipped_auto': [], 'unlinked': []}
 
         updated, skipped_auto, unlinked = [], [], []
@@ -642,3 +681,55 @@ class MaintenanceEquipment(models.Model):
                 updated.append(etiqueta)
         return {'updated': updated, 'skipped_auto': skipped_auto,
                 'unlinked': unlinked}
+
+    # ==================================================================
+    # INHABILITAR / HABILITAR  (con ventana de confirmación)
+    # ==================================================================
+    def action_open_disable_wizard(self):
+        """Abre la ventana que lista las LdM y órdenes afectadas antes de
+        inhabilitar. No bloquea: la decisión final es de quien confirma."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Inhabilitar molde',
+            'res_model': 'mrp.mold.disable.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_mold_id': self.id},
+        }
+
+    def action_enable_mold(self):
+        self.write({'is_enabled': True})
+        return True
+
+    # ==================================================================
+    # ACTUALIZACIÓN MASIVA DE LdM
+    # ==================================================================
+    def action_propagate_cycle(self):
+        """Recalcula el tiempo de las operaciones de LdM de los moldes
+        seleccionados con su ciclo y cavidades actuales (por unidad)."""
+        moldes = self.filtered('is_mold')
+        res = moldes._push_cycle_to_routing(force=True)
+        partes = ['%s operaciones de LdM actualizadas.' % len(res['updated'])]
+        if res['skipped_auto']:
+            partes.append(
+                '%s operaciones NO se actualizaron porque están en tiempo '
+                'automático (cámbialas a manual): %s%s.' % (
+                    len(res['skipped_auto']),
+                    '; '.join(res['skipped_auto'][:5]),
+                    '…' if len(res['skipped_auto']) > 5 else ''))
+        if res['unlinked']:
+            partes.append(
+                '%s moldes no están en ninguna operación: %s%s.' % (
+                    len(res['unlinked']), ', '.join(res['unlinked'][:5]),
+                    '…' if len(res['unlinked']) > 5 else ''))
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Ciclo propagado a las LdM',
+                'message': '\n'.join(partes),
+                'type': 'success' if res['updated'] else 'warning',
+                'sticky': True,
+            },
+        }

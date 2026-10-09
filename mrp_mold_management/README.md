@@ -622,7 +622,7 @@ siguen existiendo en el modelo y solo habría que colocarlos con Studio.
 
 ---
 
-# v18.0.2.1.0 — Decisión A, menú único y pantalla única de ocupación
+# v18.0.2.1.0 / 2.2.0 — Decisión A, menú único y pantalla única de ocupación
 
 ## 1. Decisión A: el producto manda
 
@@ -675,3 +675,31 @@ Nuevos: `models/product_sync.py`, `models/mold_generate_wizard.py`,
 `views/mold_generate_wizard_views.xml`. Cambiados: `maintenance_equipment.py`,
 `setup.py`, `__init__.py`, `__manifest__.py`, `ir.model.access.csv` y las
 vistas de equipo, orden de trabajo, operación, zonas, revisión e informe.
+
+
+## v18.0.2.3.0 — ajustes tras la primera revisión
+
+- **Nombre = producto.** `maintenance.equipment.name` se calcula desde el
+  producto y se oculta en la ficha del molde; el producto ocupa su lugar en
+  el título. No hay que digitar el nombre.
+- **"Casa" → "Ubicación de Almacenamiento"** en etiquetas, filtros, menús y
+  mensajes. Los nombres técnicos de campos no cambian.
+- **Ciclo.** Sin cambios: tiempo por unidad = ciclo / cavidades del molde.
+  Las cavidades se cambian por la bitácora de revisión.
+- **Inhabilitar con confirmación.** `is_enabled` pasa a solo lectura en la
+  ficha; los botones Inhabilitar / Habilitar molde abren
+  `mrp.mold.disable.wizard`, que lista LdM (principal y alternativo) y
+  órdenes abiertas, permite descargarlas en Excel y no bloquea. La LdM y las
+  órdenes no se modifican.
+- **Aviso al crear órdenes.** Si el molde principal de la operación está
+  inhabilitado, se crea una actividad en la orden de fabricación para su
+  responsable (`user_id`) pidiendo ajustar molde y ciclo. No bloquea.
+- **Alertas configurables** (Moldes → Configuración de Alertas,
+  `mrp.mold.alert.config`): reparación en dos niveles (jefe de
+  mantenimiento, luego jefe superior), proveedor externo produciendo
+  (centro con `x_studio_ct_externo`) con su propio umbral y destinatario,
+  y otras salidas. Corrección: las alertas se repetían cada día porque el
+  resumen incluía los días; ahora se marcan en `alert_flags` y no se repiten
+  ni aunque se cierre la actividad.
+- **Masivo:** acción `Propagar ciclo a las LdM` sobre los moldes
+  seleccionados (`action_propagate_cycle`).

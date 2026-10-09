@@ -10,3 +10,5 @@ from . import mrp_workorder
 from . import mold_repair_report
 from . import mold_alerts
 from . import setup
+from . import mold_disable_wizard
+from . import mold_alert_config

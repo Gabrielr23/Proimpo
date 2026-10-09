@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.2.1.0',
+    'version': '18.0.2.3.0',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """
@@ -20,9 +20,9 @@ Qué aporta
 * Situación calculada (esperando compra, disponible, en producción, en
   reparación, dado de baja) separada de la decisión manual de habilitar o
   inhabilitar el molde para producción.
-* Ubicación en dos capas: casa fija y ubicación actual derivada de hechos
+* Ubicación en dos capas: ubicación de almacenamiento fija y ubicación actual derivada de hechos
   (orden de trabajo en curso, solicitud de mantenimiento abierta), con
-  override manual y botón "Devolver a su casa".
+  override manual y botón "Devolver a su ubicación".
 * Moldes alternativos por operación de LdM: el equivalente a los centros
   de trabajo alternativos, pero para moldes.
 * Ocupación del molde en el tiempo y detección de conflictos entre órdenes.
@@ -61,6 +61,7 @@ módulo expone las restricciones y la consulta de disponibilidad
         'views/mold_zone_views.xml',
         'views/mold_repair_report_views.xml',
         'views/mold_generate_wizard_views.xml',
+        'views/mold_wizards_views.xml',
         'data/cron.xml',
         'data/menu_placement.xml',
     ],

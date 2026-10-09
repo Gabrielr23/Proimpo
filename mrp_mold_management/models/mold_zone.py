@@ -30,7 +30,7 @@ class MrpMoldZone(models.Model):
     note = fields.Text(string='Observaciones')
 
     mold_ids = fields.One2many(
-        'maintenance.equipment', 'home_zone_id', string='Moldes con Casa Aquí')
+        'maintenance.equipment', 'home_zone_id', string='Moldes Almacenados Aquí')
     mold_count = fields.Integer(string='# Moldes', compute='_compute_mold_count')
 
     def _compute_mold_count(self):
@@ -41,7 +41,7 @@ class MrpMoldZone(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Moldes con casa en %s' % self.name,
+            'name': 'Moldes almacenados en %s' % self.name,
             'res_model': 'maintenance.equipment',
             'view_mode': 'list,form',
             'domain': [('home_zone_id', '=', self.id)],

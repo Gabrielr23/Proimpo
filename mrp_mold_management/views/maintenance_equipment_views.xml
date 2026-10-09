@@ -27,18 +27,18 @@
                 <field name="is_away_from_home" invisible="1"/>
             </xpath>
 
-            <xpath expr="//notebook" position="before">
-                <group name="mold_product_group" invisible="not is_mold">
-                    <group>
-                        <field name="product_id"
-                               required="is_mold and not id"
-                               options="{'no_create': True, 'no_quick_create': True}"
-                               placeholder="Producto de la categoría Moldes (ML-...)"/>
-                    </group>
-                    <group>
-                        <field name="mold_code"/>
-                    </group>
-                </group>
+            <!--
+                En un molde el nombre ES el del producto: se oculta el campo
+                Nombre y el producto ocupa su lugar en el título.
+            -->
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="invisible">is_mold</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="product_id" invisible="not is_mold"
+                       required="is_mold and not id"
+                       options="{'no_create': True, 'no_quick_create': True}"
+                       placeholder="Producto molde (ML-...)"/>
             </xpath>
 
             <xpath expr="//notebook" position="inside">
@@ -52,8 +52,17 @@
 
                     <group>
                         <group string="Estado">
+                            <field name="mold_code" readonly="product_id"/>
                             <field name="mold_situation" readonly="1"/>
-                            <field name="is_enabled"/>
+                            <field name="is_enabled" readonly="1"/>
+                            <button name="action_open_disable_wizard"
+                                    type="object" string="Inhabilitar molde"
+                                    icon="fa-ban" class="btn-secondary"
+                                    invisible="not is_enabled"/>
+                            <button name="action_enable_mold" type="object"
+                                    string="Habilitar molde" icon="fa-check"
+                                    class="btn-primary"
+                                    invisible="is_enabled"/>
                         </group>
                         <group string="Compra y Llegada">
                             <field name="purchase_order_id"
@@ -68,7 +77,7 @@
                     </group>
 
                     <group>
-                        <group string="Casa (posición fija)">
+                        <group string="Ubicación de Almacenamiento (posición fija)">
                             <field name="home_zone_id"
                                    options="{'no_quick_create': True}"/>
                             <field name="home_position"
@@ -89,7 +98,7 @@
                                    invisible="not location_is_manual"/>
                             <field name="away_since" readonly="1" invisible="1"/>
                             <button name="action_return_home" type="object"
-                                    string="Devolver a su casa"
+                                    string="Devolver a su ubicación"
                                     class="btn-primary" icon="fa-undo"
                                     invisible="not is_away_from_home"/>
                         </group>
@@ -97,7 +106,7 @@
 
                     <group>
                         <group string="Producción">
-                            <field name="cavity_count"/>
+                            <field name="cavity_count" string="Cavidades del Molde"/>
                             <field name="cycle_time_theoretical"/>
                             <field name="cycle_time_current"/>
                             <field name="cycle_time_effective" readonly="1"/>
@@ -160,7 +169,7 @@
                        decoration-info="mold_situation == 'produccion'"
                        decoration-warning="mold_situation in ('compra', 'reparacion')"
                        decoration-danger="mold_situation == 'baja'"/>
-                <field name="is_enabled" optional="show" widget="boolean_toggle"/>
+                <field name="is_enabled" optional="show"/>
                 <field name="location_display" optional="show"/>
                 <field name="days_away" optional="hide"/>
                 <field name="home_zone_id" optional="hide"/>
@@ -192,9 +201,9 @@
                 <filter name="filter_disabled" string="Inhabilitados"
                         domain="[('is_enabled', '=', False)]"/>
                 <separator/>
-                <filter name="filter_away" string="Fuera de su casa"
+                <filter name="filter_away" string="Fuera de su ubicación"
                         domain="[('is_away_from_home', '=', True)]"/>
-                <filter name="filter_sin_casa" string="Sin casa definida"
+                <filter name="filter_sin_casa" string="Sin ubicación de almacenamiento"
                         domain="[('is_mold', '=', True), ('home_zone_id', '=', False)]"/>
                 <filter name="filter_sin_producto" string="Sin producto asociado"
                         domain="[('is_mold', '=', True), ('product_id', '=', False)]"/>
@@ -203,7 +212,7 @@
                 <separator/>
                 <filter name="group_situation" string="Situación"
                         context="{'group_by': 'mold_situation'}"/>
-                <filter name="group_home_zone" string="Zona Casa"
+                <filter name="group_home_zone" string="Zona de Almacenamiento"
                         context="{'group_by': 'home_zone_id'}"/>
                 <filter name="group_current_zone" string="Zona Actual"
                         context="{'group_by': 'current_zone_id'}"/>
@@ -231,7 +240,7 @@
     </record>
 
     <record id="action_mold_away" model="ir.actions.act_window">
-        <field name="name">Moldes Fuera de su Casa</field>
+        <field name="name">Moldes Fuera de su Ubicación</field>
         <field name="res_model">maintenance.equipment</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('is_mold', '=', True), ('is_away_from_home', '=', True)]</field>
@@ -263,7 +272,7 @@
               sequence="1"/>
 
     <menuitem id="menu_mold_away"
-              name="Moldes Fuera de su Casa"
+              name="Moldes Fuera de su Ubicación"
               parent="menu_mold_root"
               action="action_mold_away"
               sequence="2"/>

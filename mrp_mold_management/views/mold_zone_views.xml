@@ -85,8 +85,8 @@
             </p>
             <p>
                 Los racks y talleres donde se guardan los moldes. Cada molde
-                tiene una zona "casa" fija, y el botón "Devolver a su casa"
-                lo regresa allí sin que nadie tenga que recordar la posición.
+                tiene una ubicación de almacenamiento fija, y el botón
+                "Devolver a su ubicación" lo regresa allí sin que nadie tenga que recordar la posición.
             </p>
         </field>
     </record>

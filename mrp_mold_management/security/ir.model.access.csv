@@ -5,3 +5,5 @@ access_mrp_mold_zone_user,mrp.mold.zone.user,model_mrp_mold_zone,base.group_user
 access_mrp_mold_zone_manager,mrp.mold.zone.manager,model_mrp_mold_zone,maintenance.group_equipment_manager,1,1,1,1
 access_mrp_mold_repair_report_user,mrp.mold.repair.report.user,model_mrp_mold_repair_report,base.group_user,1,0,0,0
 access_mrp_mold_generate_wizard_manager,mrp.mold.generate.wizard.manager,model_mrp_mold_generate_wizard,maintenance.group_equipment_manager,1,1,1,1
+access_mrp_mold_disable_wizard_user,mrp.mold.disable.wizard.user,model_mrp_mold_disable_wizard,base.group_user,1,1,1,1
+access_mrp_mold_alert_config_manager,mrp.mold.alert.config.manager,model_mrp_mold_alert_config,maintenance.group_equipment_manager,1,1,1,1
