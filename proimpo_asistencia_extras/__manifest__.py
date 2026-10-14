@@ -8,7 +8,7 @@
     'author': "PROIMPO SAS",
     'license': "LGPL-3",
     'category': "Human Resources",
-    'version': "19.0.2.0.1",
+    'version': "19.0.2.0.2",
     'depends': ['hr_attendance', 'hr_att_expected', 'mail'],
     'data': [
         'security/groups.xml',
