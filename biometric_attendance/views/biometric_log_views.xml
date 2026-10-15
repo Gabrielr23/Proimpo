@@ -24,22 +24,22 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="employee_id"/>
-                            <field name="employee_cedula"/>
-                            <field name="timestamp"/>
+                            <field name="employee_id" readonly="id"/>
+                            <field name="employee_cedula" readonly="id"/>
+                            <field name="timestamp" readonly="id"/>
                         </group>
                         <group>
-                            <field name="status"/>
-                            <field name="original_status"/>
-                            <field name="ip_address"/>
-                            <field name="processed"/>
+                            <field name="status" readonly="id"/>
+                            <field name="original_status" readonly="id"/>
+                            <field name="ip_address" readonly="id"/>
+                            <field name="processed" readonly="id"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Detalles">
                             <group>
-                                <field name="determination_reason"/>
-                                <field name="payload"/>
+                                <field name="determination_reason" readonly="id"/>
+                                <field name="payload" readonly="id"/>
                             </group>
                         </page>
                     </notebook>
