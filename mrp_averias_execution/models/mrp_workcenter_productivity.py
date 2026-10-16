@@ -19,7 +19,18 @@ class MrpWorkcenterProductivity(models.Model):
     """
     _inherit = 'mrp.workcenter.productivity'
 
-    LINEA_FIELD = 'x_studio_linea_tiempo'
+    # OJO: el nombre técnico de este campo Studio ("Línea Tiempo" en
+    # quality.check) NO es fijo entre ambientes -- Studio le agrega un
+    # sufijo numérico cuando detecta colisión al recrear el campo
+    # (pasó en el rebuild del 2026-10-16: x_studio_linea_tiempo se
+    # recreó como x_studio_linea_tiempo_1). Si en un futuro rebuild
+    # vuelve a fallar "column ... does not exist" en
+    # mrp_averia_report.py o acá, revisa el nombre técnico real en
+    # Ajustes -> Técnico -> Campos (modelo quality.check, etiqueta
+    # "Línea Tiempo") y actualízalo en LOS TRES lugares que lo usan:
+    # esta constante, mrp_averia_linea.py (_sync_averias_a_seguimiento)
+    # y la vista SQL de mrp_averia_report.py.
+    LINEA_FIELD = 'x_studio_linea_tiempo_1'
 
     # --- Fase 5: filtrar loss_id por tipo de Centro de Trabajo -------
     workcenter_tipo = fields.Selection(

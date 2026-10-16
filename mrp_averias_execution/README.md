@@ -1,12 +1,15 @@
 # mrp_averias_execution -- pasos manuales después de instalar/actualizar
 
-Estos pasos NO se hacen por datos XML del módulo a propósito: dependen de
-vistas de Studio ya existentes en el ambiente de PROIMPO, y un XML mal
-apuntado puede tumbar la instalación para todo el ambiente de prueba
-compartido. Se hacen a mano, una sola vez (sobreviven a las
-actualizaciones del módulo).
+## 1. Botón "Registrar avance" en la orden de trabajo -- AUTOMÁTICO
 
-## 1. Botón "Registrar avance" en la orden de trabajo
+Ya no es un paso manual. `data/menu_placement.xml` dispara
+`mrp.averias.execution.setup.fix_registrar_avance_button()` en cada
+actualización del módulo: busca en vivo la vista de `mrp.workorder` que
+contiene el botón nativo "Iniciar" (`button_start`) y agrega "Registrar
+avance" justo después, sin xml_id adivinado. Si por algo no aparece
+(por ejemplo si ninguna vista activa de `mrp.workorder` contiene
+`button_start` -- no debería pasar, pero por las dudas), el camino
+manual de respaldo es:
 
 Modo desarrollador → abrir una orden de trabajo → editar vista de
 formulario → agregar, junto a Iniciar/Pausar:
@@ -22,6 +25,11 @@ formulario → agregar, junto a Iniciar/Pausar:
 archivo XML de datos -- el `%(module.xmlid)d` no se resuelve: hay que
 usar el ID numérico de la acción `ir.actions.act_window`, visible en
 Ajustes → Técnico → Acciones de la ventana.)*
+
+Los pasos 2 y 3 de abajo SÍ siguen siendo manuales -- el botón
+"Tipificar" vive dentro de una lista editable (columna de un campo
+one2many), más frágil de ubicar en vivo que un botón suelto en el
+header, así que por ahora no se automatizó.
 
 ## 2. Botón "Tipificar" en Seguimiento de tiempo
 

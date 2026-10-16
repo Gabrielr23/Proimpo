@@ -71,8 +71,18 @@ class MrpAveriaLinea(models.Model):
     def _sync_averias_a_seguimiento(self, total):
         """Escribe el total de vuelta en la línea de Seguimiento de
         tiempo que originó el control de calidad (campo técnico Studio
-        x_studio_linea_tiempo en quality.check -- mismo nombre que
+        "Línea Tiempo" en quality.check -- mismo campo que
         MrpWorkcenterProductivity.LINEA_FIELD).
+
+        OJO: el nombre técnico de ese campo NO es fijo entre ambientes
+        -- Studio le agrega un sufijo numérico si hay colisión al
+        recrearlo (x_studio_linea_tiempo_1 en el rebuild del
+        2026-10-16, era x_studio_linea_tiempo antes). Si esto vuelve a
+        fallar con AttributeError/campo no encontrado, verifica el
+        nombre real en Ajustes -> Técnico -> Campos (modelo
+        quality.check) y actualízalo ACÁ, en LINEA_FIELD
+        (mrp_workcenter_productivity.py) y en la vista SQL de
+        mrp_averia_report.py -- los tres deben coincidir.
 
         Antes la cantidad se cargaba en el wizard ANTES de abrir la
         hoja; ahora se carga DENTRO de la hoja (una fila por
@@ -82,6 +92,6 @@ class MrpAveriaLinea(models.Model):
         seguimiento de tiempo" -- este es el arreglo.
         """
         self.ensure_one()
-        linea_tiempo = self.quality_check_id.x_studio_linea_tiempo
+        linea_tiempo = self.quality_check_id.x_studio_linea_tiempo_1
         if linea_tiempo and linea_tiempo.x_studio_averias != total:
             linea_tiempo.sudo().write({'x_studio_averias': total})

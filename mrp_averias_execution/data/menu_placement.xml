@@ -5,4 +5,10 @@
          views/mrp_averia_categoria_views.xml (el orden en el
          manifest importa: la acción tiene que existir primero). -->
     <function model="mrp.averias.execution.setup" name="fix_menu_placement" eval="[[]]"/>
+
+    <!-- Botón "Registrar avance" en la orden de trabajo; antes era
+         un paso manual en Studio. Debe cargarse DESPUÉS de
+         views/mrp_workorder_progress_wizard_views.xml (necesita que
+         la acción del wizard ya exista). -->
+    <function model="mrp.averias.execution.setup" name="fix_registrar_avance_button" eval="[[]]"/>
 </odoo>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.4.0',
+    'version': '18.0.1.5.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -12,7 +12,10 @@ agrega:
   * Fase 1: automatizaciones de creación de control de calidad y
     totalización de averías (antes en Acciones automatizadas de Studio).
   * Fase 2: wizard "Registrar avance" para cerrar la línea de Seguimiento
-    de tiempo en curso y abrir la siguiente sin pasar por "Pausado".
+    de tiempo en curso y abrir la siguiente sin pasar por "Pausado". El
+    botón se agrega solo en la orden de trabajo (busca en vivo la vista
+    con el botón nativo "Iniciar" y hereda ahí) -- ya no es un paso
+    manual.
   * Fase 4: catálogo de categorías de avería (mrp.averia.categoria)
     filtrado por tipo de Centro de Trabajo, para la hoja de trabajo
     unificada "Registro Averías" (varias líneas por hora, cada una con

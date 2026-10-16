@@ -29,6 +29,17 @@ class MrpAveriaReport(models.Model):
     cual de esa tabla -- por eso este módulo ahora depende de
     mrp_shift_resolver (ver __manifest__.py): sin esas columnas la
     vista SQL de abajo no se puede crear.
+
+    OJO -- campo Studio x_studio_linea_tiempo_1 (antes
+    x_studio_linea_tiempo, sin sufijo): Studio le cambia el nombre
+    técnico cada vez que lo recrea y detecta colisión (pasó en el
+    rebuild del 2026-10-16). Si una futura actualización falla con
+    "UndefinedColumn: column qc.x_studio_linea_tiempo_1 does not
+    exist", verifica el nombre real en Ajustes -> Técnico -> Campos
+    (modelo quality.check, etiqueta "Línea Tiempo") y actualízalo ACÁ
+    Y en mrp_workcenter_productivity.py (LINEA_FIELD) y
+    mrp_averia_linea.py (_sync_averias_a_seguimiento) -- los tres
+    deben coincidir siempre.
     """
     _name = 'mrp.averia.report'
     _description = "Averías Tipificadas (reporte)"
@@ -128,6 +139,6 @@ class MrpAveriaReport(models.Model):
                 LEFT JOIN product_product pp ON pp.id = al.product_id
                 LEFT JOIN product_template pt ON pt.id = pp.product_tmpl_id
                 LEFT JOIN mrp_workcenter_productivity lt
-                    ON lt.id = qc.x_studio_linea_tiempo
+                    ON lt.id = qc.x_studio_linea_tiempo_1
             )
         """ % self._table)
