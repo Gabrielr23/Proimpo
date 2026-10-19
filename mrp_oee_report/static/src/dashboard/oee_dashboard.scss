@@ -1,0 +1,205 @@
+// Tablero OEE. Superficies y texto heredan las variables de Bootstrap de Odoo
+// (funcionan en modo claro y oscuro). Colores de pérdida validados para
+// daltonismo en orden de apilado: valioso · velocidad · calidad · no programadas.
+.o_oee {
+    --oee-good-time: #2a78d6;
+    --oee-speed: #eda100;
+    --oee-quality: #6250d6;
+    --oee-unplanned: #eb6834;
+    --oee-authorized: #9a9893;
+    --oee-neutral: #c9c7c1;
+    --oee-st-good: #0ca30c;
+    --oee-st-warn: #fab219;
+    --oee-st-bad: #d03b3b;
+    --oee-track: var(--bs-secondary-bg, #efeeea);
+    background: var(--bs-tertiary-bg, #f6f6f4);
+    color: var(--bs-body-color);
+
+    .o_oee_filters {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 16px;
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+    }
+    .o_oee_date { width: 140px; }
+    .o_oee_select { width: auto; max-width: 220px; }
+    .o_oee_search { width: 240px; }
+    .o_oee_check { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 0.9em; }
+
+    .o_oee_body { padding: 16px; display: flex; flex-direction: column; gap: 16px; transition: opacity .15s; }
+    .o_oee_busy { opacity: .55; pointer-events: none; }
+    .o_oee_empty { padding: 48px; text-align: center; }
+    .o_oee_muted { color: var(--bs-secondary-color); }
+
+    .o_oee_warnings {
+        border: 1px solid var(--oee-st-warn);
+        border-left-width: 4px;
+        background: var(--bs-body-bg);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: .9em;
+        i { color: var(--oee-st-warn); }
+    }
+
+    .o_oee_card {
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 8px;
+        padding: 16px 20px;
+        h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 4px; }
+    }
+    .o_oee_grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+    .o_oee_grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+
+    // ---------- héroe ----------
+    .o_oee_hero {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px 40px;
+        align-items: center;
+    }
+    .o_oee_big { font-size: 4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+    .o_oee_big_label { color: var(--bs-secondary-color); letter-spacing: .05em; }
+    .o_oee_status { margin-top: 6px; font-size: .9em; font-weight: 600; }
+    .o_st_good { color: var(--oee-st-good); }
+    .o_st_warn { color: #b07800; }
+    .o_st_bad { color: var(--oee-st-bad); }
+    .o_st_none { color: var(--bs-secondary-color); }
+    .o_oee_pillars { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 24px; }
+    .o_oee_pillar_val { font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .o_oee_pillar_name { color: var(--bs-secondary-color); margin-bottom: 6px; }
+    .o_oee_track { height: 6px; border-radius: 3px; background: var(--oee-track); overflow: hidden; margin: 4px 0; }
+    .o_oee_fill { height: 100%; background: var(--oee-good-time); border-radius: 3px; }
+    .o_oee_counts {
+        display: flex; flex-direction: column; gap: 6px; text-align: right;
+        > div { display: flex; flex-direction: column; }
+        span:last-child { color: var(--bs-secondary-color); font-size: .85em; }
+    }
+    .o_oee_count { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .o_oee_narrative {
+        grid-column: 1 / -1;
+        border-top: 1px solid var(--bs-border-color);
+        padding-top: 12px;
+    }
+
+    .o_oee_stat { font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .o_oee_kv {
+        display: flex; justify-content: space-between; padding: 4px 0;
+        border-bottom: 1px dashed var(--bs-border-color);
+        b { font-variant-numeric: tabular-nums; }
+    }
+
+    // ---------- colores de pérdida ----------
+    .k_good { background: var(--oee-good-time); }
+    .k_speed { background: var(--oee-speed); }
+    .k_quality { background: var(--oee-quality); }
+    .k_unplanned { background: var(--oee-unplanned); }
+    .k_authorized { background: var(--oee-authorized); }
+    .k_total { background: var(--oee-neutral); }
+    .k_neutral-loss {
+        background: repeating-linear-gradient(45deg, var(--oee-neutral) 0 4px, transparent 4px 8px);
+        border: 1px solid var(--oee-neutral);
+    }
+
+    // ---------- cascada ----------
+    .o_oee_wf_row {
+        display: grid;
+        grid-template-columns: 240px 1fr 130px;
+        gap: 16px;
+        align-items: center;
+        padding: 6px 0;
+    }
+    .o_oee_wf_label { display: flex; flex-direction: column; line-height: 1.2; }
+    .o_oee_wf_track { position: relative; height: 20px; }
+    .o_oee_wf_bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+    .o_oee_wf_val {
+        display: flex; flex-direction: column; text-align: right; line-height: 1.2;
+        b { font-variant-numeric: tabular-nums; }
+    }
+
+    // ---------- barras horizontales ----------
+    .o_oee_hbar_row {
+        display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: center;
+        padding: 4px 0; cursor: pointer;
+        &:hover .o_oee_hbar_label { text-decoration: underline; }
+    }
+    .o_oee_hbar_label { text-align: right; font-weight: 600; }
+    .o_oee_hbar_track { display: flex; align-items: center; gap: 2px; height: 18px; }
+    .o_oee_hbar_val { margin-left: 8px; white-space: nowrap; font-size: .85em; color: var(--bs-secondary-color); }
+    .o_oee_seg {
+        height: 100%;
+        min-width: 2px;
+        &:first-child { border-radius: 4px 0 0 4px; }
+        &:last-of-type { border-radius: 0 4px 4px 0; }
+        &:only-of-type { border-radius: 4px; }
+    }
+
+    .o_oee_legend {
+        display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px;
+        font-size: .85em; color: var(--bs-secondary-color);
+        i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+    }
+
+    // ---------- columnas por turno ----------
+    .o_oee_cols {
+        position: relative;
+        display: flex; align-items: flex-end; gap: 6px;
+        height: 220px; padding-top: 18px; padding-bottom: 34px;
+        overflow-x: auto;
+    }
+    .o_oee_target {
+        position: absolute; left: 0; right: 0;
+        border-top: 2px dashed var(--bs-secondary-color);
+        pointer-events: none;
+        z-index: 1;
+    }
+    .o_oee_col {
+        position: relative; flex: 1 0 28px; max-width: 64px; height: 100%;
+        display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+    }
+    .o_oee_col_bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 2px; }
+    .o_oee_col_val { font-size: .75em; font-variant-numeric: tabular-nums; }
+    .o_oee_col_label {
+        position: absolute; bottom: -32px; font-size: .7em; color: var(--bs-secondary-color);
+        text-align: center; line-height: 1.1; width: 100%;
+    }
+    .o_bg_good { background: var(--oee-st-good); }
+    .o_bg_warn { background: var(--oee-st-warn); }
+    .o_bg_bad { background: var(--oee-st-bad); }
+    .o_bg_none { background: var(--oee-neutral); }
+
+    // ---------- Pareto ----------
+    .o_oee_par_row {
+        display: grid; grid-template-columns: minmax(110px, 38%) 1fr 92px; gap: 10px;
+        align-items: center; padding: 4px 0;
+    }
+    .o_oee_par_label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .o_oee_par_track { height: 14px; display: flex; }
+    .o_oee_par_val { display: flex; flex-direction: column; text-align: right; line-height: 1.15; font-variant-numeric: tabular-nums; }
+
+    // ---------- tabla ----------
+    .o_oee_tabs {
+        display: flex; gap: 4px; border-bottom: 1px solid var(--bs-border-color); margin-bottom: 8px;
+        .btn { color: var(--bs-secondary-color); text-decoration: none; border-radius: 0; }
+        .o_active { color: var(--bs-body-color); font-weight: 600; border-bottom: 2px solid var(--oee-good-time); }
+    }
+    .o_oee_table {
+        font-variant-numeric: tabular-nums;
+        th.o_sort { cursor: pointer; white-space: nowrap; }
+        td { vertical-align: middle; }
+    }
+    .o_oee_code {
+        display: inline-block; min-width: 46px; padding: 1px 6px; margin-right: 6px;
+        border-radius: 4px; background: var(--bs-emphasis-color, #222); color: var(--bs-body-bg, #fff);
+        font-weight: 600; font-size: .85em; text-align: center;
+    }
+    .o_oee_use_cell { width: 32%; }
+    .o_oee_use { display: flex; gap: 2px; height: 10px; }
+    .o_oee_badge { font-weight: 600; white-space: nowrap; }
+}

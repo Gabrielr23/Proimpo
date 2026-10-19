@@ -1,88 +1,62 @@
-# Informe de OEE por Turno (`mrp_oee_report`)
+# OEE por Turno y Tablero OEE (`mrp_oee_report`)
 
-Fase B del proyecto de OEE/tablero de piso. Vista SQL de solo lectura.
-**Grano: centro de trabajo × fecha operativa × turno.**
+Versiones: **18.0.1.1.0** (Odoo 18) y **19.0.1.1.0** (Odoo 19), mismo código salvo el número de versión.
 
-`depends`: `mrp`, `mrp_shift_resolver`, `mrp_mold_management`
+## Qué cambió frente a 18.0.1.0.0
 
-## Por qué reemplaza a `mrp_averias_report`
-
-Aquel informe ancla solo en horas CON avería, así que su universo está
-sesgado y sus denominadores no sirven (producción total, tiempo total).
-Este ancla en TODAS las líneas de `mrp.workcenter.productivity`.
-
-## Fórmulas
-
-| Indicador | Cálculo |
-|---|---|
-| Disponibilidad | minutos productivos / minutos totales |
-| Rendimiento | (buenas + averías) / unidades teóricas |
-| Calidad | buenas / (buenas + averías) |
-| OEE | Disponibilidad × Rendimiento × Calidad |
-
-Escala 0-100. Semáforo: **verde ≥80 · amarillo 70-80 · rojo <70**.
-
-## Objetivo por hora — cadena de respaldo
-
-Se calcula **por línea**, no por turno (un turno puede correr varias
-órdenes distintas):
-
-1. Molde de la orden u operación: `3600 / (ciclo efectivo / cavidades)`
-2. Ciclo manual de la operación: `60 / time_cycle_manual`
-
-El tercer nivel de respaldo que existe en Python (`duration_expected /
-qty_production`) **no se pudo replicar en SQL**: `qty_production` es
-`store=False` y las vistas SQL solo leen columnas almacenadas. Igual
-motivo por el que se usa `time_cycle_manual` y no `time_cycle`.
-
-## Reglas de cálculo que vale la pena conocer
-
-**Las unidades teóricas solo se acumulan en tiempo PRODUCTIVO.** Exigirle
-producción a una máquina detenida por una parada ya registrada castigaría
-dos veces la disponibilidad.
-
-**Y solo en turnos PLANEADOS.** En una franja con `day_period='lunch'`
-(capacidad apagada por diseño) el objetivo es 0, así que:
-- la producción real SÍ se reporta (cantidad, averías, Calidad,
-  Disponibilidad);
-- Rendimiento y OEE quedan **en blanco**, no en cero — no se juzga contra
-  una meta que no existía.
-
-Filtro "Turno extra / no planeado" en la búsqueda para aislar esos casos.
-
-## Validación hecha antes de entregar
-
-Se levantó PostgreSQL 16, se replicó el esquema real y se verificó la
-aritmética a mano:
-
-| Caso | Resultado esperado | Obtenido |
+| # | Antes | Ahora |
 |---|---|---|
-| Molde 2 cav/30s, 2h productivas + 1h parada, 420 buenas + 30 averías | Disp 66,7 · Rend 93,8 · Cal 93,3 · OEE 58,3 | idéntico |
-| Operación SIN molde, ciclo manual 0,5 min/ud, 2h, 200+40 | Disp 100 · Rend 100 · Cal 83,3 · OEE 83,3 | idéntico |
-| Turno no planeado (domingo) con producción real | cantidad visible, Rend y OEE en blanco | idéntico |
+| 1 | D = productivos / totales: setup y purga restaban Disponibilidad | Casilla **Parada autorizada** en el motivo de pérdida; esas horas salen antes (tiempo cargado), como en Access |
+| 2 | Estándar con ciclo ACTUAL del molde | Ciclo **TEÓRICO** del molde (el actual solo si el teórico está vacío) |
+| 3 | Unidades teóricas solo en líneas productivas → R > 100% si la cantidad se reporta en una línea de parada | R = minutos estándar de lo producido / minutos operando, independiente de la línea donde se reportó |
+| 4 | Los % se sumaban al agrupar en pivot/lista | % sin agregación; consolidados en el Tablero, siempre sobre sumas de minutos |
+| 5 | Base = minutos registrados | El Tablero muestra además la duración de turnos (calendario) y el tiempo **sin registrar** |
+| 6 | `l.loss_type` — no existe en Odoo 19 (no almacenado) | Categoría leída de `mrp_workcenter_productivity_loss_type`: funciona en 18 y 19 |
+| 7 | Semáforo fijo 80/70 | Meta = `oee_target` del centro de trabajo; verde ≥ meta, amarillo hasta 10 puntos debajo, rojo más abajo |
+| 8 | `unidades / unidades` en SQL daba división entera | Cantidades convertidas a decimal |
 
-## Instalación
+## Modelo de minutos
 
-Requiere `mrp_shift_resolver` **v18.0.1.1.0 o superior** instalado (los
-campos `shift_name`, `shift_date` y `shift_is_planned` deben estar
-almacenados). Si `shift_is_planned` no existiera, el módulo lo detecta y
-asume todos los turnos planeados, dejando una advertencia en el log.
+```
+registrado = operando + paradas autorizadas + paradas no programadas
+cargado    = registrado - paradas autorizadas
+D   = operando / cargado
+R   = (unidades buenas + averías) x minutos estándar por unidad / minutos operando con estándar
+C   = buenas / (buenas + averías)
+OEE = D x R x C
+```
 
-Menú: **Fabricación → Informes → OEE por Turno** (ubicado por
-`data/menu_placement.xml`, que se reejecuta en cada actualización).
+Clase de tiempo de cada línea según su motivo:
 
-## Mantenimiento
+| Motivo | Clase |
+|---|---|
+| Casilla "Parada autorizada" marcada | Autorizada |
+| Categoría Productivo, Rendimiento o Calidad (máquina corriendo) | Operando |
+| Categoría Disponibilidad, o sin categoría | No programada |
 
-Si se agregan columnas o cambia la estructura, regenerar la vista con
-⚙ Acciones → **Regenerar informe de OEE** desde la vista de lista, sin
-necesidad de actualizar el módulo.
+Minutos estándar por unidad: ciclo teórico del molde (seg) ÷ cavidades ÷ 60; si no hay molde, `time_cycle_manual` de la operación. Las líneas sin ninguno de los dos no entran al Rendimiento y el Tablero lo avisa.
 
-## Pendiente para Fase C (`mrp_oee_dashboard`)
+Validado con el caso del 21/09 del tablero de Access (PostgreSQL 16, esquemas 18 y 19): D 97,0 · R 84,8 · C 94,7 · OEE 77,9, velocidad 15:46 h, calidad 4:42 h — idéntico. La fórmula anterior daba 67,6 con los mismos datos.
 
-- Consolidado por máquina-día (agrupando los 3 turnos) y de planta,
-  **ponderado por horas de operación** — no se puede hacer con un pivot
-  normal, porque promediar porcentajes ya calculados da un número
-  distinto al correcto.
-- Filtro de alcance Fase 1: `tag_ids='Inyectoras'` AND
-  `x_studio_ct_externo=False`.
-- Drill-down: día → máquina → turno.
+## Menús
+
+- Fabricación → Informes → **Tablero OEE** (pantalla de planta)
+- Fabricación → Informes → **OEE por Turno** (lista / pivot de minutos)
+- Fabricación → Informes → **Líneas de OEE** (detalle por línea de tiempo)
+- Fabricación → Configuración → **Motivos de pérdida (OEE)** (casilla Parada autorizada)
+
+## Tablero
+
+Filtros: Hoy / Ayer / 7 días / 30 días / Mes / Rango, grupo de CT (etiqueta), máquina, turno, búsqueda por OP, producto u operario, solo turnos planeados, h:mm o minutos.
+
+Bloques: OEE con D/R/C y meta · cumplimiento del plan (prorrateo de las órdenes de trabajo programadas), horas de setup · tasa de scrap y no conformes · paradas no programadas, eventos y microparadas (< 5 min) · cascada "En qué se fueron los minutos" · máquinas que más tiempo perdieron · OEE por turno · Paretos de paradas no programadas, autorizadas y defectos (si está instalada la tipificación de averías) · tabla Máquinas / Órdenes / Productos / Operarios con uso del tiempo, plan % y costo del tiempo perdido (`costs_hour`).
+
+## Después de instalar
+
+1. Fabricación → Configuración → Motivos de pérdida (OEE): marcar **Parada autorizada** en los motivos de setup / cambio / purga (hoy: "Configuración y ajustes"; decidir "movimiento de maquina", que no tiene categoría).
+2. Revisar `oee_target` de los CT: hoy todos están en 90.
+3. Si se actualiza `mrp_shift_resolver` o `mrp_mold_management`: OEE por Turno → Acciones → **Regenerar informe de OEE**.
+
+## Trampas que se evitaron
+
+Sin herencia de vistas existentes (lista propia para motivos de pérdida); menús ubicados por `<function>` sin `noupdate`; columnas opcionales verificadas en `information_schema` antes de crear la vista.

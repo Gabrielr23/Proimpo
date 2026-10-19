@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mrp_oee_report.OeeDashboard">
+        <div class="o_action o_oee h-100 overflow-auto">
+
+            <!-- ======================= FILTROS ======================= -->
+            <div class="o_oee_filters">
+                <div class="btn-group btn-group-sm" role="group">
+                    <t t-foreach="ranges" t-as="r" t-key="r[0]">
+                        <button type="button" class="btn"
+                                t-att-class="state.f.range === r[0] ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => this.setRange(r[0])" t-out="r[1]"/>
+                    </t>
+                </div>
+                <input type="date" class="form-control form-control-sm o_oee_date"
+                       t-att-value="state.f.date_from" t-on-change="(ev) => this.onDate(ev, 'date_from')"/>
+                <input type="date" class="form-control form-control-sm o_oee_date"
+                       t-att-value="state.f.date_to" t-on-change="(ev) => this.onDate(ev, 'date_to')"/>
+                <t t-if="state.data">
+                    <select class="form-select form-select-sm o_oee_select" t-on-change="(ev) => this.onSelect(ev, 'tag_id')">
+                        <option value="" t-att-selected="!state.f.tag_id">Todos los grupos</option>
+                        <t t-foreach="d.options.tags" t-as="tg" t-key="tg.id">
+                            <option t-att-value="tg.id" t-att-selected="state.f.tag_id == tg.id" t-out="tg.name"/>
+                        </t>
+                    </select>
+                    <select class="form-select form-select-sm o_oee_select" t-on-change="(ev) => this.onSelect(ev, 'workcenter_id')">
+                        <option value="" t-att-selected="!state.f.workcenter_id">Todas las máquinas</option>
+                        <t t-foreach="filteredWorkcenters" t-as="w" t-key="w.id">
+                            <option t-att-value="w.id" t-att-selected="state.f.workcenter_id == w.id"
+                                    t-out="w.code ? w.code + ' · ' + w.name : w.name"/>
+                        </t>
+                    </select>
+                    <select class="form-select form-select-sm o_oee_select" t-on-change="(ev) => this.onSelect(ev, 'shift')">
+                        <option value="" t-att-selected="!state.f.shift">Todos los turnos</option>
+                        <t t-foreach="d.options.shifts" t-as="s" t-key="s">
+                            <option t-att-value="s" t-att-selected="state.f.shift === s" t-out="s"/>
+                        </t>
+                    </select>
+                </t>
+                <input type="search" class="form-control form-control-sm o_oee_search"
+                       placeholder="OP, producto u operario (Enter)"
+                       t-att-value="state.f.search" t-on-keyup="onSearchKey"/>
+                <label class="o_oee_check">
+                    <input type="checkbox" t-att-checked="state.f.planned_only" t-on-change="togglePlanned"/>
+                    Solo turnos planeados
+                </label>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn" t-att-class="state.unit === 'h' ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => state.unit = 'h'">h:mm</button>
+                        <button class="btn" t-att-class="state.unit === 'min' ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => state.unit = 'min'">min</button>
+                    </div>
+                    <button class="btn btn-sm btn-link" t-on-click="clearFilters">Quitar filtros</button>
+                    <button class="btn btn-sm btn-secondary" t-if="state.data" t-on-click="openLines">
+                        <i class="fa fa-list me-1"/>Ver líneas
+                    </button>
+                </div>
+            </div>
+
+            <div t-if="state.loading and !state.data" class="o_oee_empty">Cargando…</div>
+            <div t-if="state.error" class="alert alert-danger m-3" t-out="state.error"/>
+
+            <t t-if="state.data">
+            <div class="o_oee_body" t-att-class="state.loading ? 'o_oee_busy' : ''">
+
+                <div t-if="d.warnings.length" class="o_oee_warnings">
+                    <t t-foreach="d.warnings" t-as="w" t-key="w_index">
+                        <div><i class="fa fa-exclamation-triangle me-2"/><t t-out="w"/></div>
+                    </t>
+                </div>
+
+                <!-- ======================= 1. OEE ======================= -->
+                <section class="o_oee_card o_oee_hero">
+                    <div class="o_oee_hero_main">
+                        <div class="o_oee_big" t-out="pct(k.oee)"/>
+                        <div class="o_oee_big_label">OEE</div>
+                        <div class="o_oee_status" t-att-class="'o_st_' + k.status">
+                            <i t-att-class="'fa ' + statusIcon(k.status)"/>
+                            <span t-out="statusLabel(k.status)"/>
+                            <span class="o_oee_muted"> · meta <t t-out="pct(k.target)"/></span>
+                        </div>
+                    </div>
+                    <div class="o_oee_pillars">
+                        <t t-foreach="[['Disponibilidad', k.d, 'operando / cargado'], ['Rendimiento', k.r, 'estándar / operando'], ['Calidad', k.c, 'buenas / producidas']]" t-as="p" t-key="p[0]">
+                            <div class="o_oee_pillar">
+                                <div class="o_oee_pillar_val" t-out="pct(p[1])"/>
+                                <div class="o_oee_pillar_name" t-out="p[0]"/>
+                                <div class="o_oee_track"><div class="o_oee_fill" t-att-style="'width:' + Math.min(p[1] || 0, 100) + '%'"/></div>
+                                <div class="o_oee_muted small" t-out="p[2]"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="o_oee_counts">
+                        <div><span class="o_oee_count" t-out="num(k.buenas)"/><span>unidades buenas</span></div>
+                        <div><span class="o_oee_count" t-out="num(k.averias)"/><span>averías</span></div>
+                        <div><span class="o_oee_count" t-out="money(k.cost_lost)"/><span>costo del tiempo perdido</span></div>
+                    </div>
+                    <div class="o_oee_narrative" t-if="k.narrative">
+                        La mayor pérdida del periodo fueron <b t-out="t(k.narrative.minutes)"/> por
+                        <t t-out="k.narrative.reason"/>.
+                        <t t-if="k.narrative.units">Al ritmo estándar, ese tiempo habría dado unas
+                            <b t-out="num(k.narrative.units)"/> unidades buenas más.</t>
+                    </div>
+                </section>
+
+                <!-- ============ 2, 3, 4: Plan · Calidad · Paradas ============ -->
+                <div class="o_oee_grid3">
+                    <section class="o_oee_card">
+                        <h3>Cumplimiento del plan</h3>
+                        <t t-if="k.plan.available and k.plan.planificado">
+                            <div class="o_oee_stat" t-out="pct(k.plan.cumplimiento)"/>
+                            <div class="o_oee_track"><div class="o_oee_fill" t-att-style="'width:' + Math.min(k.plan.cumplimiento || 0, 100) + '%'"/></div>
+                            <div class="o_oee_kv"><span>Planificado</span><b t-out="num(k.plan.planificado)"/></div>
+                            <div class="o_oee_kv"><span>Conforme</span><b t-out="num(k.plan.conforme)"/></div>
+                        </t>
+                        <div t-else="" class="o_oee_muted">Sin órdenes programadas en el periodo.</div>
+                        <div class="o_oee_kv"><span>Horas de setup (autorizadas)</span><b t-out="t(k.min.autorizada)"/></div>
+                        <div class="o_oee_muted small" t-out="k.plan.note"/>
+                    </section>
+                    <section class="o_oee_card">
+                        <h3>Calidad y mermas</h3>
+                        <div class="o_oee_stat" t-out="pct1(k.scrap_rate)"/>
+                        <div class="o_oee_muted">tasa de scrap · averías / producidas</div>
+                        <div class="o_oee_kv"><span>Piezas no conformes</span><b t-out="num(k.averias)"/></div>
+                        <div class="o_oee_kv"><span>Tiempo perdido en averías</span><b t-out="t(k.min.calidad)"/></div>
+                    </section>
+                    <section class="o_oee_card">
+                        <h3>Paradas no programadas</h3>
+                        <div class="o_oee_stat" t-out="t(k.min.no_programada)"/>
+                        <div class="o_oee_muted">fallas, falta de material o de operario</div>
+                        <div class="o_oee_kv"><span>Eventos de parada</span><b t-out="num(k.eventos)"/></div>
+                        <div class="o_oee_kv"><span>Microparadas (&lt; 5 min)</span><b t-out="num(k.microparadas)"/></div>
+                    </section>
+                </div>
+
+                <!-- ======================= CASCADA ======================= -->
+                <section class="o_oee_card">
+                    <h3>En qué se fueron los minutos</h3>
+                    <div class="o_oee_muted mb-2">Se parte del tiempo de los turnos y se descuenta cada pérdida hasta el tiempo que se convirtió en producto bueno.</div>
+                    <t t-foreach="waterfall" t-as="s" t-key="s_index">
+                        <div class="o_oee_wf_row" t-att-title="s.label + ': ' + t(s.value)">
+                            <div class="o_oee_wf_label">
+                                <b t-out="s.label"/>
+                                <span class="o_oee_muted small" t-out="s.sub"/>
+                            </div>
+                            <div class="o_oee_wf_track">
+                                <div class="o_oee_wf_bar" t-att-class="'k_' + s.kind"
+                                     t-att-style="'left:' + s.left + '%;width:' + s.width + '%'"/>
+                            </div>
+                            <div class="o_oee_wf_val">
+                                <b><t t-if="s.kind !== 'total' and s.kind !== 'good'">-</t><t t-out="t(s.value)"/></b>
+                                <span class="o_oee_muted small"><t t-out="s.share"/>% del total</span>
+                            </div>
+                        </div>
+                    </t>
+                </section>
+
+                <!-- ============== MÁQUINAS · TURNOS ============== -->
+                <div class="o_oee_grid2">
+                    <section class="o_oee_card">
+                        <h3>Qué máquinas perdieron más tiempo</h3>
+                        <div class="o_oee_muted mb-2">En horas, no en %: una máquina al 50% durante una hora pesa menos que una al 80% durante todo el turno.</div>
+                        <div t-if="!lostMachines.length" class="o_oee_muted">Sin pérdidas en el periodo.</div>
+                        <t t-foreach="lostMachines" t-as="r" t-key="r.id">
+                            <div class="o_oee_hbar_row" t-on-click="() => this.pickMachine(r.id)" t-att-title="r.name">
+                                <div class="o_oee_hbar_label" t-out="r.code"/>
+                                <div class="o_oee_hbar_track">
+                                    <t t-foreach="r.segs" t-as="sg" t-key="sg.kind">
+                                        <div class="o_oee_seg" t-att-class="'k_' + sg.kind"
+                                             t-att-style="'width:' + sg.w + '%'"
+                                             t-att-title="sg.label + ': ' + t(sg.v)"/>
+                                    </t>
+                                    <span class="o_oee_hbar_val"><t t-out="t(r.min.perdido)"/> · OEE <t t-out="pct(r.oee)"/></span>
+                                </div>
+                            </div>
+                        </t>
+                        <div class="o_oee_legend">
+                            <span><i class="k_unplanned"/>Paradas no programadas</span>
+                            <span><i class="k_speed"/>Velocidad</span>
+                            <span><i class="k_quality"/>Calidad (averías)</span>
+                        </div>
+                    </section>
+                    <section class="o_oee_card">
+                        <h3>Cómo se comportó cada turno</h3>
+                        <div class="o_oee_muted mb-2">
+                            <t t-if="d.shift_mode === 'shift'">Cada barra es un turno completo.</t>
+                            <t t-else="">Más de 7 días: cada barra es un día.</t>
+                            Línea punteada = meta <t t-out="pct(k.target)"/>.
+                        </div>
+                        <div t-if="!shiftBars.length" class="o_oee_muted">Sin datos.</div>
+                        <div class="o_oee_cols" t-if="shiftBars.length">
+                            <div class="o_oee_target" t-att-style="'bottom: calc(34px + (100% - 52px) * ' + (targetLine / 100) + ')'"/>
+                            <t t-foreach="shiftBars" t-as="sb" t-key="sb_index">
+                                <div class="o_oee_col" t-att-title="sb.label + ' · OEE ' + pct(sb.oee) + ' · D ' + pct(sb.d) + ' · R ' + pct(sb.r) + ' · C ' + pct(sb.c)">
+                                    <span class="o_oee_col_val" t-out="pct(sb.oee)"/>
+                                    <div class="o_oee_col_bar" t-att-class="'o_bg_' + sb.status" t-att-style="'height:' + sb.h + '%'"/>
+                                    <span class="o_oee_col_label" t-out="sb.label"/>
+                                </div>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ======================= PARETOS ======================= -->
+                <div class="o_oee_grid3">
+                    <t t-foreach="[['Paradas no programadas por motivo', d.stops_unplanned, 'unplanned', true], ['Paradas autorizadas (setup)', d.stops_authorized, 'authorized', true], ['Piezas no conformes por defecto', d.defects.rows, 'quality', false]]" t-as="pa" t-key="pa[0]">
+                        <section class="o_oee_card">
+                            <h3 t-out="pa[0]"/>
+                            <div t-if="!pa[1].length" class="o_oee_muted">
+                                <t t-if="pa[2] === 'quality' and !d.defects.available">Sin tipificación de averías disponible.</t>
+                                <t t-else="">Sin registros en el periodo.</t>
+                            </div>
+                            <t t-set="pmax" t-value="paretoMax(pa[1])"/>
+                            <t t-foreach="pa[1].slice(0, 8)" t-as="row" t-key="row_index">
+                                <div class="o_oee_par_row" t-att-title="row.label + (pa[3] ? ' · ' + row.events + ' eventos · ' + row.micro + ' microparadas' : '')">
+                                    <div class="o_oee_par_label" t-out="row.label"/>
+                                    <div class="o_oee_par_track">
+                                        <div class="o_oee_seg" t-att-class="'k_' + pa[2]" t-att-style="'width:' + (100 * row.value / pmax) + '%'"/>
+                                    </div>
+                                    <div class="o_oee_par_val">
+                                        <b t-out="pa[3] ? t(row.value) : num(row.value)"/>
+                                        <span class="o_oee_muted small"><t t-out="row.cum"/>% acum.</span>
+                                    </div>
+                                </div>
+                            </t>
+                        </section>
+                    </t>
+                </div>
+
+                <!-- ======================= PESTAÑAS ======================= -->
+                <section class="o_oee_card">
+                    <div class="o_oee_tabs">
+                        <t t-foreach="[['machines', 'Máquinas'], ['orders', 'Órdenes'], ['products', 'Productos'], ['operators', 'Operarios']]" t-as="tb" t-key="tb[0]">
+                            <button class="btn btn-link" t-att-class="state.tab === tb[0] ? 'o_active' : ''"
+                                    t-on-click="() => this.setTab(tb[0])" t-out="tb[1]"/>
+                        </t>
+                    </div>
+                    <div class="table-responsive">
+                    <table class="table table-sm o_oee_table">
+                        <thead>
+                            <tr>
+                                <th class="o_sort" t-on-click="() => this.sortBy('name')">Nombre</th>
+                                <th class="o_sort" t-on-click="() => this.sortBy('registrado')">Uso del tiempo</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('oee')">OEE</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('d')">Disp.</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('r')">Rend.</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('c')">Calidad</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('buenas')">Buenas</th>
+                                <th class="o_sort text-end" t-on-click="() => this.sortBy('averias')">Averías</th>
+                                <t t-if="state.tab === 'machines'">
+                                    <th class="o_sort text-end" t-on-click="() => this.sortBy('cumplimiento')">Plan %</th>
+                                    <th class="o_sort text-end" t-on-click="() => this.sortBy('cost_lost')">Costo perdido</th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="tabRows" t-as="row" t-key="row.id">
+                                <tr>
+                                    <td>
+                                        <span t-if="row.code" class="o_oee_code" t-out="row.code"/>
+                                        <span t-out="state.tab === 'machines' ? row.group : row.name"/>
+                                    </td>
+                                    <td class="o_oee_use_cell">
+                                        <div class="o_oee_use" t-att-title="t(row.min.registrado) + ' registrados'">
+                                            <t t-foreach="useBar(row)" t-as="ub" t-key="ub.kind">
+                                                <div class="o_oee_seg" t-att-class="'k_' + ub.kind"
+                                                     t-att-style="'width:' + ub.w + '%'"
+                                                     t-att-title="ub.label + ': ' + t(ub.v)"/>
+                                            </t>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="o_oee_badge" t-att-class="'o_st_' + row.status" t-att-title="statusLabel(row.status) + (row.target ? ' · meta ' + pct(row.target) : '')">
+                                            <i t-att-class="'fa ' + statusIcon(row.status)"/> <t t-out="pct(row.oee)"/>
+                                        </span>
+                                    </td>
+                                    <td class="text-end" t-out="pct(row.d)"/>
+                                    <td class="text-end" t-out="pct(row.r)"/>
+                                    <td class="text-end" t-out="pct(row.c)"/>
+                                    <td class="text-end" t-out="num(row.buenas)"/>
+                                    <td class="text-end" t-out="num(row.averias)"/>
+                                    <t t-if="state.tab === 'machines'">
+                                        <td class="text-end" t-out="pct(row.cumplimiento)"/>
+                                        <td class="text-end" t-out="money(row.cost_lost)"/>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    <div class="o_oee_legend">
+                        <span><i class="k_good"/>Valioso</span>
+                        <span><i class="k_speed"/>Velocidad</span>
+                        <span><i class="k_quality"/>Calidad</span>
+                        <span><i class="k_unplanned"/>No programadas</span>
+                        <span><i class="k_authorized"/>Autorizadas</span>
+                    </div>
+                </section>
+            </div>
+            </t>
+        </div>
+    </t>
+
+</templates>
