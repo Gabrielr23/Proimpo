@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Cantidad hecha de los componentes a partir de lo realmente transferido
-(Odoo 18) — v0.8.
+(Odoo 18) — v0.10.
 
 Base: el comportamiento del módulo original (el que funcionaba en planta),
 más los arreglos y acuerdos con PROIMPO:
@@ -24,7 +24,14 @@ Cantidad hecha:
     liquidan sobreconsumos, traslados adicionales, desechos y devoluciones.
   * Nunca negativo.
   * Condición: la última transferencia enviada del componente debe tener
-    "Transferido totalmente"; si no, Cantidad hecha = 0.
+    "Transferido totalmente". Si no la hay, el módulo no interviene (v0.9):
+    el componente queda con la proporción nativa de la LdM y Odoo valida el
+    inventario al cerrar.
+
+Valor manual del operario (v0.10):
+  * Sin transferencia: se conserva lo que digitó (como Odoo nativo).
+  * Con transferencia: se conserva solo el 0; cualquier otro valor lo
+    reemplaza lo transferido (gana la transferencia).
 """
 
 from markupsafe import Markup
@@ -32,11 +39,13 @@ from markupsafe import Markup
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from odoo.tools import html_escape
-from odoo.tools.float_utils import float_compare, float_round
+from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 
 # Evita recalcular mientras Odoo cierra la orden (divide movimientos, crea
 # backorders): el valor ya quedó fijado justo antes de cerrar.
 MUC_SKIP = 'muc_skip_recompute'
+# Escrituras del propio módulo (no son ajustes manuales del operario).
+MUC_WRITING = 'muc_writing'
 OPEN_STATES = ('confirmed', 'progress', 'to_close')
 
 
@@ -111,35 +120,109 @@ class MrpProduction(models.Model):
         return float_compare(self.qty_producing, pending,
                              precision_rounding=self.product_uom_id.rounding) >= 0
 
+    def _muc_plan(self, final=None, diag=None, ignore_manual=None):
+        """Lo que el módulo pondría en cada componente abierto, sin escribir.
+        Devuelve [(movimiento, cantidad, tipo)] con tipo:
+          'module' -> calculado desde lo transferido
+          'native' -> sin transferencia: proporción LdM (nativo)
+          'manual' -> valor digitado por el operario, se conserva
+        `ignore_manual`: movimientos cuya marca manual no se tiene en cuenta
+        (para saber qué habría puesto el módulo)."""
+        self.ensure_one()
+        ignore_manual = ignore_manual or self.env['stock.move']
+        is_final = self._muc_is_final_close() if final is None else final
+        plan = []
+        available_by_product = {}
+        for move in self.move_raw_ids:
+            if move.state in ('done', 'cancel') or not move.product_id:
+                continue
+            key = move.product_id.id
+            if key not in available_by_product:
+                available_by_product[key] = self._muc_available(move, diag)
+            available = available_by_product[key]
+            manual = move.muc_manual and move not in ignore_manual
+            name = move.product_id.display_name
+            if available is None:
+                if manual:
+                    # Sin transferencia y valor del operario: se respeta (nativo).
+                    if diag is not None:
+                        diag.append("   → %s: sin transferencia, valor manual del operario "
+                                    "= %.2f %s (se conserva)" % (name, move.quantity, move.product_uom.name))
+                    plan.append((move, move.quantity, 'manual'))
+                    continue
+                # Sin Pick Components con "Transferido totalmente": como lo pone
+                # Odoo (proporción de la LdM); al cerrar, Odoo valida el
+                # inventario como siempre.
+                native = self._muc_round(max(
+                    (self.qty_producing - self.qty_produced) * move.unit_factor, 0.0), move.product_uom)
+                if diag is not None:
+                    diag.append("   → %s: sin transferencia → comportamiento nativo de Odoo "
+                                "(proporción LdM) = %.2f %s" % (name, native, move.product_uom.name))
+                plan.append((move, native, 'native'))
+                continue
+            if manual and float_is_zero(move.quantity, precision_rounding=move.product_uom.rounding):
+                # El operario puso 0 a propósito: gana el manual.
+                if diag is not None:
+                    diag.append("   → %s: el operario puso 0 → se conserva 0" % name)
+                plan.append((move, 0.0, 'manual'))
+                continue
+            # Con transferencia, cualquier otro valor manual lo reemplaza lo
+            # transferido (gana la transferencia).
+            if is_final:
+                qty = available
+            else:
+                native = (self.qty_producing - self.qty_produced) * move.unit_factor
+                qty = min(max(native, 0.0), available)
+            qty = self._muc_round(max(qty, 0.0), move.product_uom)
+            available_by_product[key] = max(available - qty, 0.0)
+            if diag is not None:
+                diag.append("   → %s: %s → Cantidad hecha = %.2f %s (antes: %.2f%s)" % (
+                    name,
+                    "cierre final (todo lo disponible)" if is_final else "cierre parcial (proporción LdM)",
+                    qty, move.product_uom.name, move.quantity,
+                    ", manual del operario: gana la transferencia" if manual else ""))
+            plan.append((move, qty, 'module'))
+        return plan
+
     def _muc_recompute(self, final=None, diag=None):
         for production in self:
             if production.state not in OPEN_STATES:
                 continue
-            is_final = production._muc_is_final_close() if final is None else final
-            available_by_product = {}
-            for move in production.move_raw_ids:
-                if move.state in ('done', 'cancel') or not move.product_id:
+            for move, qty, kind in production._muc_plan(final=final, diag=diag):
+                if kind == 'manual':
                     continue
-                key = move.product_id.id
-                if key not in available_by_product:
-                    available_by_product[key] = production._muc_available(move, diag)
-                available = available_by_product[key]
-                if available is None:  # sin "Transferido totalmente"
-                    qty = 0.0
-                elif is_final:
-                    qty = available
+                if kind == 'native':
+                    production._muc_apply_native(move, qty)
                 else:
-                    native = (production.qty_producing - production.qty_produced) * move.unit_factor
-                    qty = min(max(native, 0.0), available)
-                qty = production._muc_round(max(qty, 0.0), move.product_uom)
-                if available is not None:
-                    available_by_product[key] = max(available - qty, 0.0)
-                if diag is not None:
-                    diag.append("   → %s: %s → Cantidad hecha = %.2f %s (antes: %.2f)" % (
-                        move.product_id.display_name,
-                        "cierre final (todo lo disponible)" if is_final else "cierre parcial (proporción LdM)",
-                        qty, move.product_uom.name, move.quantity))
-                production._muc_apply(move, qty)
+                    production._muc_apply(move, qty)
+
+    def _muc_register_manual(self, moves):
+        """El operario cambió la Cantidad hecha de `moves`: marcar como
+        manual lo que no coincide con lo que pondría el módulo."""
+        self.ensure_one()
+        expected = {m.id: (q, kind) for m, q, kind in self._muc_plan(ignore_manual=moves)}
+        for move in moves:
+            if move.id not in expected:
+                continue
+            qty, kind = expected[move.id]
+            rounding = move.product_uom.rounding
+            if kind == 'module':
+                # Con transferencia solo cuenta el 0 manual.
+                manual = float_is_zero(move.quantity, precision_rounding=rounding) \
+                    and not float_is_zero(qty, precision_rounding=rounding)
+            else:
+                manual = bool(float_compare(move.quantity, qty, precision_rounding=rounding))
+            vals = {}
+            if manual != move.muc_manual:
+                vals['muc_manual'] = manual
+            if manual:
+                # Igual que Odoo cuando el usuario digita: consumo manual.
+                if not move.manual_consumption:
+                    vals['manual_consumption'] = True
+                if not move.picked:
+                    vals['picked'] = True
+            if vals:
+                move.with_context(**{MUC_WRITING: True}).write(vals)
 
     def _muc_available(self, raw_move, diag=None):
         """Disponible del componente para el grupo, en la UdM del movimiento
@@ -217,22 +300,73 @@ class MrpProduction(models.Model):
         return float_round(float_round(qty, precision_rounding=uom.rounding),
                            precision_digits=digits, rounding_method='HALF-UP')
 
+    def _muc_apply_native(self, move, qty):
+        """Deja el componente como lo hace Odoo de forma nativa: cantidad
+        proporcional, sin consumo manual (así Odoo la sigue ajustando y valida
+        el inventario al cerrar)."""
+        if not isinstance(move.id, int):  # vista previa en el formulario
+            if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
+                move.quantity = qty
+            move.manual_consumption = False
+            move.picked = bool(qty)
+            return
+        move = move.with_context(**{MUC_WRITING: True})
+        if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
+            move.write({'quantity': qty})
+        extra = {}
+        if move.muc_manual:
+            extra['muc_manual'] = False
+        if move.manual_consumption:
+            extra['manual_consumption'] = False
+        if bool(qty) != move.picked:
+            extra['picked'] = bool(qty)
+        if extra:
+            move.write(extra)
+
     def _muc_apply(self, move, qty):
         if not isinstance(move.id, int):  # vista previa en el formulario
             if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
                 move.quantity = qty
             return
+        move = move.with_context(**{MUC_WRITING: True})
         if float_compare(move.quantity, qty, precision_rounding=move.product_uom.rounding):
             move.with_context(force_manual_consumption=True).quantity = qty
         # Igual que cuando el usuario digita la cantidad: Odoo consume
         # exactamente esto al producir y no lo cambia por la proporción LdM.
         extra = {}
+        if move.muc_manual:
+            extra['muc_manual'] = False
         if not move.manual_consumption:
             extra['manual_consumption'] = True
         if qty:
             extra['picked'] = True
         if extra:
             move.write(extra)
+
+
+class StockMove(models.Model):
+    _inherit = 'stock.move'
+
+    muc_manual = fields.Boolean(
+        string="Cantidad hecha manual", copy=False,
+        help="El operario digitó la Cantidad hecha de este componente. Sin "
+             "transferencia se conserva su valor; con transferencia solo se "
+             "conserva el 0 (cualquier otro valor lo reemplaza lo transferido).")
+
+    def write(self, vals):
+        ctx = self.env.context
+        track = not ctx.get(MUC_WRITING) and not ctx.get(MUC_SKIP) and (
+            'quantity' in vals
+            or ('move_line_ids' in vals and not ctx.get('auto_conso')))
+        res = super().write(vals)
+        if track:
+            moves = self.filtered(lambda m: m.raw_material_production_id
+                                  and m.state not in ('done', 'cancel')
+                                  and m.raw_material_production_id.state in OPEN_STATES)
+            for production in moves.raw_material_production_id:
+                production._muc_register_manual(moves & production.move_raw_ids)
+                production._muc_recompute()
+        return res
 
 
 class MrpProductionWorkcenterLine(models.Model):
