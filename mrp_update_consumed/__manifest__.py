@@ -13,12 +13,16 @@ consumido en cierres anteriores.
 
 Cierre parcial: proporción de la lista de materiales, con tope en lo
 disponible. Cierre final o "Sin backorder": todo lo disponible. Nunca
-negativo. Requiere "Transferido totalmente" en el último envío.
+negativo. Requiere "Transferido totalmente" en el último envío; sin
+transferencia, el componente queda como lo pone Odoo (proporción LdM).
+
+Valor manual: con transferencia gana lo transferido; sin transferencia se
+conserva lo digitado (0 = no se consume).
     """,
     'author': "Doxoo S.A.S.",
     'website': "http://www.doxoo.co",
     'category': 'Manufacturing/Manufacturing',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.3.0',
     'depends': ['mrp'],
     'data': [
         'views/mrp_update_consumed_view.xml',

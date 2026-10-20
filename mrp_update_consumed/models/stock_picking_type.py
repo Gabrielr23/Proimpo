@@ -9,6 +9,6 @@ class StockPickingType(models.Model):
     consumed = fields.Boolean(
         string="Consumo en produccion",
         help="Marcar en los tipos de operación que llevan componentes a "
-             "pre-producción (p. ej. Pick Components). Solo las transferencias "
+             "producción (p. ej. Pick Components). Solo las transferencias "
              "de estos tipos (y sus devoluciones) cuentan para la Cantidad "
              "hecha de las órdenes de fabricación.")
