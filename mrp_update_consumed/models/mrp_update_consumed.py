@@ -30,8 +30,8 @@ Cantidad hecha:
 
 Valor manual del operario (v0.10):
   * Sin transferencia: se conserva lo que digitó (como Odoo nativo).
-  * Con transferencia: se conserva solo el 0; cualquier otro valor lo
-    reemplaza lo transferido (gana la transferencia).
+  * Con transferencia: cualquier valor (también 0) lo reemplaza lo
+    transferido (gana la transferencia).
 """
 
 from markupsafe import Markup
@@ -39,7 +39,7 @@ from markupsafe import Markup
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from odoo.tools import html_escape
-from odoo.tools.float_utils import float_compare, float_is_zero, float_round
+from odoo.tools.float_utils import float_compare, float_round
 
 # Evita recalcular mientras Odoo cierra la orden (divide movimientos, crea
 # backorders): el valor ya quedó fijado justo antes de cerrar.
@@ -160,14 +160,8 @@ class MrpProduction(models.Model):
                                 "(proporción LdM) = %.2f %s" % (name, native, move.product_uom.name))
                 plan.append((move, native, 'native'))
                 continue
-            if manual and float_is_zero(move.quantity, precision_rounding=move.product_uom.rounding):
-                # El operario puso 0 a propósito: gana el manual.
-                if diag is not None:
-                    diag.append("   → %s: el operario puso 0 → se conserva 0" % name)
-                plan.append((move, 0.0, 'manual'))
-                continue
-            # Con transferencia, cualquier otro valor manual lo reemplaza lo
-            # transferido (gana la transferencia).
+            # Con transferencia, cualquier valor manual (también 0) lo
+            # reemplaza lo transferido: gana la transferencia.
             if is_final:
                 qty = available
             else:
@@ -207,9 +201,8 @@ class MrpProduction(models.Model):
             qty, kind = expected[move.id]
             rounding = move.product_uom.rounding
             if kind == 'module':
-                # Con transferencia solo cuenta el 0 manual.
-                manual = float_is_zero(move.quantity, precision_rounding=rounding) \
-                    and not float_is_zero(qty, precision_rounding=rounding)
+                # Con transferencia gana siempre lo transferido.
+                manual = False
             else:
                 manual = bool(float_compare(move.quantity, qty, precision_rounding=rounding))
             vals = {}
@@ -349,9 +342,9 @@ class StockMove(models.Model):
 
     muc_manual = fields.Boolean(
         string="Cantidad hecha manual", copy=False,
-        help="El operario digitó la Cantidad hecha de este componente. Sin "
-             "transferencia se conserva su valor; con transferencia solo se "
-             "conserva el 0 (cualquier otro valor lo reemplaza lo transferido).")
+        help="El operario digitó la Cantidad hecha de este componente sin "
+             "transferencia: se conserva su valor (también 0). Con "
+             "transferencia gana siempre lo transferido.")
 
     def write(self, vals):
         ctx = self.env.context
