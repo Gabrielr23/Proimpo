@@ -74,3 +74,37 @@ Se ubican solos en cada actualización del módulo (`data/menu_placement.xml`
 → `mrp.averias.execution.setup.fix_menu_placement()`), bajo Calidad:
 "Registro de Averías" (todas las hojas, con su total) y, dentro de
 Configuración, "Categorías de Avería".
+
+## 6. Qué cambia en 18.0.1.6.0 (feedback de la prueba piloto)
+
+Nada de esto requiere pasos manuales; todo se aplica al actualizar.
+
+- **Registrar avance** cierra el tramo y abre el siguiente a la misma hora
+  exacta (sin huecos ni tramos cruzados, aunque registre otro usuario).
+- **Operario** (opcional): trae el del tramo abierto; si hubo cambio de
+  turno (`mrp_shift_resolver`) queda vacío y el escogido va al tramo
+  nuevo; el tramo que cierra conserva el operario del turno que sale.
+- **Tipo de productividad**: todo tramo nace como "Tiempo de productividad
+  plena". Al cerrar: rendimiento = (buenas + averías) × estándar por
+  pieza ÷ minutos. ≥ umbral → plena; < umbral → "Velocidad reducida" o la
+  causa de tipo Rendimiento que escojan. 0 buenas → pide motivo de parada.
+  Estándar: ciclo efectivo del molde ÷ cavidades; sin molde, duración por
+  defecto de la operación.
+- **Umbral**: Ajustes → Técnico → Parámetros del sistema →
+  `mrp_averias_execution.umbral_rendimiento` (95 por defecto).
+- **Paradas dentro del tramo** (motivo + minutos) y **huecos** antes del
+  tramo: se crean como líneas propias.
+- **Pausar / Terminar nativos** ya no parten el tramo en "Velocidad
+  reducida" por tiempo acumulado de la OT.
+- **Bitácora**: Fabricación → Informes → Bitácora de Seguimiento de
+  tiempo. Registra correcciones y borrados de tramos cerrados (quién,
+  cuándo, antes y después). No escribe en el chatter de la OP.
+- **Campos nuevos en Seguimiento de tiempo** (se pueden agregar como
+  columna con Studio): "Registrado en vivo" y "Rendimiento (%)".
+- **Catálogo**: "P03 Ajuste de proceso" pasa a Disponibilidad y se crea
+  "P10 Proceso inestable" (Rendimiento, Inyectoras). Causas nuevas de
+  velocidad (desgaste de herramienta, microparadas, etc.) se crean en
+  Razones de pérdida con tipo Rendimiento y tipo de CT; aparecen solas en
+  el wizard.
+- Corregido: los menús "Registro de Averías" y "Averías Tipificadas" no
+  se creaban al actualizar si "Categorías de Avería" ya existía.

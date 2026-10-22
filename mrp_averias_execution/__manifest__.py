@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.5.0',
+    'version': '18.0.1.6.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -34,6 +34,13 @@ agrega:
     del módulo, no de las plantillas de hoja de trabajo de Studio.
     Incluye turno (shift_name/shift_date/shift_is_planned), calculado
     por el módulo mrp_shift_resolver.
+  * 18.0.1.6.0 (feedback de la prueba piloto 21-10): Registrar avance con
+    operario (opcional, vacío en cambio de turno), tramos sin huecos ni
+    cruces (cierra y abre a la misma hora), tipo de productividad por
+    rendimiento real al cerrar el tramo (umbral en el parámetro
+    mrp_averias_execution.umbral_rendimiento, 95 por defecto), paradas
+    dentro del tramo y huecos con motivo, bitácora de correcciones del
+    Seguimiento de tiempo (Fabricación > Informes), P03 y P10 separadas.
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.
@@ -53,6 +60,7 @@ este módulo define un modelo con el mismo nombre técnico
         'quality_mrp',
         'quality_control_worksheet',
         'mrp_shift_resolver',
+        'hr',
     ],
     'data': [
         'security/ir.model.access.csv',
@@ -61,6 +69,8 @@ este módulo define un modelo con el mismo nombre técnico
         'views/mrp_averia_linea_views.xml',
         'views/quality_check_views.xml',
         'views/mrp_averia_report_views.xml',
+        'views/mrp_seguimiento_log_views.xml',
+        'data/ir_config_parameter_data.xml',
         'data/mrp_averia_categoria_data.xml',
         'data/mrp_workcenter_productivity_loss_data.xml',
         'data/menu_placement.xml',

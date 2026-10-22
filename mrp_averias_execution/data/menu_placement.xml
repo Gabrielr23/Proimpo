@@ -11,4 +11,7 @@
          views/mrp_workorder_progress_wizard_views.xml (necesita que
          la acción del wizard ya exista). -->
     <function model="mrp.averias.execution.setup" name="fix_registrar_avance_button" eval="[[]]"/>
+
+    <!-- P03 / P10 partidas en dos razones (una sola vez). -->
+    <function model="mrp.averias.execution.setup" name="fix_catalogo_p03_p10" eval="[[]]"/>
 </odoo>

@@ -94,4 +94,8 @@ class MrpAveriaLinea(models.Model):
         self.ensure_one()
         linea_tiempo = self.quality_check_id.x_studio_linea_tiempo_1
         if linea_tiempo and linea_tiempo.x_studio_averias != total:
-            linea_tiempo.sudo().write({'x_studio_averias': total})
+            # Flujo normal (hoja de averías), no una corrección: no va a
+            # la bitácora. Sí reclasifica el tramo, porque las averías
+            # cuentan como piezas en el rendimiento.
+            linea_tiempo.sudo().with_context(seguimiento_sin_log=True).write(
+                {'x_studio_averias': total})

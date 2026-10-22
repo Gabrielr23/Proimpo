@@ -8,3 +8,4 @@ from . import mrp_averia_linea
 from . import mrp_averia_categoria_linea
 from . import quality_check
 from . import mrp_averia_report
+from . import mrp_seguimiento_log
