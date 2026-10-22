@@ -1,32 +1,26 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'OEE por Turno y Tablero OEE',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.3.0',
     'summary': 'OEE con cascada de minutos (paradas autorizadas, no programadas, '
                'velocidad y calidad) y tablero de planta.',
     'description': """
 OEE por Turno y Tablero OEE
 ===========================
 
-Modelo de minutos, igual al tablero de Access de planta:
+Modelo de minutos (igual al tablero de Access de planta): D = operando / cargado;
+R = minutos estándar de lo producido / minutos operando; C = buenas / producidas;
+OEE = D x R x C.
 
-  registrado = operando + paradas autorizadas + paradas no programadas
-  cargado    = registrado - paradas autorizadas
-  D = operando / cargado
-  R = minutos estándar de lo producido / minutos operando (con estándar)
-  C = buenas / (buenas + averías)
-  OEE = D x R x C
-
-- Paradas autorizadas: casilla en el catálogo de motivos de pérdida.
-- Estándar: ciclo TEÓRICO del molde / cavidades; si no hay molde, el ciclo
-  manual de la operación.
-- Los % se calculan siempre sobre sumas de minutos (nunca promediando %).
-- Meta y semáforo: oee_target del centro de trabajo (verde >= meta,
-  amarillo hasta 10 puntos debajo, rojo más abajo).
-
-Las columnas de turnos, moldes y operario se verifican al crear la vista
-(si una falta, el informe funciona con menos detalle y lo deja en el log).
-Tras actualizar turnos o moldes: Acciones > Regenerar informe de OEE.
+* Cada línea de tiempo se reparte entre los turnos del calendario que atraviesa.
+* Una línea de más de 12 h no cuenta y pasa a Calidad del registro.
+* El reloj de la máquina se cuenta una vez (salvo CT de la lista paralela).
+* Estándar: ciclo actual del molde, si no el teórico, si no el de la operación.
+* Paradas autorizadas: casilla en el catálogo de motivos de pérdida.
+* Datos en tabla actualizada por partes: cada 15 min y con Actualizar se
+  recalculan solo los últimos 3 días; actualizar el módulo no recalcula nada
+  salvo que cambie el cálculo (entonces el histórico se rehace en segundo plano).
+* Botón Recalcular periodo para correcciones más antiguas.
 """,
     'author': 'PROIMPO S.A.S.',
     'category': 'Manufacturing',
@@ -39,6 +33,8 @@ Tras actualizar turnos o moldes: Acciones > Regenerar informe de OEE.
     'data': [
         'security/ir.model.access.csv',
         'views/mrp_oee_report_views.xml',
+        'data/oee_params.xml',
+        'data/oee_data.xml',
         'data/menu_placement.xml',
     ],
     'assets': {

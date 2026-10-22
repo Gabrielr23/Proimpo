@@ -11,8 +11,8 @@ const RANGES = [
     ["month", "Mes"],
     ["custom", "Rango"],
 ];
-const STATUS_LABEL = { good: "En meta", warn: "Cerca de la meta", bad: "Bajo la meta", none: "Sin dato" };
-const STATUS_ICON = { good: "fa-check-circle", warn: "fa-exclamation-circle", bad: "fa-times-circle", none: "fa-minus-circle" };
+const STATUS_LABEL = { good: "En meta", warn: "Cerca de la meta", bad: "Bajo la meta", check: "Revisar datos (sobre 100%)", none: "Sin dato" };
+const STATUS_ICON = { good: "fa-check-circle", warn: "fa-exclamation-circle", bad: "fa-times-circle", check: "fa-question-circle", none: "fa-minus-circle" };
 
 export class OeeDashboard extends Component {
     static template = "mrp_oee_report.OeeDashboard";
@@ -27,6 +27,7 @@ export class OeeDashboard extends Component {
             error: false,
             data: null,
             tab: "machines",
+            view: "planta",
             unit: "h",
             sortKey: "oee",
             sortAsc: true,
@@ -59,11 +60,13 @@ export class OeeDashboard extends Component {
         };
     }
 
-    async load() {
+    async load(refresh = false) {
         this.state.loading = true;
         this.state.error = false;
         try {
-            this.state.data = await this.orm.call("mrp.oee.dashboard", "get_dashboard_data", [this.params()]);
+            const method = refresh === "period" ? "recompute_period_and_get"
+                : refresh ? "refresh_and_get" : "get_dashboard_data";
+            this.state.data = await this.orm.call("mrp.oee.dashboard", method, [this.params()]);
             const r = this.state.data.range;
             if (this.state.f.range !== "custom") {
                 this.state.f.date_from = r.from;
@@ -123,6 +126,37 @@ export class OeeDashboard extends Component {
             target: "current",
         });
     }
+    refresh() {
+        this.load(true);
+    }
+    recomputePeriod() {
+        this.load("period");
+    }
+    setView(v) {
+        this.state.view = v;
+    }
+    openRecord(model, id) {
+        if (!id) {
+            return;
+        }
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: model,
+            res_id: id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+    openShiftLines(row) {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: `Líneas ${row.workcenter} · ${row.shift}`,
+            res_model: "mrp.oee.line",
+            views: [[false, "list"]],
+            domain: [["workcenter_id", "=", row.workcenter_id], ["shift_date", "=", row.day], ["shift_name", "=", row.shift]],
+            target: "current",
+        });
+    }
     setTab(t) {
         this.state.tab = t;
     }
@@ -172,15 +206,18 @@ export class OeeDashboard extends Component {
         });
     }
     get waterfall() {
+        // Base 100% = turnos planeados (calendario) + turnos extra con registro.
         const m = this.k.min;
+        const base = this.k.min_base || m.registrado || 1;
         const steps = [];
-        const hasTurno = this.k.min_turno > 0;
-        const top = hasTurno ? Math.max(this.k.min_turno, m.registrado) : m.registrado;
-        if (hasTurno) {
-            steps.push({ label: "Duración de turnos", sub: "según el calendario del CT", kind: "total", start: 0, value: this.k.min_turno });
+        if (!this.k.base_registro) {
+            steps.push({ label: "Turnos planeados", sub: "según el calendario del CT, sin franjas de descanso", kind: "total", start: 0, value: this.k.min_turno });
+            if (this.k.min_extra > 0.5) {
+                steps.push({ label: "Turnos extra", sub: "registro en franjas de descanso o fuera del calendario", kind: "total", start: this.k.min_turno, value: this.k.min_extra });
+            }
             steps.push({ label: "Sin registrar", sub: "tiempo de turno sin línea de tiempo", kind: "neutral-loss", start: m.registrado, value: this.k.min_sin_registrar });
         }
-        steps.push({ label: "Tiempo registrado", sub: "suma del seguimiento de tiempo", kind: "total", start: 0, value: m.registrado });
+        steps.push({ label: "Tiempo registrado", sub: "repartido por turno, sin traslapes ni líneas olvidadas", kind: "total", start: 0, value: m.registrado });
         steps.push({ label: "Paradas autorizadas", sub: "setup, cambio de molde o color, purga", kind: "authorized", start: m.cargado, value: m.autorizada });
         steps.push({ label: "Tiempo cargado", sub: "lo que se debió producir · base de la Disponibilidad", kind: "total", start: 0, value: m.cargado });
         steps.push({ label: "Paradas no programadas", sub: "fallas, falta de material o de operario", kind: "unplanned", start: m.operando, value: m.no_programada });
@@ -190,14 +227,26 @@ export class OeeDashboard extends Component {
         }
         const vel = Math.max(m.velocidad, 0);
         steps.push({ label: "Pérdida de velocidad", sub: "corrió más lento que el estándar", kind: "speed", start: m.valioso + m.calidad, value: vel });
-        steps.push({ label: "Pérdida de calidad", sub: "tiempo que se fue en averías", kind: "quality", start: m.valioso, value: m.calidad });
-        steps.push({ label: "Tiempo valioso", sub: "convertido en producto bueno", kind: "good", start: 0, value: m.valioso });
+        steps.push({ label: "Pérdida de calidad", sub: "averías × minutos estándar por pieza", kind: "quality", start: m.valioso, value: m.calidad });
+        steps.push({ label: "Tiempo valioso", sub: "piezas buenas × minutos estándar por pieza", kind: "good", start: 0, value: m.valioso });
         return steps.map((s) => ({
             ...s,
-            left: top ? (100 * Math.max(s.start, 0)) / top : 0,
-            width: top ? Math.max((100 * s.value) / top, s.value > 0 ? 0.4 : 0) : 0,
-            share: top ? Math.round((100 * s.value) / top) : 0,
+            left: (100 * Math.max(s.start, 0)) / base,
+            width: Math.min(Math.max((100 * s.value) / base, s.value > 0 ? 0.4 : 0), 100),
+            share: Math.round((100 * s.value) / base),
         }));
+    }
+    get lastRefresh() {
+        const v = this.d && this.d.last_refresh;
+        if (!v) {
+            return "";
+        }
+        const dt = new Date(v.replace(" ", "T") + "Z");
+        return dt.toLocaleString("es-CO", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+    get reviewCount() {
+        const r = this.d.review;
+        return r.olvidadas.length + r.traslapes.length + r.huecos.length + r.ordenes.length;
     }
     get lostMachines() {
         const rows = this.d.machines.filter((r) => r.min.perdido > 0).slice(0, 10);

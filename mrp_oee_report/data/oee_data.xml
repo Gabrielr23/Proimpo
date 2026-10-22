@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Recalcula los últimos días (parámetro mrp_oee_report.recalc_days) cada 15 minutos. -->
+    <record id="cron_refresh_oee" model="ir.cron">
+        <field name="name">OEE: actualizar datos del tablero</field>
+        <field name="model_id" ref="model_mrp_oee_line"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Rehace el histórico en segundo plano cuando cambia el cálculo. Se
+         dispara sola después de actualizar el módulo; la frecuencia de 1 hora
+         es solo un respaldo si quedó a medias. -->
+    <record id="cron_rebuild_oee" model="ir.cron">
+        <field name="name">OEE: recalcular histórico en segundo plano</field>
+        <field name="model_id" ref="model_mrp_oee_line"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_rebuild()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

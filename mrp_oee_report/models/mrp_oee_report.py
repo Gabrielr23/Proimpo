@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
+from datetime import timedelta
 
-from odoo import fields, models, tools
+from odoo import fields, models
 
-from .oee_sql import build_line_sql
+from .oee_sql import drop_relation
 
 _logger = logging.getLogger(__name__)
 
@@ -52,7 +53,6 @@ class MrpOeeReport(models.Model):
                        help='Disponibilidad x Rendimiento x Calidad.')
 
     def _build_query(self):
-        line = build_line_sql(self.env.cr)
         d = "NULLIF(SUM(x.min_operando) + SUM(x.min_no_programada), 0)"
         r = "NULLIF(SUM(x.min_operando_std), 0)"
         c = "NULLIF(SUM(x.unidades_buenas) + SUM(x.unidades_averias), 0)"
@@ -80,27 +80,35 @@ class MrpOeeReport(models.Model):
                 100.0 * (SUM(x.min_operando) / {d})
                       * (SUM(x.min_estandar) / {r})
                       * (SUM(x.unidades_buenas) / {c})      AS oee
-            FROM ({line}) x
+            FROM mrp_oee_line x
             GROUP BY x.workcenter_id, x.shift_date, x.shift_name
-        """.format(line=line, d=d, r=r, c=c)
+        """.format(d=d, r=r, c=c)
 
     def init(self):
-        tools.drop_view_if_exists(self.env.cr, self._table)
+        drop_relation(self.env.cr, self._table)
         self.env.cr.execute('CREATE OR REPLACE VIEW %s AS (%s)'
                             % (self._table, self._build_query()))
         _logger.info('Vista %s regenerada.', self._table)
 
     def action_rebuild_view(self):
-        """Regenera ambas vistas sin actualizar el módulo (por ejemplo, después
-        de instalar el módulo de turnos o de moldes)."""
-        self.env['mrp.oee.line'].sudo().init()
+        """Regenera la vista por turno y manda a rehacer todo el histórico de
+        OEE en segundo plano (no bloquea a nadie)."""
         self.sudo().init()
+        Line = self.env['mrp.oee.line'].sudo()
+        self.env['ir.config_parameter'].sudo().set_param(
+            'mrp_oee_report.rebuild_until',
+            fields.Date.to_string(fields.Date.context_today(self) + timedelta(days=1)))
+        Line.recompute_recent()
+        cron = self.env.ref('mrp_oee_report.cron_rebuild_oee', raise_if_not_found=False)
+        if cron:
+            cron.sudo()._trigger()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Informe de OEE',
-                'message': 'Las vistas de OEE se regeneraron correctamente.',
+                'message': 'Los últimos días ya están al día. El resto del histórico '
+                           'se recalcula en segundo plano.',
                 'type': 'success',
                 'sticky': False,
             },

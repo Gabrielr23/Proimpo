@@ -6,4 +6,6 @@
         DESPUÉS del archivo que crea los menús.
     -->
     <function model="mrp.oee.report.setup" name="fix_menu_placement" eval="[]"/>
+    <!-- Recalcula los últimos días y dispara el histórico si el cálculo cambió. -->
+    <function model="mrp.oee.line" name="_after_update" eval="[]"/>
 </odoo>

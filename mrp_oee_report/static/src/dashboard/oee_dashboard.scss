@@ -12,19 +12,22 @@
     --oee-st-warn: #fab219;
     --oee-st-bad: #d03b3b;
     --oee-track: var(--bs-secondary-bg, #efeeea);
-    background: var(--bs-tertiary-bg, #f6f6f4);
+    background: $o-webclient-background-color;
     color: var(--bs-body-color);
 
-    .o_oee_filters {
+    .o_oee_sticky {
         position: sticky;
         top: 0;
         z-index: 5;
+        background: $o-view-background-color;
+    }
+    .o_oee_filters {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         align-items: center;
         padding: 10px 16px;
-        background: var(--bs-body-bg);
+        background: $o-view-background-color;
         border-bottom: 1px solid var(--bs-border-color);
     }
     .o_oee_date { width: 140px; }
@@ -37,10 +40,18 @@
     .o_oee_empty { padding: 48px; text-align: center; }
     .o_oee_muted { color: var(--bs-secondary-color); }
 
+    .o_oee_rebuild {
+        margin: 12px 16px 0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--oee-good-time);
+        background: $o-view-background-color;
+        font-size: .9em;
+    }
     .o_oee_warnings {
         border: 1px solid var(--oee-st-warn);
         border-left-width: 4px;
-        background: var(--bs-body-bg);
+        background: $o-view-background-color;
         border-radius: 6px;
         padding: 8px 12px;
         font-size: .9em;
@@ -48,7 +59,7 @@
     }
 
     .o_oee_card {
-        background: var(--bs-body-bg);
+        background: $o-view-background-color;
         border: 1px solid var(--bs-border-color);
         border-radius: 8px;
         padding: 16px 20px;
@@ -71,6 +82,7 @@
     .o_st_warn { color: #b07800; }
     .o_st_bad { color: var(--oee-st-bad); }
     .o_st_none { color: var(--bs-secondary-color); }
+    .o_st_check { color: #6250d6; }
     .o_oee_pillars { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 24px; }
     .o_oee_pillar_val { font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
     .o_oee_pillar_name { color: var(--bs-secondary-color); margin-bottom: 6px; }
@@ -155,9 +167,9 @@
     }
     .o_oee_target {
         position: absolute; left: 0; right: 0;
-        border-top: 2px dashed var(--bs-secondary-color);
+        border-top: 2px dashed var(--bs-emphasis-color, #222);
         pointer-events: none;
-        z-index: 1;
+        z-index: 2;
     }
     .o_oee_col {
         position: relative; flex: 1 0 28px; max-width: 64px; height: 100%;
@@ -173,6 +185,9 @@
     .o_bg_warn { background: var(--oee-st-warn); }
     .o_bg_bad { background: var(--oee-st-bad); }
     .o_bg_none { background: var(--oee-neutral); }
+    .o_bg_check {
+        background: repeating-linear-gradient(45deg, #6250d6 0 4px, #8f84e6 4px 8px);
+    }
 
     // ---------- Pareto ----------
     .o_oee_par_row {
@@ -182,6 +197,15 @@
     .o_oee_par_label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .o_oee_par_track { height: 14px; display: flex; }
     .o_oee_par_val { display: flex; flex-direction: column; text-align: right; line-height: 1.15; font-variant-numeric: tabular-nums; }
+
+    // ---------- pestañas de vista ----------
+    .o_oee_views {
+        display: flex; gap: 4px; padding: 0 16px; background: $o-view-background-color;
+        border-bottom: 1px solid var(--bs-border-color);
+        .btn { color: var(--bs-secondary-color); text-decoration: none; border-radius: 0; padding: 10px 12px; }
+        .o_active { color: var(--bs-body-color); font-weight: 600; border-bottom: 2px solid var(--oee-good-time); }
+    }
+    .o_oee_count_badge { background: var(--oee-unplanned); color: #fff; margin-left: 4px; }
 
     // ---------- tabla ----------
     .o_oee_tabs {
@@ -196,7 +220,7 @@
     }
     .o_oee_code {
         display: inline-block; min-width: 46px; padding: 1px 6px; margin-right: 6px;
-        border-radius: 4px; background: var(--bs-emphasis-color, #222); color: var(--bs-body-bg, #fff);
+        border-radius: 4px; background: var(--bs-emphasis-color, #222); color: $o-view-background-color;
         font-weight: 600; font-size: .85em; text-align: center;
     }
     .o_oee_use_cell { width: 32%; }

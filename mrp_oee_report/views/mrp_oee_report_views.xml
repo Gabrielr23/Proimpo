@@ -116,6 +116,10 @@
                 <field name="std_source" optional="show"/>
                 <field name="std_min_unit" optional="hide"/>
                 <field name="min_estandar" sum="Estándar" optional="hide"/>
+                <field name="min_bruto" sum="Según la línea" optional="hide"/>
+                <field name="min_traslape" sum="Traslapado" optional="show"/>
+                <field name="olvidada" optional="show"/>
+                <field name="productivity_id" optional="hide"/>
             </list>
         </field>
     </record>
@@ -149,6 +153,8 @@
                 <filter name="unplanned" string="Paradas no programadas" domain="[('time_class', '=', 'unplanned')]"/>
                 <separator/>
                 <filter name="sin_estandar" string="Sin ciclo estándar" domain="[('std_source', '=', 'none')]"/>
+                <filter name="olvidadas" string="Líneas olvidadas (&gt; 12 h)" domain="[('olvidada', '=', True)]"/>
+                <filter name="traslapes" string="Con traslape" domain="[('min_traslape', '&gt;', 0.5)]"/>
                 <group>
                     <filter name="g_wc" string="Centro de Trabajo" context="{'group_by': 'workcenter_id'}"/>
                     <filter name="g_loss" string="Motivo" context="{'group_by': 'loss_id'}"/>

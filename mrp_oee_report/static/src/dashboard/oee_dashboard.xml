@@ -4,6 +4,7 @@
     <t t-name="mrp_oee_report.OeeDashboard">
         <div class="o_action o_oee h-100 overflow-auto">
 
+            <div class="o_oee_sticky">
             <!-- ======================= FILTROS ======================= -->
             <div class="o_oee_filters">
                 <div class="btn-group btn-group-sm" role="group">
@@ -56,14 +57,40 @@
                     <button class="btn btn-sm btn-secondary" t-if="state.data" t-on-click="openLines">
                         <i class="fa fa-list me-1"/>Ver líneas
                     </button>
+                    <button class="btn btn-sm btn-primary" t-on-click="refresh" t-att-disabled="state.loading"
+                            t-att-title="'Recalcula los últimos ' + ((state.data and state.data.recalc_days) or 3) + ' días ahora (también se hace solo cada 15 min)'">
+                        <i class="fa fa-refresh me-1"/>Actualizar
+                    </button>
+                    <button class="btn btn-sm btn-secondary" t-on-click="recomputePeriod" t-att-disabled="state.loading"
+                            title="Rehace las fechas del filtro (máx. 13 meses). Úsalo después de corregir registros más antiguos.">
+                        <i class="fa fa-history me-1"/>Recalcular periodo
+                    </button>
+                    <span class="o_oee_muted small" t-if="lastRefresh">Datos al <t t-out="lastRefresh"/></span>
                 </div>
+            </div>
+            <div class="o_oee_views" t-if="state.data">
+                <button class="btn btn-link" t-att-class="state.view === 'planta' ? 'o_active' : ''"
+                        t-on-click="() => this.setView('planta')">Planta (OEE)</button>
+                <button class="btn btn-link" t-att-class="state.view === 'registro' ? 'o_active' : ''"
+                        t-on-click="() => this.setView('registro')">
+                    Calidad del registro
+                    <span t-if="reviewCount" class="badge rounded-pill o_oee_count_badge" t-out="reviewCount"/>
+                </button>
+            </div>
             </div>
 
             <div t-if="state.loading and !state.data" class="o_oee_empty">Cargando…</div>
             <div t-if="state.error" class="alert alert-danger m-3" t-out="state.error"/>
 
             <t t-if="state.data">
+            <div t-if="d.rebuild.pending" class="o_oee_rebuild">
+                <i class="fa fa-cog fa-spin me-2"/>
+                Recalculando el histórico en segundo plano: listo desde el
+                <b t-out="d.rebuild.until"/> (el registro empieza el <t t-out="d.rebuild.oldest"/>).
+                Las fechas anteriores pueden mostrar datos del cálculo anterior mientras termina.
+            </div>
             <div class="o_oee_body" t-att-class="state.loading ? 'o_oee_busy' : ''">
+            <t t-if="state.view === 'planta'">
 
                 <div t-if="d.warnings.length" class="o_oee_warnings">
                     <t t-foreach="d.warnings" t-as="w" t-key="w_index">
@@ -138,7 +165,10 @@
                 <!-- ======================= CASCADA ======================= -->
                 <section class="o_oee_card">
                     <h3>En qué se fueron los minutos</h3>
-                    <div class="o_oee_muted mb-2">Se parte del tiempo de los turnos y se descuenta cada pérdida hasta el tiempo que se convirtió en producto bueno.</div>
+                    <div class="o_oee_muted mb-2">
+                        <t t-if="k.base_registro">Con filtro por OP, producto u operario la base (100%) es el tiempo registrado de lo filtrado.</t>
+                        <t t-else="">La base (100%) es la duración de los turnos; cada paso descuenta una pérdida hasta el tiempo que se convirtió en producto bueno.</t>
+                    </div>
                     <t t-foreach="waterfall" t-as="s" t-key="s_index">
                         <div class="o_oee_wf_row" t-att-title="s.label + ': ' + t(s.value)">
                             <div class="o_oee_wf_label">
@@ -298,6 +328,87 @@
                         <span><i class="k_authorized"/>Autorizadas</span>
                     </div>
                 </section>
+            </t>
+
+            <!-- ======================= CALIDAD DEL REGISTRO ======================= -->
+            <t t-if="state.view === 'registro'">
+                <div class="o_oee_muted">Lo que hay que corregir en el seguimiento de tiempo para que el OEE sea confiable. Cada fila abre el registro.</div>
+
+                <section class="o_oee_card">
+                    <h3>Líneas olvidadas (más de 12 h)</h3>
+                    <div class="o_oee_muted mb-2">No cuentan en el OEE, ni su tiempo ni sus piezas, hasta corregir la hora de fin.</div>
+                    <div t-if="!d.review.olvidadas.length" class="o_oee_muted">Sin líneas olvidadas.</div>
+                    <table t-else="" class="table table-sm o_oee_table">
+                        <thead><tr><th>Inicio</th><th>Máquina</th><th>Orden</th><th>Operario</th><th>Motivo</th><th class="text-end">Duración</th><th class="text-end">Piezas</th><th/></tr></thead>
+                        <tbody>
+                            <t t-foreach="d.review.olvidadas" t-as="o" t-key="o.productivity_id">
+                                <tr>
+                                    <td t-out="o.inicio"/><td t-out="o.workcenter"/><td t-out="o.orden or '—'"/>
+                                    <td t-out="o.operario or '—'"/><td t-out="o.motivo or '—'"/>
+                                    <td class="text-end" t-out="t(o.minutos)"/><td class="text-end" t-out="num(o.unidades)"/>
+                                    <td class="text-end"><button class="btn btn-sm btn-link" t-on-click="() => this.openRecord('mrp.workcenter.productivity', o.productivity_id)">Abrir</button></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="o_oee_card">
+                    <h3>Traslapes en la misma máquina</h3>
+                    <div class="o_oee_muted mb-2">Varias órdenes con tiempo abierto a la vez. En el OEE el reloj se contó una vez; entre órdenes operando, el tiempo se repartió en partes iguales.</div>
+                    <div t-if="!d.review.traslapes.length" class="o_oee_muted">Sin traslapes.</div>
+                    <table t-else="" class="table table-sm o_oee_table">
+                        <thead><tr><th>Fecha</th><th>Turno</th><th>Máquina</th><th>Órdenes</th><th class="text-end">Traslapado</th><th/></tr></thead>
+                        <tbody>
+                            <t t-foreach="d.review.traslapes" t-as="r" t-key="r_index">
+                                <tr>
+                                    <td t-out="r.day"/><td t-out="r.shift"/><td t-out="r.workcenter"/><td t-out="r.ordenes"/>
+                                    <td class="text-end" t-out="t(r.minutos)"/>
+                                    <td class="text-end"><button class="btn btn-sm btn-link" t-on-click="() => this.openShiftLines(r)">Ver líneas</button></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="o_oee_card">
+                    <h3>Turnos con tiempo sin registrar</h3>
+                    <div class="o_oee_muted mb-2">Turnos planeados con más de 30 min sin línea de tiempo, en máquinas que sí tuvieron registro en el periodo.</div>
+                    <div t-if="!d.review.huecos.length" class="o_oee_muted">Sin huecos de registro.</div>
+                    <table t-else="" class="table table-sm o_oee_table">
+                        <thead><tr><th>Fecha</th><th>Turno</th><th>Máquina</th><th class="text-end">Turno</th><th class="text-end">Registrado</th><th class="text-end">Sin registrar</th><th/></tr></thead>
+                        <tbody>
+                            <t t-foreach="d.review.huecos" t-as="r" t-key="r_index">
+                                <tr>
+                                    <td t-out="r.day"/><td t-out="r.shift"/><td t-out="r.workcenter"/>
+                                    <td class="text-end" t-out="t(r.turno)"/><td class="text-end" t-out="t(r.registrado)"/>
+                                    <td class="text-end"><b t-out="t(r.hueco)"/></td>
+                                    <td class="text-end"><button class="btn btn-sm btn-link" t-on-click="() => this.openShiftLines(r)">Ver líneas</button></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="o_oee_card">
+                    <h3>Órdenes para revisar</h3>
+                    <div class="o_oee_muted mb-2">Producción registrada incompleta (menos del 90% de lo producido en órdenes terminadas), Rendimiento sobre 105% o tiempo operando sin piezas.</div>
+                    <div t-if="!d.review.ordenes.length" class="o_oee_muted">Sin órdenes para revisar.</div>
+                    <table t-else="" class="table table-sm o_oee_table">
+                        <thead><tr><th>Orden</th><th>Producto</th><th class="text-end">Registradas</th><th class="text-end">Producidas</th><th class="text-end">Rend.</th><th>Motivo</th><th/></tr></thead>
+                        <tbody>
+                            <t t-foreach="d.review.ordenes" t-as="r" t-key="r.production_id">
+                                <tr>
+                                    <td t-out="r.name"/><td t-out="r.product"/>
+                                    <td class="text-end" t-out="num(r.registradas)"/><td class="text-end" t-out="num(r.producidas)"/>
+                                    <td class="text-end" t-out="pct(r.r)"/><td t-out="r.motivos"/>
+                                    <td class="text-end"><button class="btn btn-sm btn-link" t-on-click="() => this.openRecord('mrp.production', r.production_id)">Abrir</button></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </section>
+            </t>
             </div>
             </t>
         </div>
