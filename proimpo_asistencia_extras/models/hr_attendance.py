@@ -39,6 +39,16 @@ SEL_ESTADO = [
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
+    def _pa_vals_overtime(self, status):
+        """Valores para fijar el estado nativo de horas extra. v2.0.2: ademas deja
+        en 0 las horas extra 'validadas' nativas (validated_overtime_hours) para que
+        Nomina NO genere entradas de trabajo OVERTIME: las extras de PROIMPO se pagan
+        por concepto (HED/HEN/HRN...) desde los detalles de devengado, no por esa via."""
+        vals = {'overtime_status': status}
+        if 'validated_overtime_hours' in self._fields:
+            vals['validated_overtime_hours'] = 0.0
+        return vals
+
     def _pa_autoaprobar(self):
         """Aprueba en tiempo real los registros completos sin horas extra reales
         (solo recargos o nada). Esos no requieren aprobacion del gerente."""
@@ -46,7 +56,7 @@ class HrAttendance(models.Model):
             return
         for r in self:
             if r.check_out and r.overtime_status == 'to_approve' and r._extras_reales() <= 0:
-                r.with_context(pa_auto=True).write({'overtime_status': 'approved'})
+                r.with_context(pa_auto=True).write(r._pa_vals_overtime('approved'))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -169,7 +179,7 @@ class HrAttendance(models.Model):
                 continue
             nuevo = 'to_approve' if any(e in (False, 'por_aprobar') for e in estados) else 'approved'
             if r.overtime_status != nuevo:
-                r.with_context(pa_auto=True).write({'overtime_status': nuevo})
+                r.with_context(pa_auto=True).write(r._pa_vals_overtime(nuevo))
 
     def _pa_set_estado_todos(self, estado):
         """Fija el mismo estado a todos los conceptos extra con horas del registro."""
@@ -242,8 +252,25 @@ class HrAttendance(models.Model):
                             ('overtime_status', '=', 'to_approve')])
         sin_extra = regs.filtered(lambda r: r._extras_reales() <= 0)
         if sin_extra:
-            sin_extra.write({'overtime_status': 'approved'})
+            sin_extra.write(sin_extra._pa_vals_overtime('approved'))
         return len(sin_extra)
+
+    @api.model
+    def _pa_limpiar_overtime_nativo(self, date_from=None, date_to=None):
+        """Pone en 0 las horas extra validadas nativas (y deja 'approved') en las
+        asistencias del rango, para retirar las entradas OVERTIME de Nomina.
+        Uso (accion de servidor): env['hr.attendance']._pa_limpiar_overtime_nativo()"""
+        if 'validated_overtime_hours' not in self._fields:
+            return 0
+        dom = [('validated_overtime_hours', '>', 0)]
+        if date_from:
+            dom.append(('check_in', '>=', date_from))
+        if date_to:
+            dom.append(('check_in', '<=', date_to))
+        regs = self.sudo().search(dom)
+        for r in regs:
+            r.with_context(pa_auto=True).write({'validated_overtime_hours': 0.0})
+        return len(regs)
 
     @api.model
     def _extras_destinatarios(self):
