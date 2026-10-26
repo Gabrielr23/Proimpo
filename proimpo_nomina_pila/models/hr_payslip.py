@@ -36,6 +36,48 @@ class HrPayslip(models.Model):
         self.ensure_one()
         return sum(self.line_ids.filtered(lambda l: l.salary_rule_id.code == code).mapped('total'))
 
+    # ------------------------------------------------------------------
+    # v2.4.0: INCAPACIDADES EN DIAS CALENDARIO (como CGUNO y como la PILA).
+    # Odoo solo genera entradas de trabajo en dias del horario (un viernes-domingo
+    # cuenta 1 dia); legalmente la incapacidad y la PILA van en dias calendario.
+    # Este helper cuenta, desde las ausencias aprobadas cuyo tipo tiene novedad
+    # PILA IGE/IRL, los dias calendario que caen en el periodo del recibo y los
+    # separa en 'empresa' (dias 1 y 2 de cada incapacidad) y 'eps' (dia 3+).
+    # Uso en reglas:  payslip._inc_dias()            -> IGE + IRL
+    #                 payslip._inc_dias(('IGE',))    -> solo enfermedad general
+    #                 payslip._inc_dias(('IRL',))    -> solo laboral (ARL)
+    # ------------------------------------------------------------------
+    def _inc_dias(self, novedades=('IGE', 'IRL'), dias_empresa=2):
+        self.ensure_one()
+        res = {'total': 0, 'empresa': 0, 'eps': 0}
+        if not (self.date_from and self.date_to and self.employee_id):
+            return res
+        leaves = self.env['hr.leave'].search([
+            ('employee_id', '=', self.employee_id.id), ('state', '=', 'validate'),
+            ('request_date_from', '<=', self.date_to),
+            ('request_date_to', '>=', self.date_from)])
+        for lv in leaves:
+            st = lv.holiday_status_id
+            if (getattr(st, 'pila_novedad', False) or 'worked') not in novedades:
+                continue
+            ini_lv = lv.request_date_from
+            fin_lv = lv.request_date_to or ini_lv
+            d1 = max(ini_lv, self.date_from)
+            d2 = min(fin_lv, self.date_to)
+            if d2 < d1:
+                continue
+            # indice del dia dentro de la incapacidad (1 = primer dia de la incapacidad)
+            idx_ini = (d1 - ini_lv).days + 1
+            n = (d2 - d1).days + 1
+            emp = max(0, min(n, dias_empresa - idx_ini + 1))
+            res['total'] += n
+            res['empresa'] += emp
+            res['eps'] += n - emp
+        return res
+
+    def _inc_dias_total(self, novedades=('IGE', 'IRL')):
+        return self._inc_dias(novedades)['total']
+
     def _pila_segmentos(self, e, ct, first, last):
         """Divide los dias del mes por novedad PILA a partir de las ausencias de Odoo.
         Devuelve {'total':d, 'worked':d, 'VAC':d, 'LR':d, 'IGE':d, 'IRL':d, 'LMA':d, 'SLN':d}."""
