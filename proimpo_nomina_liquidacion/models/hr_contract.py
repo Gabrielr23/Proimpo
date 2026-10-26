@@ -8,7 +8,8 @@ from odoo import models
 #   Cesantias/prima/intereses: basico + variable + auxilio de transporte.
 #   Vacaciones: basico + variable - horas extra (sin transporte).
 LIQ_EXTRA_CODES = ('HED', 'HEN', 'HRN', 'HEDDF', 'HRDDF', 'HENDF', 'HRNDF')
-COD_VAC_PAG = ('VAC', 'VACDISF', 'VACACIONES')
+# v2.0.1: las vacaciones COMPENSADAS en dinero (VACCOMP) tambien consumen dias causados.
+COD_VAC_PAG = ('VAC', 'VACDISF', 'VACACIONES', 'VACCOMP')
 
 
 def dias360(d1, d2):

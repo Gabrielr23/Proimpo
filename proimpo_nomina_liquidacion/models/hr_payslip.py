@@ -132,6 +132,8 @@ class HrPayslip(models.Model):
             return False
         code = (wet.code or '').strip()
         name = (wet.name or '').lower()
+        if 'compens' in name or code.upper() == 'VACCOMP':
+            return False  # vacaciones compensadas: NO son ausencia
         return code == self.VAC_WE_CODE or 'vacacion' in name
 
     def _es_vacacion_leave(self, leave):
@@ -139,9 +141,52 @@ class HrPayslip(models.Model):
         if not st:
             return False
         name = (st.name or '').lower()
+        if self._es_vac_compensada_tipo(st):
+            return False  # vacaciones compensadas: NO restan del basico
         wet = getattr(st, 'work_entry_type_id', False)
         code = (wet.code or '').strip() if wet else ''
         return 'vacacion' in name or code == self.VAC_WE_CODE
+
+    # ------------------------------------------------------------------
+    # Vacaciones COMPENSADAS en dinero (Art. 189 CST: hasta la mitad, por escrito)
+    # El empleado las solicita en Ausencias con el tipo "Vacaciones compensadas"
+    # (clase de tiempo libre = Tiempo trabajado). No son ausencia: sigue trabajando
+    # y recibe el pago. Se pagan una sola vez, en el periodo donde INICIA la solicitud.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _es_vac_compensada_tipo(st):
+        name = (st.name or '').lower()
+        wet = getattr(st, 'work_entry_type_id', False)
+        code = ((wet.code or '') if wet else '').strip().upper()
+        return ('vacacion' in name and 'compens' in name) or code == 'VACCOMP'
+
+    def _vac_compensadas(self):
+        """{'dias': dias calendario a pagar en este periodo, 'leaves': solicitudes}."""
+        self.ensure_one()
+        dias = 0
+        leaves = self.env['hr.leave']
+        if self.date_from and self.date_to:
+            for lv in self.env['hr.leave'].search([
+                    ('employee_id', '=', self.employee_id.id),
+                    ('request_date_from', '>=', self.date_from),
+                    ('request_date_from', '<=', self.date_to),
+                    ('state', '=', 'validate')]):
+                if not self._es_vac_compensada_tipo(lv.holiday_status_id):
+                    continue
+                # dias de la solicitud tal como los cuenta Odoo (dias habiles del horario del
+                # empleado, + festivos si el tipo tiene "Dia festivo incluido"); es lo que ve
+                # y aprueba el encargado. Si por alguna razon viene en 0, dias calendario.
+                d = lv.number_of_days or ((lv.request_date_to - lv.request_date_from).days + 1)
+                dias += max(d, 0)
+                leaves |= lv
+        # entrada manual VACCOMP (dias) como alternativa/complemento
+        for il in self.input_line_ids:
+            if (il.code or '').upper() == 'VACCOMP' and il.amount:
+                dias += il.amount
+        return {'dias': dias, 'leaves': leaves}
+
+    def _vac_compensadas_dias(self):
+        return self._vac_compensadas()['dias']
 
     def _vac_disfrutadas(self):
         """Días de vacaciones del período.
@@ -210,9 +255,12 @@ class HrPayslip(models.Model):
         dias_causados = dias_trab * 15.0 / 360.0
         return base / 30.0 * max(dias_causados - (dias_disfrutados or 0.0), 0.0)
 
-    def _liq_vacaciones_compensadas(self, dias):
+    def _liq_vacaciones_compensadas(self, dias=None):
         """Valor de vacaciones compensadas en dinero: base de vacaciones / 30 x días.
-        La base es el promedio del último año, sin horas extra ni auxilio de transporte."""
+        La base es el promedio del último año, sin horas extra ni auxilio de transporte.
+        Si no se pasan dias, se toman de las solicitudes de Ausencias (_vac_compensadas)."""
+        if dias is None:
+            dias = self._vac_compensadas_dias()
         return self._liq_base('vac') / 30.0 * (dias or 0.0)
 
     # ------------------------------------------------------------------
