@@ -6,11 +6,16 @@ _logger = logging.getLogger(__name__)
 
 # Fórmulas correctas por código de regla
 FORMULAS = {
+    # v1.3.0: salario integral cotiza sobre el 70% (Art. 18 Ley 100 / Art. 132 CST) y el
+    # tope de 25 SMMLV es mensual (proporcional a los dias del periodo).
     'IBC': (
         "smmlv = contract.company_id.smmlv_value\n"
         "dias = (payslip.date_to - payslip.date_from).days + 1\n"
         "base = categories.get('BASIC', 0) + categories.get('DEVSAL', 0)\n"
-        "result = min(max(base, smmlv / 30.0 * min(dias, 30)), 25 * smmlv)"
+        "if contract.integral_salary:\n"
+        "    base = base * 0.70\n"
+        "tope = 25 * smmlv * min(dias, 30) / 30.0\n"
+        "result = min(max(base, smmlv / 30.0 * min(dias, 30)), tope)"
     ),
     'BASE_PREST': (
         "result = categories.get('BASIC', 0) + categories.get('DEVSAL', 0) "
