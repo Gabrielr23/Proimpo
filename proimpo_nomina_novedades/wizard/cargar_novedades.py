@@ -208,7 +208,13 @@ class CargarNovedades(models.TransientModel):
                     errores.append(_("Fila %s: %s quedó con valor 0 (¿salario del contrato?).") % (i, cod))
                     continue
 
-                self.env['l10n_co_hr_payroll.earn.line'].create(vals)
+                line = self.env['l10n_co_hr_payroll.earn.line'].create(vals)
+                # v1.2.0: asegurar la CANTIDAD de horas. En algunas instalaciones el
+                # calculo por rango de fechas/horas deja quantity = 1 (la categoria
+                # del concepto aun no esta calculada al crear la linea); se fija
+                # explicitamente para que total = horas x valor hora.
+                if cod in CODIGOS_EXTRA and abs((line.quantity or 0.0) - val) > 0.001:
+                    line.write({'quantity': val})
                 n_lineas += 1
                 hubo = True
 
