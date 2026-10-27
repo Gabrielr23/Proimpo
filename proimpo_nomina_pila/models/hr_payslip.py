@@ -48,7 +48,8 @@ class HrPayslip(models.Model):
     #                 payslip._inc_dias(('IGE',))    -> solo enfermedad general
     #                 payslip._inc_dias(('IRL',))    -> solo laboral (ARL)
     # ------------------------------------------------------------------
-    def _inc_dias(self, novedades=('IGE', 'IRL'), dias_empresa=2):
+    def _inc_dias(self, novedades=('IGE', 'IRL'), dias_empresa=2, nombre=None):
+        # nombre: si se indica, solo tipos de ausencia cuyo nombre contenga ese texto (p.ej. 'PATERN')
         self.ensure_one()
         res = {'total': 0, 'empresa': 0, 'eps': 0, 'pagar': 0}  # 'pagar': dias calendario completos si inicia en el periodo (pago anticipado)
         if not (self.date_from and self.date_to and self.employee_id):
@@ -60,6 +61,8 @@ class HrPayslip(models.Model):
         for lv in leaves:
             st = lv.holiday_status_id
             if (getattr(st, 'pila_novedad', False) or 'worked') not in novedades:
+                continue
+            if nombre and nombre.upper() not in (st.name or '').upper():
                 continue
             ini_lv = lv.request_date_from
             fin_lv = lv.request_date_to or ini_lv
