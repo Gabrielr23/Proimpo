@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import base64
+from datetime import timedelta
 from odoo import models, _
 from odoo.exceptions import UserError
 
@@ -47,9 +48,10 @@ class HrPayslip(models.Model):
     #                 payslip._inc_dias(('IGE',))    -> solo enfermedad general
     #                 payslip._inc_dias(('IRL',))    -> solo laboral (ARL)
     # ------------------------------------------------------------------
-    def _inc_dias(self, novedades=('IGE', 'IRL'), dias_empresa=2):
+    def _inc_dias(self, novedades=('IGE', 'IRL'), dias_empresa=2, nombre=None):
+        # nombre: si se indica, solo tipos de ausencia cuyo nombre contenga ese texto (p.ej. 'PATERN')
         self.ensure_one()
-        res = {'total': 0, 'empresa': 0, 'eps': 0}
+        res = {'total': 0, 'empresa': 0, 'eps': 0, 'pagar': 0}  # 'pagar': dias calendario completos si inicia en el periodo (pago anticipado)
         if not (self.date_from and self.date_to and self.employee_id):
             return res
         leaves = self.env['hr.leave'].search([
@@ -59,6 +61,8 @@ class HrPayslip(models.Model):
         for lv in leaves:
             st = lv.holiday_status_id
             if (getattr(st, 'pila_novedad', False) or 'worked') not in novedades:
+                continue
+            if nombre and nombre.upper() not in (st.name or '').upper():
                 continue
             ini_lv = lv.request_date_from
             fin_lv = lv.request_date_to or ini_lv
@@ -73,6 +77,8 @@ class HrPayslip(models.Model):
             res['total'] += n
             res['empresa'] += emp
             res['eps'] += n - emp
+            if self.date_from <= ini_lv <= self.date_to:
+                res['pagar'] += (fin_lv - ini_lv).days + 1
         return res
 
     def _inc_dias_total(self, novedades=('IGE', 'IRL')):
@@ -89,7 +95,18 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     def _lic_rem(self, novedades=('LR',)):
         self.ensure_one()
-        res = {'dias': 0.0, 'horas': 0.0, 'leaves': self.env['hr.leave']}
+        # 'dias'  = dias habiles de la licencia que caen en el periodo (se RESTAN del basico)
+        # 'pagar' = dias habiles a PAGAR en el periodo: TODOS los de la licencia si la
+        #           licencia INICIA en el periodo (pago anticipado, como CGUNO y como las
+        #           vacaciones); 0 si empezo en un periodo anterior (ya se pagaron).
+        # 'descontar' = dias que el BASICO debe restar en este periodo (v2.5.2, como CGUNO):
+        #   - periodo donde INICIA la licencia: los dias habiles del periodo MENOS los dias
+        #     no habiles (fin de semana/festivo) de la licencia que quedan despues del
+        #     periodo, que se pagan anticipados como salario (luto 13-19: 1Q paga 12 dias
+        #     + 5 de luto + 17 y 18 = 19 dias);
+        #   - periodos siguientes: TODOS los dias calendario de la licencia que caen en el
+        #     periodo (2Q: 16, 17, 18 y 19 -> 11 dias de basico).
+        res = {'dias': 0.0, 'pagar': 0.0, 'descontar': 0.0, 'horas': 0.0, 'leaves': self.env['hr.leave']}
         if not (self.date_from and self.date_to and self.employee_id):
             return res
         leaves = self.env['hr.leave'].search([
@@ -106,9 +123,21 @@ class HrPayslip(models.Model):
             d2 = min(fin_lv, self.date_to)
             if d2 < d1:
                 continue
-            # proporcion de la solicitud que cae en el periodo (solicitudes que cruzan quincena)
-            total_cal = (fin_lv - ini_lv).days + 1
-            frac = ((d2 - d1).days + 1) / float(total_cal) if total_cal else 1.0
+            # v2.4.2: parte de la solicitud que cae en el periodo, contada en DIAS HABILES
+            # del horario del empleado (una licencia 13-19 oct con horario L-V tiene 5 dias
+            # habiles: 3 caen en la 1Q (13, 14, 15) y 2 en la 2Q (16 y 19)).
+            cal = lv.employee_id.resource_calendar_id or self.contract_id.resource_calendar_id
+            dow = set(int(a.dayofweek) for a in cal.attendance_ids) if cal else {0, 1, 2, 3, 4}
+            def habiles(a, b):
+                n = 0
+                d = a
+                while d <= b:
+                    if d.weekday() in dow:
+                        n += 1
+                    d += timedelta(days=1)
+                return n
+            tot_hab = habiles(ini_lv, fin_lv)
+            frac = (habiles(d1, d2) / float(tot_hab)) if tot_hab else 1.0
             if getattr(lv, 'request_unit_hours', False):
                 horas = lv.number_of_hours if 'number_of_hours' in lv._fields else 0.0
                 if not horas:
@@ -117,8 +146,22 @@ class HrPayslip(models.Model):
                 res['horas'] += horas * frac
             else:
                 res['dias'] += (lv.number_of_days or 0.0) * frac
+                cal_in = (d2 - d1).days + 1
+                if self.date_from <= ini_lv <= self.date_to:
+                    res['pagar'] += (lv.number_of_days or 0.0)
+                    if fin_lv > self.date_to:
+                        a = self.date_to + timedelta(days=1)
+                        cal_after = (fin_lv - a).days + 1
+                        nohab_after = cal_after - habiles(a, fin_lv)
+                    else:
+                        nohab_after = 0
+                    res['descontar'] += habiles(d1, d2) - nohab_after
+                else:
+                    res['descontar'] += cal_in
             res['leaves'] |= lv
         res['dias'] = round(res['dias'], 2)
+        res['pagar'] = round(res['pagar'], 2)
+        res['descontar'] = round(res['descontar'], 2)
         res['horas'] = round(res['horas'], 2)
         return res
 
