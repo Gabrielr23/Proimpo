@@ -72,40 +72,50 @@ class HrPayslip(models.Model):
             return ''
         return ('%d' % qty) if float(qty).is_integer() else ('%.2f' % qty)
 
+    # Horas por dia para el control del volante (convencion 210 h/mes = 7 h/dia, como CGUNO)
+    _HORAS_DIA = 7.0
+    # Conceptos que se cuantifican en DIAS en el recibo (cantidad de la linea = dias)
+    _COD_DIAS = {'VAC', 'VACDISF', 'VACCOMP', 'LICR', 'LICMP', 'INCEG_EMP', 'INCEG_EPS', 'INCAT',
+                 'LIQVAC'}
+    # Conceptos en HORAS (cantidad de la linea = horas)
+    _COD_HORAS = {'HED', 'HEN', 'HRN', 'HEDDF', 'HRDDF', 'HENDF', 'HRNDF', 'LICRH'}
+    # Conceptos que suman a las HORAS BASE del periodo (tiempo laboral y ausencias pagadas);
+    # las horas extra y recargos NO suman (igual que en CGUNO).
+    _COD_BASE = {'BASIC', 'APOYO', 'VAC', 'VACDISF', 'LICR', 'LICRH', 'LICMP',
+                 'INCEG_EMP', 'INCEG_EPS', 'INCAT'}
+
+    def _volante_horas_periodo(self):
+        """Horas base del periodo: dias (base 30) x 7 h. Una quincena = 105 h."""
+        return _dias360(self.date_from, self.date_to) * self._HORAS_DIA
+
     def _volante_devengados(self):
-        """Filas de devengados para el volante con la cantidad poblada:
-        - Salario básico -> días laborados (días del período menos ausencias en días).
-        - Vacaciones / licencias / incapacidades -> días.
-        - Horas extra y recargos -> horas.
-        - BONNS con varias entradas se desglosa por descripción (earn.line.name)."""
+        """Filas de devengados para el volante con la cantidad en HORAS (control de las
+        105 h quincenales, como CGUNO):
+        - Salario basico / apoyo -> horas = valor / (salario / 210).
+        - Vacaciones, licencias, incapacidades -> dias de la linea x 7 h.
+        - Horas extra, recargos y permisos por horas -> horas de la linea.
+        - BONNS con varias entradas se desglosa por descripcion (earn.line.name).
+        Devuelve (filas, horas_base)."""
         self.ensure_one()
         DESGLOSAR = {'BONNS'}
-
-        dias_base = _dias360(self.date_from, self.date_to)
-        dias_ausencia = sum(e.quantity for e in self.earn_ids
-                            if e.category in _CAT_DIAS)
-
-        def cantidad(code):
-            earns = self.earn_ids.filtered(
-                lambda e: e.code == code and e.category in (_CAT_DIAS | _CAT_HORAS))
-            return sum(earns.mapped('quantity')) if earns else 0.0
+        wage = self.contract_id.wage or 0.0
+        valor_hora = wage / 210.0 if wage else 0.0
 
         filas = []
+        horas_base = 0.0
         devs = self.line_ids.filtered(
             lambda l: l.salary_rule_id.type_concept == 'earn' and l.total != 0)
         bonns_hecho = False
         for l in devs.sorted(lambda x: x.salary_rule_id.sequence):
-            code = l.salary_rule_id.code
+            code = (l.salary_rule_id.code or '').upper()
 
-            # BONNS: agrupar TODAS sus líneas y desglosar por descripción (earn.line.name)
             if code in DESGLOSAR:
                 if bonns_hecho:
                     continue
                 bonns_hecho = True
                 bonns_lines = devs.filtered(lambda x: x.salary_rule_id.code in DESGLOSAR)
                 total_bonns = sum(bonns_lines.mapped('total'))
-                earns = self.earn_ids.filtered(
-                    lambda e: e.code in DESGLOSAR and e.total)
+                earns = self.earn_ids.filtered(lambda e: e.code in DESGLOSAR and e.total)
                 suma = sum(earns.mapped('total'))
                 if earns and abs(suma - total_bonns) < 1.0:
                     for e in earns.sorted(lambda x: x.sequence):
@@ -117,13 +127,22 @@ class HrPayslip(models.Model):
                                       'qty_txt': '', 'amount': bl.total})
                 continue
 
-            if code == 'BASIC':
-                qty = max(dias_base - dias_ausencia, 0.0)
-            else:
-                qty = cantidad(code)
+            horas = None
+            if code == 'BASIC' and valor_hora:
+                horas = l.total / valor_hora
+            elif code == 'APOYO':
+                apoyo_hora = (self.contract_id.company_id.smmlv_value or 0.0) * 0.75 / 210.0
+                horas = l.total / apoyo_hora if apoyo_hora else None
+            elif code in self._COD_DIAS:
+                horas = (l.quantity or 0.0) * self._HORAS_DIA
+            elif code in self._COD_HORAS:
+                horas = l.quantity or 0.0
+            if horas is not None and code in self._COD_BASE:
+                horas_base += horas
             filas.append({'code': code, 'name': l.name,
-                          'qty_txt': self._fmt_cant(qty), 'amount': l.total})
-        return filas
+                          'qty_txt': self._fmt_cant(horas) if horas is not None else '',
+                          'amount': l.total})
+        return filas, round(horas_base, 2)
 
     def _volante_email(self):
         self.ensure_one()

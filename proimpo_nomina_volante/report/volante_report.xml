@@ -31,7 +31,10 @@
                 <t t-set="deds" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'deduction' and l.total != 0)"/>
                 <t t-set="deds_norm" t-value="deds.filtered(lambda l: l.salary_rule_id.code not in ('PREST', 'LIBR'))"/>
                 <t t-set="prestamos" t-value="o._volante_prestamos()"/>
-                <t t-set="devrows" t-value="o._volante_devengados()"/>
+                <t t-set="devres" t-value="o._volante_devengados()"/>
+                <t t-set="devrows" t-value="devres[0]"/>
+                <t t-set="horas_base" t-value="devres[1]"/>
+                <t t-set="horas_periodo" t-value="o._volante_horas_periodo()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
                 <t t-call="web.basic_layout">
@@ -84,7 +87,7 @@
                             <tr style="background:#1F4E79; color:#fff;">
                                 <th style="padding:2px 4px; text-align:left; width:8%;">Cód.</th>
                                 <th style="padding:2px 4px; text-align:left; width:46%;">Concepto</th>
-                                <th style="padding:2px 4px; text-align:right; width:12%;">Cant.</th>
+                                <th style="padding:2px 4px; text-align:right; width:12%;">Horas</th>
                                 <th style="padding:2px 4px; text-align:right; width:17%;">Devengado</th>
                                 <th style="padding:2px 4px; text-align:right; width:17%;">Deducción</th>
                             </tr>
@@ -120,6 +123,11 @@
                             </t>
                         </tbody>
                         <tfoot>
+                            <tr style="font-size:9px; color:#555;">
+                                <td colspan="2" style="padding:2px 4px; text-align:right;">Horas base del período (control: <span t-esc="o._fmt_cant(horas_periodo)"/> h)</td>
+                                <td style="padding:2px 4px; text-align:right; font-weight:bold;"><span t-esc="o._fmt_cant(horas_base)"/></td>
+                                <td></td><td></td>
+                            </tr>
                             <tr style="background:#DDEBF7; font-weight:bold;">
                                 <td colspan="3" style="padding:3px 4px; text-align:right;">TOTALES</td>
                                 <td style="padding:3px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(tot_dev)"/></td>
