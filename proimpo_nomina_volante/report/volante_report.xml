@@ -5,11 +5,11 @@
         <field name="name">Volante compacto</field>
         <field name="format">Letter</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">30</field>
+        <field name="margin_top">8</field>
         <field name="margin_bottom">8</field>
         <field name="margin_left">8</field>
         <field name="margin_right">8</field>
-        <field name="header_spacing">4</field>
+        <field name="header_spacing">0</field>
         <field name="dpi">90</field>
     </record>
 
@@ -34,10 +34,25 @@
                 <t t-set="devrows" t-value="o._volante_devengados()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
-                <t t-call="web.external_layout">
+                <t t-call="web.basic_layout">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
 
-                    <!-- Título compacto (el membrete de la empresa lo pone el layout estándar) -->
+                    <!-- v1.3.4: membrete propio y compacto (el layout estandar de la compania
+                         ocupaba mas alto que el margen y se montaba sobre los datos del empleado) -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+                        <tr>
+                            <td style="width:35%; vertical-align:middle; padding:0;">
+                                <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height:38px; max-width:220px;"/>
+                            </td>
+                            <td style="width:65%; text-align:right; vertical-align:middle; padding:0; font-size:9px; color:#444; line-height:1.25;">
+                                <div style="font-size:11px; font-weight:bold; color:#1F4E79;"><span t-field="o.company_id.name"/></div>
+                                <div t-if="o.company_id.vat">NIT <span t-field="o.company_id.vat"/></div>
+                                <div><span t-field="o.company_id.street"/><t t-if="o.company_id.city"> · <span t-field="o.company_id.city"/></t><t t-if="o.company_id.state_id">, <span t-field="o.company_id.state_id.name"/></t></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Título compacto -->
                     <div style="text-align:center; border-bottom:2px solid #1F4E79; padding-bottom:2px; margin-bottom:2px;">
                         <span style="font-size:13px; font-weight:bold; color:#1F4E79;">COMPROBANTE DE PAGO</span>
                         <span style="font-size:10px; color:#555;"> — <span t-field="o.struct_id.name"/> · Documento <span t-field="o.number"/></span>
