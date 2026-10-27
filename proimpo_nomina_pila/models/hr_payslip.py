@@ -78,6 +78,50 @@ class HrPayslip(models.Model):
     def _inc_dias_total(self, novedades=('IGE', 'IRL')):
         return self._inc_dias(novedades)['total']
 
+    # ------------------------------------------------------------------
+    # v2.4.1: LICENCIAS REMUNERADAS como concepto aparte (luto, calamidad, permisos
+    # pagados, dia de la familia...). Se toman de las ausencias aprobadas cuyo tipo
+    # tiene novedad PILA 'LR'. Devuelve dias completos (segun el horario, como los
+    # cuenta Odoo) y horas (solicitudes por horas), para que la regla LICR pague
+    # dias x salario/30 y LICRH horas x salario/210, y BASIC los reste.
+    # La licencia de maternidad/paternidad (novedad 'LMA') se maneja en dias
+    # calendario con payslip._inc_dias(('LMA',)).
+    # ------------------------------------------------------------------
+    def _lic_rem(self, novedades=('LR',)):
+        self.ensure_one()
+        res = {'dias': 0.0, 'horas': 0.0, 'leaves': self.env['hr.leave']}
+        if not (self.date_from and self.date_to and self.employee_id):
+            return res
+        leaves = self.env['hr.leave'].search([
+            ('employee_id', '=', self.employee_id.id), ('state', '=', 'validate'),
+            ('request_date_from', '<=', self.date_to),
+            ('request_date_to', '>=', self.date_from)])
+        for lv in leaves:
+            st = lv.holiday_status_id
+            if (getattr(st, 'pila_novedad', False) or 'worked') not in novedades:
+                continue
+            ini_lv = lv.request_date_from
+            fin_lv = lv.request_date_to or ini_lv
+            d1 = max(ini_lv, self.date_from)
+            d2 = min(fin_lv, self.date_to)
+            if d2 < d1:
+                continue
+            # proporcion de la solicitud que cae en el periodo (solicitudes que cruzan quincena)
+            total_cal = (fin_lv - ini_lv).days + 1
+            frac = ((d2 - d1).days + 1) / float(total_cal) if total_cal else 1.0
+            if getattr(lv, 'request_unit_hours', False):
+                horas = lv.number_of_hours if 'number_of_hours' in lv._fields else 0.0
+                if not horas:
+                    horas = max((lv.request_hour_to or 0.0) - (lv.request_hour_from or 0.0), 0.0) \
+                        if 'request_hour_to' in lv._fields else 0.0
+                res['horas'] += horas * frac
+            else:
+                res['dias'] += (lv.number_of_days or 0.0) * frac
+            res['leaves'] |= lv
+        res['dias'] = round(res['dias'], 2)
+        res['horas'] = round(res['horas'], 2)
+        return res
+
     def _pila_segmentos(self, e, ct, first, last):
         """Divide los dias del mes por novedad PILA a partir de las ausencias de Odoo.
         Devuelve {'total':d, 'worked':d, 'VAC':d, 'LR':d, 'IGE':d, 'IRL':d, 'LMA':d, 'SLN':d}."""
