@@ -15,7 +15,14 @@ FORMULAS = {
         "if contract.integral_salary:\n"
         "    base = base * 0.70\n"
         "tope = 25 * smmlv * min(dias, 30) / 30.0\n"
-        "result = min(max(base, smmlv / 30.0 * min(dias, 30)), tope)"
+        "# v1.3.1: el piso de 1 SMMLV no aplica a los dias de vacaciones ya pagados (y cotizados)\n"
+        "# en un periodo anterior (pago anticipado): el piso es proporcional a los dias pagados aqui.\n"
+        "vac_prev = 0\n"
+        "if hasattr(payslip, '_vac_disfrutadas'):\n"
+        "    v = payslip._vac_disfrutadas()\n"
+        "    vac_prev = v['total'] if not v.get('pagar') else 0\n"
+        "piso = smmlv / 30.0 * max(min(dias, 30) - vac_prev, 0)\n"
+        "result = min(max(base, piso), tope)"
     ),
     'BASE_PREST': (
         "result = categories.get('BASIC', 0) + categories.get('DEVSAL', 0) "
