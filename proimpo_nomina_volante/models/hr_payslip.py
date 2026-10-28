@@ -142,6 +142,23 @@ class HrPayslip(models.Model):
             filas.append({'code': code, 'name': l.name,
                           'qty_txt': self._fmt_cant(horas) if horas is not None else '',
                           'amount': l.total})
+        # v1.4.1: ausencias NO remuneradas como lineas informativas (sin valor), con sus
+        # horas, para que el control de horas base cierre en 105 h (como CGUNO muestra
+        # "Permiso parcial no remunerado").
+        for wd in self.worked_days_line_ids:
+            if wd.is_paid or not wd.work_entry_type_id:
+                continue
+            code = (wd.work_entry_type_id.code or '').upper()
+            if code in ('LEAVE1200', 'LEAVE1000', 'LEAVE1100'):
+                continue  # incapacidades/maternidad ya salen como concepto pagado
+            horas = wd.number_of_hours or 0.0
+            if not horas and wd.number_of_days:
+                horas = wd.number_of_days * self._HORAS_DIA
+            if not horas:
+                continue
+            horas_base += horas
+            filas.append({'code': code, 'name': '%s (no remunerado)' % (wd.name or wd.work_entry_type_id.name),
+                          'qty_txt': self._fmt_cant(round(horas, 2)), 'amount': 0.0, 'info': True})
         return filas, round(horas_base, 2)
 
     def _volante_email(self):
