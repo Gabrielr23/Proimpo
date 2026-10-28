@@ -71,6 +71,20 @@
         </field>
     </record>
 
+    <!-- ==================== MOLDES POSIBLES ==================== -->
+    <record id="view_mold_options_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.mold.options.wizard.form</field>
+        <field name="model">mrp.mold.options.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Moldes posibles">
+                <field name="body" nolabel="1"/>
+                <footer>
+                    <button string="Cerrar" special="cancel" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <!-- ==================== CONFIGURACIÓN DE ALERTAS ==================== -->
     <record id="view_mold_alert_config_form" model="ir.ui.view">
         <field name="name">mrp.mold.alert.config.form</field>

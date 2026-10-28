@@ -21,6 +21,12 @@ class MaintenanceRequest(models.Model):
              'fuera", pero no "días por taller", que es lo que sirve para '
              'negociar tiempos de respuesta.')
 
+    expected_return_date = fields.Date(
+        string='Regreso Estimado',
+        help='Cuándo se espera que el molde vuelva del taller. Se muestra en '
+             'la alerta que recibe quien tiene una orden de fabricación que '
+             'necesita el molde.')
+
     repair_days = fields.Integer(
         string='Días en Reparación', compute='_compute_repair_days',
         store=True,

@@ -27,6 +27,14 @@ class MrpRoutingWorkcenter(models.Model):
              'a los centros de trabajo alternativos, pero para moldes. Cada '
              'uno conserva sus propias cavidades y ciclo.',
     )
+    mold_has_variants = fields.Boolean(
+        related='mold_id.has_variants', string='Molde con Variantes')
+    mold_variant_id = fields.Many2one(
+        'mrp.mold.variant', string='Variante del Molde',
+        domain="[('mold_id', '=', mold_id)]",
+        help='Qué combinación de cavidades usa esta LdM. Ej. la LdM de la '
+             'cuchara usa "Solo cuchara"; la LdM del juego usa "Completa". '
+             'El tiempo por unidad sale del ciclo medido de la variante.')
     all_mold_ids = fields.Many2many(
         'maintenance.equipment', string='Todos los Moldes Posibles',
         compute='_compute_all_mold_ids',
@@ -57,11 +65,14 @@ class MrpRoutingWorkcenter(models.Model):
              'operación. Así toda operación tiene objetivo, use molde o no.')
 
     @api.depends('mold_id', 'mold_id.cycle_time_effective',
-                 'mold_id.cavity_count', 'time_cycle')
+                 'mold_id.cavity_count', 'mold_variant_id.cycle_time',
+                 'mold_variant_id.line_ids.cavities',
+                 'mold_variant_id.sets_per_shot', 'time_cycle')
     def _compute_hourly_target(self):
         for op in self:
-            if op.mold_id and op.mold_id.hourly_target:
-                op.hourly_target = op.mold_id.hourly_target
+            minutos = op._mold_minutes_per_unit() if op.mold_id else 0.0
+            if minutos:
+                op.hourly_target = 60.0 / minutos
             elif op.time_cycle:
                 op.hourly_target = 60.0 / op.time_cycle
             else:
@@ -76,11 +87,19 @@ class MrpRoutingWorkcenter(models.Model):
         """
         self.ensure_one()
         mold = mold or self.mold_id
-        if not mold or not mold.cycle_time_effective or not mold.cavity_count:
+        if not mold:
+            return 0.0
+        variante = self.mold_variant_id
+        if variante and mold == self.mold_id and variante.mold_id == mold:
+            unidades = variante.units_per_shot(self.bom_id.product_tmpl_id)
+            if not variante.cycle_time or not unidades:
+                return 0.0
+            return (variante.cycle_time / unidades) / 60.0
+        if not mold.cycle_time_effective or not mold.cavity_count:
             return 0.0
         return (mold.cycle_time_effective / mold.cavity_count) / 60.0
 
-    @api.onchange('mold_id')
+    @api.onchange('mold_id', 'mold_variant_id')
     def _onchange_mold_id_set_native_duration(self):
         """Al elegir molde, actualiza la duración nativa de Odoo.
 
@@ -90,7 +109,46 @@ class MrpRoutingWorkcenter(models.Model):
         for op in self:
             if not op.mold_id:
                 continue
+            if op.mold_variant_id and op.mold_variant_id.mold_id != op.mold_id:
+                op.mold_variant_id = False
+            if op.mold_id.has_variants and not op.mold_variant_id:
+                continue
             minutos = op._mold_minutes_per_unit()
             if minutos:
                 op.time_mode = 'manual'
                 op.time_cycle_manual = minutos
+
+    # ------------------------------------------------------------------
+    # La duración se calcula también AL GUARDAR, no solo al elegir el molde
+    # en pantalla: así funciona igual a mano, por importación de Excel o por
+    # cualquier otro camino.
+    # ------------------------------------------------------------------
+    _MOLD_DURATION_TRIGGERS = ('mold_id', 'mold_variant_id')
+
+    def _apply_mold_cycle(self):
+        for op in self:
+            if not op.mold_id:
+                continue
+            if op.mold_id.has_variants and not op.mold_variant_id:
+                continue
+            minutos = op._mold_minutes_per_unit()
+            if minutos and (op.time_mode != 'manual'
+                            or abs((op.time_cycle_manual or 0) - minutos) > 1e-6):
+                op.with_context(mold_cycle_applied=True).write({
+                    'time_mode': 'manual',
+                    'time_cycle_manual': minutos,
+                })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        ops = super().create(vals_list)
+        if not self.env.context.get('mold_cycle_applied'):
+            ops.filtered('mold_id')._apply_mold_cycle()
+        return ops
+
+    def write(self, vals):
+        res = super().write(vals)
+        if (not self.env.context.get('mold_cycle_applied')
+                and any(k in vals for k in self._MOLD_DURATION_TRIGGERS)):
+            self._apply_mold_cycle()
+        return res

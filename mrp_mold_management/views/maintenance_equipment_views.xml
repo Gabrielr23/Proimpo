@@ -53,6 +53,7 @@
                     <group>
                         <group string="Estado">
                             <field name="mold_code" readonly="product_id"/>
+                            <field name="mold_version"/>
                             <field name="mold_situation" readonly="1"/>
                             <field name="is_enabled" readonly="1"/>
                             <button name="action_open_disable_wizard"
@@ -93,6 +94,8 @@
                                    invisible="not current_zone_id"/>
                             <field name="current_workcenter_id"
                                    options="{'no_quick_create': True}"/>
+                            <field name="expected_return_date"
+                                   invisible="not is_away_from_home"/>
                             <field name="location_is_manual" readonly="1"/>
                             <field name="location_manual_uid" readonly="1"
                                    invisible="not location_is_manual"/>
@@ -107,6 +110,7 @@
                     <group>
                         <group string="Producción">
                             <field name="cavity_count" string="Cavidades del Molde"/>
+                            <field name="has_variants"/>
                             <field name="cycle_time_theoretical"/>
                             <field name="cycle_time_current"/>
                             <field name="cycle_time_effective" readonly="1"/>
@@ -120,6 +124,26 @@
                             <field name="height_mm"/>
                             <field name="mold_weight_kg"/>
                         </group>
+                    </group>
+
+                    <group string="Variantes del Molde" invisible="not has_variants">
+                        <div class="text-muted" colspan="2">
+                            Cada variante es una combinación de cavidades
+                            abiertas con su ciclo medido. La operación de cada
+                            LdM indica qué variante usa.
+                        </div>
+                        <field name="variant_ids" nolabel="1" colspan="2"
+                               context="{'default_mold_id': id}">
+                            <list>
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="pieces_summary"/>
+                                <field name="cavity_total"/>
+                                <field name="cycle_time"/>
+                                <field name="sets_per_shot"/>
+                                <field name="shots_per_hour"/>
+                            </list>
+                        </field>
                     </group>
 
                     <group string="Compatibilidad">
@@ -164,6 +188,7 @@
             <xpath expr="//list" position="inside">
                 <field name="is_mold" optional="hide"/>
                 <field name="mold_code" optional="show"/>
+                <field name="mold_version" optional="show"/>
                 <field name="mold_situation" optional="show" widget="badge"
                        decoration-success="mold_situation == 'disponible'"
                        decoration-info="mold_situation == 'produccion'"

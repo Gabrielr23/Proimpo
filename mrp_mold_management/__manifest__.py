@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestión de Moldes de Inyección',
-    'version': '18.0.2.3.0',
+    'version': '18.0.3.1.0',
     'summary': 'Moldes como equipos de mantenimiento: cavidades, ciclo, centros '
                'compatibles, LdM calificadas y objetivo de producción por hora.',
     'description': """
@@ -34,6 +34,9 @@ Qué aporta
   Mantenimiento; se crea solo al nacer el producto, y un asistente genera
   los de los productos que ya existían.
 * Menú único "Moldes" y una sola pantalla de Ocupación de Moldes.
+* Variantes del molde: combinaciones de cavidades (molde de varias piezas o
+  cavidades tapadas) con su propio ciclo medido, elegidas en la operación
+  de la LdM.
 
 Lo que NO hace, a propósito
 ---------------------------
@@ -62,6 +65,7 @@ módulo expone las restricciones y la consulta de disponibilidad
         'views/mold_repair_report_views.xml',
         'views/mold_generate_wizard_views.xml',
         'views/mold_wizards_views.xml',
+        'views/mold_variant_views.xml',
         'data/cron.xml',
         'data/menu_placement.xml',
     ],

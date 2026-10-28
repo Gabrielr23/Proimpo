@@ -24,6 +24,23 @@ class MrpWorkorder(models.Model):
         string='Objetivo por Hora (Molde)', related='mold_id.hourly_target',
         readonly=True, digits=(10, 2))
 
+    mold_variant_id = fields.Many2one(
+        'mrp.mold.variant', string='Variante del Molde',
+        related='operation_id.mold_variant_id', readonly=True)
+
+    def _mold_minutes(self, mold):
+        """Minutos por unidad con `mold`: la regla de la operación (que
+        respeta la variante) si es su molde principal; si es un alternativo,
+        su propio ciclo ÷ cavidades."""
+        self.ensure_one()
+        if not mold:
+            return 0.0
+        if self.operation_id:
+            return self.operation_id._mold_minutes_per_unit(mold)
+        if not mold.cycle_time_effective or not mold.cavity_count:
+            return 0.0
+        return (mold.cycle_time_effective / mold.cavity_count) / 60.0
+
     hourly_target = fields.Float(
         string='Objetivo por Hora', compute='_compute_hourly_target',
         digits=(10, 2),
@@ -32,13 +49,15 @@ class MrpWorkorder(models.Model):
 
     @api.depends('mold_id', 'mold_id.cycle_time_effective',
                  'mold_id.cavity_count', 'operation_id',
+                 'operation_id.mold_variant_id.cycle_time',
                  'operation_id.time_cycle', 'duration_expected',
                  'qty_production')
     def _compute_hourly_target(self):
         for wo in self:
             target = 0.0
-            if wo.mold_id and wo.mold_id.hourly_target:
-                target = wo.mold_id.hourly_target
+            minutos = wo._mold_minutes(wo.mold_id)
+            if minutos:
+                target = 60.0 / minutos
             elif wo.operation_id and wo.operation_id.time_cycle:
                 target = 60.0 / wo.operation_id.time_cycle
             elif wo.duration_expected and wo.qty_production:
@@ -54,7 +73,8 @@ class MrpWorkorder(models.Model):
              'reales del molde asignado.')
 
     @api.depends('mold_id', 'mold_id.cycle_time_effective',
-                 'mold_id.cavity_count', 'qty_producing', 'qty_production',
+                 'mold_id.cavity_count', 'operation_id.mold_variant_id.cycle_time',
+                 'qty_producing', 'qty_production',
                  'workcenter_id.time_start', 'workcenter_id.time_stop')
     def _compute_mold_duration_expected(self):
         for wo in self:
@@ -63,11 +83,11 @@ class MrpWorkorder(models.Model):
     def _mold_duration(self, mold):
         """Duración esperada en minutos usando un molde concreto."""
         self.ensure_one()
-        if not mold or not mold.cycle_time_effective or not mold.cavity_count:
+        minutos_ud = self._mold_minutes(mold)
+        if not minutos_ud:
             return 0.0
         qty = self.qty_production or self.qty_producing or 0.0
-        segundos_ud = mold.cycle_time_effective / mold.cavity_count
-        produccion = (qty * segundos_ud) / 60.0
+        produccion = qty * minutos_ud
         wc = self.workcenter_id
         setup = (wc.time_start or 0.0) + (wc.time_stop or 0.0)
         return setup + produccion
@@ -206,6 +226,29 @@ class MrpWorkorder(models.Model):
         workorders._notify_disabled_principal()
         return workorders
 
+    def write(self, vals):
+        terminan = self.filtered(lambda w: w.state != 'done') \
+            if vals.get('state') == 'done' else self.browse()
+        res = super().write(vals)
+        if terminan:
+            terminan._hold_molds_at_external()
+        return res
+
+    def _hold_molds_at_external(self):
+        for wo in self:
+            try:
+                wc = wo.workcenter_id
+                if not (wo.state == 'done' and wo.mold_id and wc
+                        and 'x_studio_ct_externo' in wc._fields
+                        and wc.x_studio_ct_externo):
+                    continue
+                with self.env.cr.savepoint():
+                    wo.mold_id._hold_at_external_workcenter(
+                        wc, wo.date_start.date() if wo.date_start else None)
+            except Exception as e:  # noqa: BLE001
+                _logger.warning('No se pudo dejar el molde en el CT externo: '
+                                '%s', e)
+
     def _notify_disabled_principal(self):
         """Avisa al responsable de la orden de fabricación cuando el molde
         principal de la operación está inhabilitado.
@@ -242,3 +285,90 @@ class MrpWorkorder(models.Model):
             except Exception as e:  # noqa: BLE001 - nunca debe frenar la orden
                 _logger.warning('No se pudo avisar del molde inhabilitado: '
                                 '%s', e)
+
+    # ------------------------------------------------------------------
+    # Nota informativa: con qué moldes se puede hacer esta operación
+    # ------------------------------------------------------------------
+    def _mold_options(self):
+        """Lista de moldes posibles, ordenada: primero el que esté libre antes,
+        luego el de menor tiempo por unidad. Solo informa; no asigna."""
+        self.ensure_one()
+        op = self.operation_id
+        moldes = (op.all_mold_ids if op else self.env['maintenance.equipment']) \
+            | self.mold_id
+        ahora = fields.Datetime.now()
+        hoy = fields.Date.context_today(self)
+        filas = []
+        for m in moldes:
+            seg = self._mold_minutes(m) * 60.0
+            ciclo = (op.mold_variant_id.cycle_time if op and m == op.mold_id
+                     and op.mold_variant_id else m.cycle_time_effective)
+            cav = (op.mold_variant_id.units_per_shot(op.bom_id.product_tmpl_id)
+                   if op and m == op.mold_id and op.mold_variant_id
+                   else m.cavity_count)
+            orden, desde, estado = 0, None, 'Disponible ya'
+            fuera, motivo, regreso = m._external_status()
+            if not m.is_enabled or m.mold_situation == 'baja':
+                orden, estado = 4, ('Dado de baja' if m.mold_situation == 'baja'
+                                    else 'Inhabilitado')
+            elif fuera or m.mold_situation == 'reparacion':
+                desde = regreso
+                orden = 2 if regreso else 3
+                estado = '%s, %s' % (
+                    'Fuera de planta (%s)' % motivo if fuera else 'En reparación',
+                    'regreso estimado %s' % regreso.strftime('%d/%m/%Y')
+                    if regreso else 'sin fecha de regreso')
+            else:
+                ocup = self.env['mrp.workorder'].sudo().search([
+                    ('mold_id', '=', m.id), ('id', '!=', self.id),
+                    ('state', 'not in', ('done', 'cancel')),
+                    ('date_finished', '>', ahora),
+                ], order='date_finished desc', limit=1)
+                if ocup:
+                    desde = ocup.date_finished.date()
+                    orden = 1
+                    estado = 'Disponible desde %s (ocupado por %s)' % (
+                        desde.strftime('%d/%m/%Y'),
+                        ocup.production_id.name or ocup.display_name)
+            filas.append((orden, desde or hoy, seg or 1e9, m, ciclo, cav, seg,
+                          estado))
+        filas.sort(key=lambda f: (f[0], f[1], f[2]))
+        return filas
+
+    def action_mold_options(self):
+        self.ensure_one()
+        filas = self._mold_options()
+        if not filas:
+            cuerpo = '<p>Esta operación no usa molde.</p>'
+        else:
+            items = []
+            for i, (_o, _d, _s, m, ciclo, cav, seg, estado) in enumerate(filas, 1):
+                actual = ' <b>(asignado)</b>' if m == self.mold_id else ''
+                items.append(
+                    '<li><b>%s</b>%s — ciclo %s s (%s cav.)%s — %s</li>' % (
+                        m.display_name, actual,
+                        ('%g' % ciclo) if ciclo else '?', cav or '?',
+                        (', %.1f s por unidad' % seg) if seg else '',
+                        estado))
+            cuerpo = ('<p><b>Esta operación se puede hacer con:</b></p><ol>%s</ol>'
+                      '<p class="text-muted">Orden: primero el que esté libre '
+                      'antes, luego el de menor tiempo por unidad. Es '
+                      'informativo: no cambia el molde.</p>' % ''.join(items))
+        wiz = self.env['mrp.mold.options.wizard'].create({
+            'workorder_id': self.id, 'body': cuerpo})
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Moldes posibles — %s' % (self.name or ''),
+            'res_model': 'mrp.mold.options.wizard',
+            'res_id': wiz.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+
+class MrpMoldOptionsWizard(models.TransientModel):
+    _name = 'mrp.mold.options.wizard'
+    _description = 'Moldes posibles para una operación'
+
+    workorder_id = fields.Many2one('mrp.workorder', readonly=True)
+    body = fields.Html(readonly=True, sanitize=True)

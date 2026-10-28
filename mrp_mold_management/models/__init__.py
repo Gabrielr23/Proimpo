@@ -12,3 +12,5 @@ from . import mold_alerts
 from . import setup
 from . import mold_disable_wizard
 from . import mold_alert_config
+from . import mrp_production
+from . import mold_variant

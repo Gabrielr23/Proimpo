@@ -98,6 +98,8 @@ class MrpMoldManagementSetup(models.AbstractModel):
                     <field name="repair_partner_id"
                            invisible="repair_location_type != 'externo'"
                            options="{'no_quick_create': True}"/>
+                    <field name="expected_return_date"
+                           invisible="not is_mold_request"/>
                     <field name="repair_days" readonly="1"
                            invisible="not is_mold_request"/>
                 </xpath>
@@ -129,7 +131,62 @@ class MrpMoldManagementSetup(models.AbstractModel):
                 'mantenimiento (%s). Los campos existen en el modelo; '
                 'agréguelos con Studio.', e)
 
+    _MO_WO_LIST_CANDIDATES = (
+        'mrp.mrp_production_workorder_tree_editable_view',
+    )
+
+    @api.model
+    def ensure_mo_workorder_button(self):
+        """Agrega el botón ⓘ "Moldes posibles" a la lista de órdenes de
+        trabajo dentro de la orden de fabricación.
+
+        En caliente y protegido: si la vista no existe o falla, se registra
+        un aviso y el módulo se instala igual. Si Studio congeló esa lista
+        dentro del formulario de la OF, el botón no se verá ahí (ver el
+        script de diagnóstico de la guía de actualización).
+        """
+        padre = False
+        for xmlid in self._MO_WO_LIST_CANDIDATES:
+            padre = self.env.ref(xmlid, raise_if_not_found=False)
+            if padre:
+                break
+        if not padre:
+            _logger.warning('No se encontró la lista de órdenes de trabajo de '
+                            'la orden de fabricación; el botón de moldes '
+                            'posibles queda solo en Ocupación de Moldes.')
+            return
+        arch = """
+            <data>
+                <xpath expr="//list" position="inside">
+                    <button name="action_mold_options" type="object"
+                            icon="fa-info-circle" title="Moldes posibles"/>
+                </xpath>
+            </data>
+        """
+        View = self.env['ir.ui.view'].sudo()
+        existente = View.search([
+            ('name', '=', 'mrp.workorder.mo.list.mold.options'),
+            ('model', '=', 'mrp.workorder'),
+        ], limit=1)
+        vals = {
+            'name': 'mrp.workorder.mo.list.mold.options',
+            'model': 'mrp.workorder',
+            'inherit_id': padre.id,
+            'arch': arch,
+            'priority': 99,
+        }
+        try:
+            with self.env.cr.savepoint():
+                if existente:
+                    existente.write(vals)
+                else:
+                    View.create(vals)
+        except Exception as e:  # noqa: BLE001 - nunca debe tumbar la carga
+            _logger.warning('No se pudo agregar el botón de moldes posibles a '
+                            'la lista de la orden de fabricación (%s).', e)
+
     @api.model
     def post_update(self):
         self.fix_menu_placement()
         self.ensure_request_view()
+        self.ensure_mo_workorder_button()

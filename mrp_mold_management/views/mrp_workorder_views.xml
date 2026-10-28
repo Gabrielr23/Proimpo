@@ -19,9 +19,12 @@
                   editable="bottom" multi_edit="1">
                 <field name="production_id" readonly="1"/>
                 <field name="name" readonly="1"/>
+                <button name="action_mold_options" type="object"
+                        icon="fa-info-circle" title="Moldes posibles"/>
                 <field name="product_id" readonly="1" optional="show"/>
                 <field name="workcenter_id"/>
                 <field name="mold_id" options="{'no_create': True}"/>
+                <field name="mold_variant_id" optional="show"/>
                 <field name="mold_conflict" optional="show" widget="boolean_toggle"
                        readonly="1"/>
                 <field name="mold_conflict_info" optional="hide" readonly="1"/>

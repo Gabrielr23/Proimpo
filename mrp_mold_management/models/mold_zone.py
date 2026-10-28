@@ -27,6 +27,11 @@ class MrpMoldZone(models.Model):
         help='Marque si dentro de esta zona los moldes se ubican por '
              'posición (0-A, 1-B...). En TALLER o PISO normalmente no.')
 
+    is_external = fields.Boolean(
+        string='Fuera de Planta',
+        help='Marque si la zona está fuera de la planta (por ejemplo TALLER '
+             'AFUERA). Un molde aquí cuenta como "fuera de planta" para la '
+             'alerta al asignar responsable a una orden de fabricación.')
     note = fields.Text(string='Observaciones')
 
     mold_ids = fields.One2many(

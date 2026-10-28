@@ -175,6 +175,25 @@ class MaintenanceEquipment(models.Model):
                         eq.product_id.display_name, otro.display_name))
 
     # ==================================================================
+    # VERSIÓN DEL MOLDE
+    # 0 = el más viejo, 1 = el nuevo, 2 = uno más nuevo... Cada molde físico
+    # es su propio producto y su propia ficha; la "familia" de versiones son
+    # los moldes de una misma operación (principal + alternativos).
+    # ==================================================================
+    mold_version = fields.Integer(
+        string='Versión', default=0, tracking=True,
+        help='0 = molde más viejo, 1 = molde nuevo, 2 = uno más nuevo... '
+             'Se muestra junto al nombre (ej. "Molde Vaso ARGON · v1").')
+
+    @api.depends('name', 'serial_no', 'is_mold', 'mold_version')
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        for eq in self:
+            if eq.is_mold:
+                eq.display_name = '%s · v%d' % (eq.display_name or eq.name or '',
+                                                eq.mold_version or 0)
+
+    # ==================================================================
     # SITUACIÓN vs HABILITACIÓN
     #
     # Dos conceptos deliberadamente separados:
@@ -259,6 +278,22 @@ class MaintenanceEquipment(models.Model):
         for eq in self:
             eq.cycle_time_effective = (
                 eq.cycle_time_current or eq.cycle_time_theoretical)
+
+    # --- Variantes (molde de varias piezas o con cavidades que se tapan) ---
+    has_variants = fields.Boolean(
+        string='¿Tiene Variantes?', tracking=True,
+        help='Marque si el molde se corre con distintas combinaciones de '
+             'cavidades (ej. cuchara + tenedor + cuchillo, o solo cuchara). '
+             'Cada combinación es una variante con su propio ciclo medido, y '
+             'la operación de la LdM debe indicar cuál usa.')
+    variant_ids = fields.One2many(
+        'mrp.mold.variant', 'mold_id', string='Variantes')
+    variant_count = fields.Integer(compute='_compute_variant_count')
+
+    @api.depends('variant_ids')
+    def _compute_variant_count(self):
+        for eq in self:
+            eq.variant_count = len(eq.variant_ids)
 
     standard_weight_g = fields.Float(
         string='Peso Estándar Pieza (g)', digits=(10, 2))
@@ -488,6 +523,73 @@ class MaintenanceEquipment(models.Model):
             return wc
         return self.env['mrp.workcenter']
 
+    expected_return_date = fields.Date(
+        string='Regreso Estimado',
+        help='Cuándo se espera que el molde vuelva a planta (proveedor '
+             'externo, taller). Si hay una solicitud de mantenimiento abierta '
+             'con fecha estimada, se usa esa.')
+
+    def _external_status(self):
+        """(está_fuera_de_planta, motivo, regreso_estimado).
+
+        Cuenta como fuera de planta: centro de trabajo externo, zona
+        marcada "Fuera de Planta" y solicitud de mantenimiento abierta en
+        taller externo.
+        """
+        self.ensure_one()
+        regreso = self.expected_return_date
+        sol = self._open_maintenance_requests().filtered(
+            lambda r: r.repair_location_type == 'externo')
+        if sol:
+            sol = sol.sorted('request_date')[0]
+            return (True, 'en reparación externa%s' % (
+                ' (%s)' % sol.repair_partner_id.display_name
+                if sol.repair_partner_id else ''),
+                sol.expected_return_date or regreso)
+        wc = self._external_production_workcenter()
+        if wc:
+            return True, 'en el proveedor externo %s' % wc.display_name, regreso
+        zona = self.current_zone_id
+        if zona and zona.is_external and not self.current_workcenter_id:
+            return True, 'en %s' % zona.name, regreso
+        return False, '', None
+
+    def _hold_at_external_workcenter(self, workcenter, desde):
+        """Terminó una orden en un CT externo: el molde NO vuelve solo.
+
+        Queda ubicado en ese CT (ubicación fijada) y el responsable del
+        molde recibe una actividad para confirmar el regreso con el botón
+        "Devolver a su ubicación".
+        """
+        Alerts = self.env['mrp.mold.alerts']
+        for mold in self:
+            mold.sudo().write({
+                'current_workcenter_id': workcenter.id,
+                'away_since': desde or fields.Date.context_today(self),
+            })
+            user = mold.technician_user_id or mold.owner_user_id \
+                or Alerts._configured_user('jefe')
+            if not user:
+                continue
+            modelo = self.env['ir.model']._get(mold._name)
+            Act = self.env['mail.activity'].sudo()
+            resumen = 'Confirmar regreso del molde desde %s' % workcenter.display_name
+            if Act.search_count([('res_model_id', '=', modelo.id),
+                                 ('res_id', '=', mold.id),
+                                 ('summary', '=', resumen)]):
+                continue
+            Act.create({
+                'res_model_id': modelo.id,
+                'res_id': mold.id,
+                'user_id': user.id,
+                'summary': resumen,
+                'note': 'Se cerró la orden en %s, pero eso no significa que el '
+                        'molde ya volvió. Cuando llegue a planta, pulsa '
+                        '"Devolver a su ubicación" en la ficha del molde.'
+                        % workcenter.display_name,
+                'date_deadline': fields.Date.context_today(self),
+            })
+
     def _manual_location_label(self):
         self.ensure_one()
         if self.current_workcenter_id:
@@ -560,7 +662,16 @@ class MaintenanceEquipment(models.Model):
                 'location_manual_uid': False,
                 'location_manual_date': False,
                 'away_since': False,
+                'expected_return_date': False,
             })
+        # El molde volvió: se cierran las actividades de "confirmar regreso".
+        acts = self.env['mail.activity'].sudo().search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', self.ids),
+            ('summary', '=like', 'Confirmar regreso del molde%'),
+        ])
+        if acts:
+            acts.action_feedback(feedback='Molde devuelto a su ubicación.')
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -665,14 +776,15 @@ class MaintenanceEquipment(models.Model):
 
         updated, skipped_auto, unlinked = [], [], []
         for mold in self:
-            if not mold.cycle_time_effective or not mold.cavity_count:
-                continue
-            minutos = (mold.cycle_time_effective / mold.cavity_count) / 60.0
             operaciones = mold.qualified_operation_ids
             if not operaciones:
                 unlinked.append(mold.display_name)
                 continue
             for op in operaciones:
+                # Por operación: si usa una variante, manda su ciclo medido.
+                minutos = op._mold_minutes_per_unit(mold)
+                if not minutos:
+                    continue
                 etiqueta = '%s (%s)' % (op.name, op.bom_id.display_name or '')
                 if op.time_mode != 'manual':
                     skipped_auto.append(etiqueta)

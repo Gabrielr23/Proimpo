@@ -703,3 +703,50 @@ vistas de equipo, orden de trabajo, operación, zonas, revisión e informe.
   ni aunque se cierre la actividad.
 - **Masivo:** acción `Propagar ciclo a las LdM` sobre los moldes
   seleccionados (`action_propagate_cycle`).
+
+## v18.0.2.4.0 — aviso al asignar responsable y regreso desde CT externo
+
+- **Aviso al asignar responsable** (`mrp.production.write` con `user_id`):
+  si un molde que la orden necesita está fuera de planta (CT externo,
+  zona `is_external`, solicitud abierta en taller externo), crea una
+  actividad para el responsable de la OF (en la OF) y para el responsable
+  del molde (en el molde). Incluye días fuera, regreso estimado y
+  alternativos disponibles. No avisa a ventas ni bloquea.
+- **Regreso desde CT externo:** al pasar a `done` una OT en un CT con
+  `x_studio_ct_externo`, el molde queda ubicado en ese CT (ubicación fijada)
+  y su responsable recibe "Confirmar regreso del molde". `action_return_home`
+  cierra esas actividades.
+- Campos nuevos: `mrp.mold.zone.is_external`,
+  `maintenance.equipment.expected_return_date`,
+  `maintenance.request.expected_return_date`.
+
+## v18.0.3.0.0 — variantes del molde
+
+- Modelos nuevos `mrp.mold.variant` (nombre, molde, ciclo medido, piezas,
+  cavidades abiertas, juegos por disparo, nombre completo `ML-… / Variante`
+  para importar; único por molde) y `mrp.mold.variant.line` (pieza
+  `product.template` + cavidades).
+- `maintenance.equipment.has_variants` ("¿Tiene Variantes?") y `variant_ids`.
+- `mrp.routing.workcenter.mold_variant_id` (obligatoria en la vista si el
+  molde tiene variantes). `_mold_minutes_per_unit` usa el ciclo de la variante
+  ÷ cavidades de la pieza de la LdM, o ÷ juegos por disparo si la LdM es de un
+  juego. El objetivo por hora, la duración de la OT y la propagación del ciclo
+  usan la misma regla. Los alternativos siguen con ciclo ÷ cavidades propios.
+- `mrp.workorder.mold_variant_id` relacionado (solo lectura).
+- Menú Moldes → Variantes del Molde.
+- Estructura de LdM decidida: una LdM por pieza y una LdM de juego por
+  combinación que se corra junta. Reparto de costo pendiente.
+
+## v18.0.3.1.0 — versión del molde, duración al guardar, moldes posibles
+
+- `maintenance.equipment.mold_version` (0 viejo, 1 nuevo…); `display_name`
+  de los moldes termina en " · vN".
+- `mrp.routing.workcenter`: `_apply_mold_cycle()` en `create`/`write` cuando
+  cambian `mold_id` o `mold_variant_id` (antes solo había onchange, que no
+  corre al importar). Guardado con contexto `mold_cycle_applied`.
+- `mrp.workorder.action_mold_options()`: nota con moldes posibles
+  (principal + alternativos), orden: disponible ya → disponible desde (fin de
+  la OT que lo ocupa o regreso estimado) → sin fecha → inhabilitado/baja;
+  luego menor tiempo por unidad. Wizard `mrp.mold.options.wizard`.
+- Botón ⓘ en Ocupación de Moldes; en la lista de OT de la OF se agrega en
+  caliente (`setup.ensure_mo_workorder_button`, protegido con savepoint).
