@@ -159,6 +159,19 @@ class HrPayslip(models.Model):
             horas_base += horas
             filas.append({'code': code, 'name': '%s (no remunerado)' % (wd.name or wd.work_entry_type_id.name),
                           'qty_txt': self._fmt_cant(round(horas, 2)), 'amount': 0.0, 'info': True})
+        # v1.4.2: vacaciones que vienen de un periodo anterior (ya pagadas anticipadamente):
+        # linea informativa con sus horas, sin valor (como CGUNO), para que el control cierre.
+        if hasattr(self, '_vac_disfrutadas') and not any(f['code'] in ('VAC', 'VACDISF') for f in filas):
+            try:
+                vac = self._vac_disfrutadas()
+            except Exception:  # noqa: BLE001
+                vac = {}
+            if vac.get('total'):
+                h = vac['total'] * self._HORAS_DIA
+                horas_base += h
+                filas.insert(1 if filas else 0, {
+                    'code': 'VAC', 'name': 'Vacaciones (pagadas en el período anterior)',
+                    'qty_txt': self._fmt_cant(round(h, 2)), 'amount': 0.0, 'info': True})
         return filas, round(horas_base, 2)
 
     def _volante_email(self):
