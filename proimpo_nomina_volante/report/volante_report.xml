@@ -5,11 +5,11 @@
         <field name="name">Volante compacto</field>
         <field name="format">Letter</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">30</field>
+        <field name="margin_top">8</field>
         <field name="margin_bottom">8</field>
         <field name="margin_left">8</field>
         <field name="margin_right">8</field>
-        <field name="header_spacing">4</field>
+        <field name="header_spacing">0</field>
         <field name="dpi">90</field>
     </record>
 
@@ -31,13 +31,31 @@
                 <t t-set="deds" t-value="o.line_ids.filtered(lambda l: l.salary_rule_id.type_concept == 'deduction' and l.total != 0)"/>
                 <t t-set="deds_norm" t-value="deds.filtered(lambda l: l.salary_rule_id.code not in ('PREST', 'LIBR'))"/>
                 <t t-set="prestamos" t-value="o._volante_prestamos()"/>
-                <t t-set="devrows" t-value="o._volante_devengados()"/>
+                <t t-set="devres" t-value="o._volante_devengados()"/>
+                <t t-set="devrows" t-value="devres[0]"/>
+                <t t-set="horas_base" t-value="devres[1]"/>
+                <t t-set="horas_periodo" t-value="o._volante_horas_periodo()"/>
                 <t t-set="tot_dev" t-value="sum(devs.mapped('total'))"/>
                 <t t-set="tot_ded" t-value="sum(deds.mapped('total'))"/>
-                <t t-call="web.external_layout">
+                <t t-call="web.basic_layout">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10px; color:#222;">
 
-                    <!-- Título compacto (el membrete de la empresa lo pone el layout estándar) -->
+                    <!-- v1.3.4: membrete propio y compacto (el layout estandar de la compania
+                         ocupaba mas alto que el margen y se montaba sobre los datos del empleado) -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+                        <tr>
+                            <td style="width:35%; vertical-align:middle; padding:0;">
+                                <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height:38px; max-width:220px;"/>
+                            </td>
+                            <td style="width:65%; text-align:right; vertical-align:middle; padding:0; font-size:9px; color:#444; line-height:1.25;">
+                                <div style="font-size:11px; font-weight:bold; color:#1F4E79;"><span t-field="o.company_id.name"/></div>
+                                <div t-if="o.company_id.vat">NIT <span t-field="o.company_id.vat"/></div>
+                                <div><span t-field="o.company_id.street"/><t t-if="o.company_id.city"> · <span t-field="o.company_id.city"/></t><t t-if="o.company_id.state_id">, <span t-field="o.company_id.state_id.name"/></t></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Título compacto -->
                     <div style="text-align:center; border-bottom:2px solid #1F4E79; padding-bottom:2px; margin-bottom:2px;">
                         <span style="font-size:13px; font-weight:bold; color:#1F4E79;">COMPROBANTE DE PAGO</span>
                         <span style="font-size:10px; color:#555;"> — <span t-field="o.struct_id.name"/> · Documento <span t-field="o.number"/></span>
@@ -69,18 +87,18 @@
                             <tr style="background:#1F4E79; color:#fff;">
                                 <th style="padding:2px 4px; text-align:left; width:8%;">Cód.</th>
                                 <th style="padding:2px 4px; text-align:left; width:46%;">Concepto</th>
-                                <th style="padding:2px 4px; text-align:right; width:12%;">Cant.</th>
+                                <th style="padding:2px 4px; text-align:right; width:12%;">Horas</th>
                                 <th style="padding:2px 4px; text-align:right; width:17%;">Devengado</th>
                                 <th style="padding:2px 4px; text-align:right; width:17%;">Deducción</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-foreach="devrows" t-as="l">
-                                <tr style="border-bottom:1px solid #e5e5e5;">
+                                <tr t-att-style="'border-bottom:1px solid #e5e5e5;' + (' color:#777; font-style:italic;' if l.get('info') else '')">
                                     <td style="padding:1px 4px;"><span t-esc="l['code']"/></td>
                                     <td style="padding:1px 4px;"><span t-esc="l['name']"/></td>
                                     <td style="padding:1px 4px; text-align:right;"><span t-esc="l['qty_txt']"/></td>
-                                    <td style="padding:1px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(l['amount'])"/></td>
+                                    <td style="padding:1px 4px; text-align:right;"><span t-if="not l.get('info')" t-esc="'{:,.0f}'.format(l['amount'])"/></td>
                                     <td style="padding:1px 4px;"></td>
                                 </tr>
                             </t>
@@ -105,6 +123,11 @@
                             </t>
                         </tbody>
                         <tfoot>
+                            <tr style="font-size:9px; color:#555;">
+                                <td colspan="2" style="padding:2px 4px; text-align:right;">Horas base del período (control: <span t-esc="o._fmt_cant(horas_periodo)"/> h)</td>
+                                <td style="padding:2px 4px; text-align:right; font-weight:bold;"><span t-esc="o._fmt_cant(horas_base)"/></td>
+                                <td></td><td></td>
+                            </tr>
                             <tr style="background:#DDEBF7; font-weight:bold;">
                                 <td colspan="3" style="padding:3px 4px; text-align:right;">TOTALES</td>
                                 <td style="padding:3px 4px; text-align:right;"><span t-esc="'{:,.0f}'.format(tot_dev)"/></td>
