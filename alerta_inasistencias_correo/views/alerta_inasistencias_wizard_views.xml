@@ -35,10 +35,12 @@
     <!-- Anclado bajo el menú raíz de la app Asistencias. Verificado contra
          el código fuente de Odoo 18.0: hr_attendance.menu_hr_attendance_root
          existe con ese id exacto (addons/hr_attendance/views/hr_attendance_view.xml). -->
+    <!-- ✅ 2026-10-29: visible solo para administradores de Asistencias. -->
     <menuitem id="menu_alerta_inasistencias_wizard"
               name="Alerta de Inasistencias"
               parent="hr_attendance.menu_hr_attendance_root"
               action="action_alerta_inasistencias_wizard"
+              groups="hr_attendance.group_hr_attendance_manager"
               sequence="100"/>
 
 </odoo>

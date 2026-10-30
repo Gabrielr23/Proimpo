@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 
-from odoo import models, fields
+from odoo import models, fields, _
+from odoo.exceptions import AccessError
 
 from ..models.hr_attendance import TZ
+
+GRUPO_AUTORIZADO = 'hr_attendance.group_hr_attendance_manager'
 
 
 class AlertaInasistenciasWizard(models.TransientModel):
@@ -30,13 +33,20 @@ class AlertaInasistenciasWizard(models.TransientModel):
         """Dispara ejecutar_alerta_inasistencias() de inmediato, fuera de
         los horarios programados — mismo motor que usan los 4 ir.cron."""
         self.ensure_one()
+        # ✅ 2026-10-29: solo administradores de Asistencias (además de la
+        # restricción del menú y de ir.model.access.csv).
+        if not self.env.user.has_group(GRUPO_AUTORIZADO):
+            raise AccessError(_(
+                "Solo los administradores de Asistencias pueden enviar "
+                "la alerta de inasistencias."
+            ))
 
         fecha_objetivo = None
         if self.fecha_objetivo_sel == 'ayer':
             # Mismo cálculo de "ayer" que usa el cron del resumen de 06:30.
             fecha_objetivo = datetime.now(TZ).date() - timedelta(days=1)
 
-        resultado = self.env['hr.attendance'].sudo().ejecutar_alerta_inasistencias(
+        resultado = self.env['hr.attendance'].sudo()._ejecutar_alerta_inasistencias(
             fecha_objetivo=fecha_objetivo,
         )
 
