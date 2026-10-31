@@ -1,0 +1,82 @@
+# -*- coding: utf-8 -*-
+{
+    'name': "Ejecución en Piso - Averías",
+    'version': '18.0.1.6.1',
+    'category': 'Manufacturing',
+    'summary': "Registrar avance, hoja de trabajo unificada de averías y "
+               "razones de pérdida por Centro de Trabajo (PROIMPO)",
+    'description': """
+Migra a módulo las automatizaciones de averías que hoy viven en Studio, y
+agrega:
+
+  * Fase 1: automatizaciones de creación de control de calidad y
+    totalización de averías (antes en Acciones automatizadas de Studio).
+  * Fase 2: wizard "Registrar avance" para cerrar la línea de Seguimiento
+    de tiempo en curso y abrir la siguiente sin pasar por "Pausado". El
+    botón se agrega solo en la orden de trabajo (busca en vivo la vista
+    con el botón nativo "Iniciar" y hereda ahí) -- ya no es un paso
+    manual.
+  * Fase 4: catálogo de categorías de avería (mrp.averia.categoria)
+    filtrado por tipo de Centro de Trabajo, para la hoja de trabajo
+    unificada "Registro Averías" (varias líneas por hora, cada una con
+    categoría, cantidad y descripción libre). La hoja se abre al
+    marcar ¿Avería? (ya no depende de una cantidad previa) y su total
+    se sincroniza de vuelta a Seguimiento de tiempo. El control de
+    calidad muestra un botón inteligente "Averías" (solo si aplica)
+    que abre la hoja correspondiente -- sin depender de plantillas de
+    hoja de trabajo.
+  * Fase 5: extensión del catálogo nativo de Razones de pérdida
+    (mrp.workcenter.productivity.loss) con etiqueta de Centro de Trabajo
+    e indicador Programada/No programada, cargado con las razones de
+    PROIMPO (Inyectoras, Sopladoras, Impresión, Sellado).
+  * Fase 6 (primer corte): reporte "Averías Tipificadas" (lista, pivote,
+    gráfico), reemplazo del reporte viejo -- lee de las tablas propias
+    del módulo, no de las plantillas de hoja de trabajo de Studio.
+    Incluye turno (shift_name/shift_date/shift_is_planned), calculado
+    por el módulo mrp_shift_resolver.
+  * 18.0.1.6.0 (feedback de la prueba piloto 21-10): Registrar avance con
+    operario (opcional, vacío en cambio de turno), tramos sin huecos ni
+    cruces (cierra y abre a la misma hora), tipo de productividad por
+    rendimiento real al cerrar el tramo (umbral en el parámetro
+    mrp_averias_execution.umbral_rendimiento, 95 por defecto), paradas
+    dentro del tramo y huecos con motivo, bitácora de correcciones del
+    Seguimiento de tiempo (Fabricación > Informes), P03 y P10 separadas.
+  * 18.0.1.6.1: minutos del wizard en formato minutos:segundos.
+
+No se toca ningún campo Studio existente (x_studio_*) — el módulo los
+referencia por nombre técnico y construye la funcionalidad nueva encima.
+
+El bloqueo/desbloqueo de Centro de Trabajo (antes "Fase 3" del plan)
+queda deliberadamente fuera de este módulo por ahora.
+
+IMPORTANTE: si el módulo viejo "mrp_averias_report" sigue instalado,
+hay que desinstalarlo/eliminarlo ANTES de actualizar esta versión --
+este módulo define un modelo con el mismo nombre técnico
+(mrp.averia.report) para ocupar su lugar.
+""",
+    'author': "PROIMPO S.A.S",
+    'depends': [
+        'mrp',
+        'quality_control',
+        'quality_mrp',
+        'quality_control_worksheet',
+        'mrp_shift_resolver',
+        'hr',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/mrp_workorder_progress_wizard_views.xml',
+        'views/mrp_averia_categoria_views.xml',
+        'views/mrp_averia_linea_views.xml',
+        'views/quality_check_views.xml',
+        'views/mrp_averia_report_views.xml',
+        'views/mrp_seguimiento_log_views.xml',
+        'data/ir_config_parameter_data.xml',
+        'data/mrp_averia_categoria_data.xml',
+        'data/mrp_workcenter_productivity_loss_data.xml',
+        'data/menu_placement.xml',
+    ],
+    'installable': True,
+    'application': False,
+    'license': 'LGPL-3',
+}

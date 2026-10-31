@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sin noupdate: se re-ejecuta en cada actualización del módulo,
+         igual que en mrp_mold_management. Debe cargarse DESPUÉS de
+         views/mrp_averia_categoria_views.xml (el orden en el
+         manifest importa: la acción tiene que existir primero). -->
+    <function model="mrp.averias.execution.setup" name="fix_menu_placement" eval="[[]]"/>
+
+    <!-- Botón "Registrar avance" en la orden de trabajo; antes era
+         un paso manual en Studio. Debe cargarse DESPUÉS de
+         views/mrp_workorder_progress_wizard_views.xml (necesita que
+         la acción del wizard ya exista). -->
+    <function model="mrp.averias.execution.setup" name="fix_registrar_avance_button" eval="[[]]"/>
+
+    <!-- P03 / P10 partidas en dos razones (una sola vez). -->
+    <function model="mrp.averias.execution.setup" name="fix_catalogo_p03_p10" eval="[[]]"/>
+</odoo>

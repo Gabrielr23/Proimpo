@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_averia_report_list" model="ir.ui.view">
+        <field name="name">mrp.averia.report.list</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="fecha desc">
+                <field name="fecha"/>
+                <field name="shift_name"/>
+                <field name="workcenter_id"/>
+                <field name="tipo_centro_trabajo"/>
+                <field name="product_id"/>
+                <field name="production_id"/>
+                <field name="operacion_id"/>
+                <field name="categoria_id"/>
+                <field name="cantidad" sum="Total"/>
+                <field name="quality_state"/>
+                <field name="shift_is_planned" optional="hide"/>
+                <field name="descripcion" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mrp_averia_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.averia.report.pivot</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="tipo_centro_trabajo" type="row"/>
+                <field name="shift_name" type="row"/>
+                <field name="categoria_id" type="row"/>
+                <field name="fecha" interval="day" type="col"/>
+                <field name="cantidad" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_mrp_averia_report_graph" model="ir.ui.view">
+        <field name="name">mrp.averia.report.graph</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <graph type="bar" stacked="1">
+                <field name="workcenter_id"/>
+                <field name="categoria_id"/>
+                <field name="cantidad" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_mrp_averia_report_search" model="ir.ui.view">
+        <field name="name">mrp.averia.report.search</field>
+        <field name="model">mrp.averia.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="workcenter_id"/>
+                <field name="product_id"/>
+                <field name="categoria_id"/>
+                <field name="production_id"/>
+                <field name="shift_name" string="Turno"/>
+                <filter string="Hoy" name="hoy"
+                        domain="[('fecha', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Aprobados" name="aprobados"
+                        domain="[('quality_state', '=', 'pass')]"/>
+                <filter string="Fallidos" name="fallidos"
+                        domain="[('quality_state', '=', 'fail')]"/>
+                <filter string="Turno no planeado" name="no_planeado"
+                        domain="[('shift_is_planned', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Centro de trabajo" name="group_ct"
+                            context="{'group_by': 'workcenter_id'}"/>
+                    <filter string="Tipo de CT" name="group_tipo_ct"
+                            context="{'group_by': 'tipo_centro_trabajo'}"/>
+                    <filter string="Turno" name="group_turno"
+                            context="{'group_by': 'shift_name'}"/>
+                    <filter string="Fecha operativa del turno" name="group_shift_date"
+                            context="{'group_by': 'shift_date'}"/>
+                    <filter string="Categoría de avería" name="group_categoria"
+                            context="{'group_by': 'categoria_id'}"/>
+                    <filter string="Producto" name="group_producto"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter string="Categoría de producto" name="group_categ_producto"
+                            context="{'group_by': 'product_categ_id'}"/>
+                    <filter string="Orden de fabricación" name="group_of"
+                            context="{'group_by': 'production_id'}"/>
+                    <filter string="Fecha (día)" name="group_fecha"
+                            context="{'group_by': 'fecha:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mrp_averia_report" model="ir.actions.act_window">
+        <field name="name">Averías Tipificadas</field>
+        <field name="res_model">mrp.averia.report</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="search_view_id" ref="view_mrp_averia_report_search"/>
+        <field name="context">{'search_default_group_ct': 1}</field>
+    </record>
+
+</odoo>
