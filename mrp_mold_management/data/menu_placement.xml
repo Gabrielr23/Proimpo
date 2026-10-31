@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Un <function> en archivo de datos SIN noupdate se reejecuta en cada
+        actualización del módulo, a diferencia de post_init_hook, que solo
+        corre en la primera instalación — y este módulo siempre se despliega
+        actualizando. Debe cargarse DESPUÉS de los archivos que crean los
+        menús.
+    -->
+    <function model="mrp.mold.management.setup" name="post_update" eval="[]"/>
+
+</odoo>
