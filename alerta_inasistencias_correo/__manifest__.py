@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Alerta de Inasistencias por Correo a RH',
-    # Verificado contra el código fuente de Odoo 18.0 (rama 18.0 de
-    # github.com/odoo/odoo): mail.mail.email_cc existe, hr.leave state
-    # 'validate' existe, y el menú hr_attendance.menu_hr_attendance_root
-    # existe tal cual se referencia en views/alerta_inasistencias_wizard_views.xml.
-    'version': '19.0.1.0.0',
+    # Verificado contra el código fuente de Odoo 19.0 (rama 19.0 de
+    # github.com/odoo/odoo, 2026-11-04): mail.mail.email_cc existe, hr.leave
+    # state 'validate' existe, hr_attendance.menu_hr_attendance_root y
+    # hr_attendance.group_hr_attendance_manager existen, y los campos de
+    # hr.employee usados (identification_id, private_country_id,
+    # private_state_id, address_id, resource_calendar_id) siguen accesibles
+    # desde el empleado (en 19.0 viven en hr.version vía _inherits).
+    'version': '19.0.1.1.0',
     'category': 'Human Resources',
     'license': 'LGPL-3',
     'summary': (
@@ -28,7 +31,8 @@ Módulo liviano (sin modelos de datos nuevos, sin tablas que crezcan) que:
 - Agrega un asistente (wizard) con un botón "Enviar alerta ahora" para
   disparar el envío manualmente en cualquier momento, además de los 4
   ir.cron programados (que se configuran aparte, ver el modo de uso al
-  final de models/hr_attendance.py).
+  final de models/hr_attendance.py). El botón y el envío están
+  restringidos a los administradores de Asistencias.
 
 Por qué es un módulo instalable (y no solo una Acción de Servidor con el
 código pegado): el reporte usa una librería externa (xlsxwriter) y es
@@ -37,7 +41,7 @@ una Acción de Servidor. Empaquetado como método de un modelo, corre como
 Python normal sin esa restricción; la Acción de Servidor / el botón del
 wizard solo necesitan una línea que lo invoque.
 """,
-    'author': 'Interno',
+    'author': 'Proimpo S.A.S',
     'depends': [
         'base',
         'hr',
