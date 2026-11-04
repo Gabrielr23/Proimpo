@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        <function> SIN noupdate: se reejecuta en cada actualización del módulo
+        (post_init_hook solo corre en la primera instalación). Debe cargarse
+        DESPUÉS del archivo que crea los menús.
+    -->
+    <function model="mrp.oee.report.setup" name="fix_menu_placement" eval="[]"/>
+    <!-- Recalcula los últimos días y dispara el histórico si el cálculo cambió. -->
+    <function model="mrp.oee.line" name="_after_update" eval="[]"/>
+</odoo>

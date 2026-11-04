@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== OEE POR TURNO: LISTA ==================== -->
+    <record id="view_mrp_oee_report_list" model="ir.ui.view">
+        <field name="name">mrp.oee.report.list</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <list string="OEE por Turno" create="false" edit="false" delete="false">
+                <field name="shift_date"/>
+                <field name="workcenter_id"/>
+                <field name="shift_name"/>
+                <field name="shift_is_planned" optional="show"/>
+                <field name="unidades_buenas" sum="Buenas"/>
+                <field name="unidades_averias" sum="Averías"/>
+                <field name="minutos_registrados" sum="Registrados" optional="hide"/>
+                <field name="minutos_autorizados" sum="Autorizadas" optional="show"/>
+                <field name="minutos_cargados" sum="Cargados" optional="hide"/>
+                <field name="minutos_no_programados" sum="No programadas" optional="show"/>
+                <field name="minutos_operando" sum="Operando" optional="hide"/>
+                <field name="minutos_estandar" sum="Estándar" optional="hide"/>
+                <field name="oee_target" column_invisible="True"/>
+                <field name="disponibilidad" widget="badge"
+                       decoration-success="disponibilidad &gt;= oee_target"
+                       decoration-warning="disponibilidad &gt;= oee_target - 10 and disponibilidad &lt; oee_target"
+                       decoration-danger="disponibilidad &lt; oee_target - 10"/>
+                <field name="rendimiento" widget="badge"
+                       decoration-success="rendimiento &gt;= oee_target"
+                       decoration-warning="rendimiento &gt;= oee_target - 10 and rendimiento &lt; oee_target"
+                       decoration-danger="rendimiento &lt; oee_target - 10"/>
+                <field name="calidad" widget="badge"
+                       decoration-success="calidad &gt;= oee_target"
+                       decoration-warning="calidad &gt;= oee_target - 10 and calidad &lt; oee_target"
+                       decoration-danger="calidad &lt; oee_target - 10"/>
+                <field name="oee" widget="badge"
+                       decoration-success="oee &gt;= oee_target"
+                       decoration-warning="oee &gt;= oee_target - 10 and oee &lt; oee_target"
+                       decoration-danger="oee &lt; oee_target - 10"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mrp_oee_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.oee.report.pivot</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <pivot string="OEE por Turno (minutos)" sample="1">
+                <field name="workcenter_id" type="row"/>
+                <field name="minutos_cargados" type="measure"/>
+                <field name="minutos_operando" type="measure"/>
+                <field name="minutos_estandar" type="measure"/>
+                <field name="unidades_buenas" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_mrp_oee_report_search" model="ir.ui.view">
+        <field name="name">mrp.oee.report.search</field>
+        <field name="model">mrp.oee.report</field>
+        <field name="arch" type="xml">
+            <search string="OEE por Turno">
+                <field name="workcenter_id"/>
+                <field name="shift_name"/>
+                <filter name="filter_shift_date" date="shift_date" string="Fecha Operativa"/>
+                <separator/>
+                <filter name="solo_planeados" string="Solo turnos planeados"
+                        domain="[('shift_is_planned', '=', True)]"/>
+                <filter name="turno_extra" string="Turno extra / no planeado"
+                        domain="[('shift_is_planned', '=', False)]"/>
+                <group>
+                    <filter name="group_workcenter" string="Centro de Trabajo"
+                            context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_shift" string="Turno"
+                            context="{'group_by': 'shift_name'}"/>
+                    <filter name="group_day" string="Fecha Operativa"
+                            context="{'group_by': 'shift_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mrp_oee_report" model="ir.actions.act_window">
+        <field name="name">OEE por Turno</field>
+        <field name="res_model">mrp.oee.report</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_mrp_oee_report_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay datos de OEE</p>
+            <p>Se alimenta del seguimiento de tiempo de las órdenes de trabajo,
+               con cantidad y averías registradas hora a hora. Los % de cada fila
+               son de ese turno; para consolidados use el Tablero OEE.</p>
+        </field>
+    </record>
+
+    <!-- ==================== LÍNEAS DE TIEMPO ==================== -->
+    <record id="view_mrp_oee_line_list" model="ir.ui.view">
+        <field name="name">mrp.oee.line.list</field>
+        <field name="model">mrp.oee.line</field>
+        <field name="arch" type="xml">
+            <list string="Líneas de OEE" create="false" edit="false" delete="false">
+                <field name="date_start"/>
+                <field name="shift_name"/>
+                <field name="workcenter_id"/>
+                <field name="production_id" optional="show"/>
+                <field name="product_id" optional="show"/>
+                <field name="operario" optional="show"/>
+                <field name="loss_id"/>
+                <field name="time_class" widget="badge"
+                       decoration-success="time_class == 'running'"
+                       decoration-muted="time_class == 'authorized'"
+                       decoration-danger="time_class == 'unplanned'"/>
+                <field name="min_registrado" sum="Minutos"/>
+                <field name="unidades_buenas" sum="Buenas"/>
+                <field name="unidades_averias" sum="Averías"/>
+                <field name="std_source" optional="show"/>
+                <field name="std_min_unit" optional="hide"/>
+                <field name="min_estandar" sum="Estándar" optional="hide"/>
+                <field name="min_bruto" sum="Según la línea" optional="hide"/>
+                <field name="min_traslape" sum="Traslapado" optional="show"/>
+                <field name="olvidada" optional="show"/>
+                <field name="productivity_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mrp_oee_line_pivot" model="ir.ui.view">
+        <field name="name">mrp.oee.line.pivot</field>
+        <field name="model">mrp.oee.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Minutos por clase de tiempo">
+                <field name="workcenter_id" type="row"/>
+                <field name="time_class" type="col"/>
+                <field name="min_registrado" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_mrp_oee_line_search" model="ir.ui.view">
+        <field name="name">mrp.oee.line.search</field>
+        <field name="model">mrp.oee.line</field>
+        <field name="arch" type="xml">
+            <search string="Líneas de OEE">
+                <field name="workcenter_id"/>
+                <field name="production_id"/>
+                <field name="product_id"/>
+                <field name="operario"/>
+                <field name="loss_id"/>
+                <filter name="filter_shift_date" date="shift_date" string="Fecha Operativa"/>
+                <separator/>
+                <filter name="running" string="Operando" domain="[('time_class', '=', 'running')]"/>
+                <filter name="authorized" string="Paradas autorizadas" domain="[('time_class', '=', 'authorized')]"/>
+                <filter name="unplanned" string="Paradas no programadas" domain="[('time_class', '=', 'unplanned')]"/>
+                <separator/>
+                <filter name="sin_estandar" string="Sin ciclo estándar" domain="[('std_source', '=', 'none')]"/>
+                <filter name="olvidadas" string="Líneas olvidadas (&gt; 12 h)" domain="[('olvidada', '=', True)]"/>
+                <filter name="traslapes" string="Con traslape" domain="[('min_traslape', '&gt;', 0.5)]"/>
+                <group>
+                    <filter name="g_wc" string="Centro de Trabajo" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="g_loss" string="Motivo" context="{'group_by': 'loss_id'}"/>
+                    <filter name="g_class" string="Clase de tiempo" context="{'group_by': 'time_class'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mrp_oee_line" model="ir.actions.act_window">
+        <field name="name">Líneas de OEE</field>
+        <field name="res_model">mrp.oee.line</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_mrp_oee_line_search"/>
+    </record>
+
+    <!-- ==================== MOTIVOS DE PÉRDIDA (OEE) ==================== -->
+    <record id="view_oee_loss_list" model="ir.ui.view">
+        <field name="name">mrp.workcenter.productivity.loss.oee.list</field>
+        <field name="model">mrp.workcenter.productivity.loss</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Motivos de pérdida (OEE)" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="loss_id"/>
+                <field name="oee_authorized_stop"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_oee_loss" model="ir.actions.act_window">
+        <field name="name">Motivos de pérdida (OEE)</field>
+        <field name="res_model">mrp.workcenter.productivity.loss</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_oee_loss_list"/>
+        <field name="help" type="html">
+            <p>Marque "Parada autorizada" en setup, cambio de molde o color,
+               purga y limpieza: su tiempo no resta Disponibilidad.</p>
+        </field>
+    </record>
+
+    <!-- ==================== TABLERO ==================== -->
+    <record id="action_mrp_oee_dashboard" model="ir.actions.client">
+        <field name="name">Tablero OEE</field>
+        <field name="tag">mrp_oee_dashboard</field>
+    </record>
+
+    <!-- ==================== REGENERAR ==================== -->
+    <record id="action_server_rebuild_oee_view" model="ir.actions.server">
+        <field name="name">Regenerar informe de OEE</field>
+        <field name="model_id" ref="model_mrp_oee_report"/>
+        <field name="binding_model_id" ref="model_mrp_oee_report"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_rebuild_view()</field>
+    </record>
+
+    <!-- Sin parent: data/menu_placement.xml los cuelga en su lugar -->
+    <menuitem id="menu_mrp_oee_dashboard" name="Tablero OEE"
+              action="action_mrp_oee_dashboard" sequence="79"/>
+    <menuitem id="menu_mrp_oee_report" name="OEE por Turno"
+              action="action_mrp_oee_report" sequence="80"/>
+    <menuitem id="menu_mrp_oee_line" name="Líneas de OEE"
+              action="action_mrp_oee_line" sequence="81"/>
+    <menuitem id="menu_mrp_oee_loss" name="Motivos de pérdida (OEE)"
+              action="action_oee_loss" sequence="90"/>
+
+</odoo>

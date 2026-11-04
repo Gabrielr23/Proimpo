@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Etiquetas de CT donde dos órdenes pueden correr a la vez (no se
+         deduplica su tiempo). Separadas por coma, nombre exacto de la etiqueta.
+         Editar en Ajustes > Técnico > Parámetros del sistema y luego pulsar
+         Actualizar en el tablero. -->
+    <record id="param_parallel_tags" model="ir.config_parameter">
+        <field name="key">mrp_oee_report.parallel_tags</field>
+        <field name="value">Terminado &amp; Empaque</field>
+    </record>
+    <!-- Días hacia atrás que se recalculan solos cada 15 min y con el botón
+         Actualizar. Correcciones más antiguas: botón "Recalcular periodo". -->
+    <record id="param_recalc_days" model="ir.config_parameter">
+        <field name="key">mrp_oee_report.recalc_days</field>
+        <field name="value">3</field>
+    </record>
+</odoo>

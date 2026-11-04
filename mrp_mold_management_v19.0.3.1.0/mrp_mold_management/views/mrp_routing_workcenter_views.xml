@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Vista base confirmada por diagnóstico en vivo:
+        mrp.mrp_routing_workcenter_form_view (sin padre). Las extensiones de
+        mrp_workorder y de Studio heredan de esa misma base de forma
+        independiente, así que esta tercera se combina sin conflicto.
+    -->
+    <record id="view_mrp_routing_workcenter_form_mold" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.form.mold</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='workcenter_id']" position="after">
+                <field name="mold_id" options="{'no_quick_create': True}"/>
+                <field name="mold_has_variants" invisible="1"/>
+                <field name="mold_variant_id"
+                       invisible="not mold_has_variants"
+                       required="mold_has_variants"
+                       options="{'no_quick_create': True}"
+                       context="{'default_mold_id': mold_id}"/>
+                <field name="alternative_mold_ids" widget="many2many_tags"
+                       options="{'no_quick_create': True}"/>
+                <field name="mold_cavity_count" invisible="not mold_id"/>
+                <field name="mold_cycle_time" invisible="not mold_id"/>
+                <field name="hourly_target" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        Lista de operaciones dentro de la LdM. Ancla deliberadamente
+        conservadora (//list position="inside"): agrega al final sin asumir
+        nada sobre las demás columnas ni su orden.
+    -->
+    <record id="view_mrp_routing_workcenter_bom_list_mold" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.bom.list.mold</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_bom_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="mold_id" optional="show"/>
+                <field name="mold_variant_id" optional="show"/>
+                <field name="alternative_mold_ids" widget="many2many_tags"
+                       optional="hide"/>
+                <field name="mold_cavity_count" optional="hide"/>
+                <field name="mold_cycle_time" optional="hide"/>
+                <field name="hourly_target" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

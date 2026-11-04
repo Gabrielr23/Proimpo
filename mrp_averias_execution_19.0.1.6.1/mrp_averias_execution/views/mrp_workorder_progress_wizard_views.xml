@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_workorder_progress_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.workorder.progress.wizard.form</field>
+        <field name="model">mrp.workorder.progress.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Registrar avance">
+                <field name="workorder_id" invisible="1"/>
+                <field name="linea_id" invisible="1" force_save="1"/>
+                <field name="workcenter_tipo" invisible="1"/>
+                <field name="cambio_turno" invisible="1" force_save="1"/>
+                <field name="sin_produccion" invisible="1"/>
+                <field name="es_lento" invisible="1"/>
+                <field name="segundos_pieza" invisible="1"/>
+
+                <group>
+                    <group>
+                        <field name="cantidad"/>
+                        <field name="reporta_averia"/>
+                        <field name="employee_id" options="{'no_create': True}"/>
+                        <div colspan="2" class="text-warning" invisible="not cambio_turno">
+                            Cambio de turno: escoge el operario que entra.
+                        </div>
+                    </group>
+                    <group>
+                        <field name="tramo_inicio"/>
+                        <field name="minutos_tramo" widget="float_time"/>
+                        <field name="piezas_estandar" invisible="not segundos_pieza or sin_produccion"/>
+                        <field name="rendimiento" invisible="not segundos_pieza or sin_produccion"/>
+                        <field name="tipo_sugerido"/>
+                    </group>
+                </group>
+
+                <group invisible="not sin_produccion">
+                    <field name="motivo_parada_id" required="sin_produccion"
+                           options="{'no_create': True}"/>
+                </group>
+                <group invisible="not es_lento">
+                    <field name="causa_id" placeholder="Velocidad reducida"
+                           options="{'no_create': True}"/>
+                </group>
+
+                <div invisible="sin_produccion">
+                    <separator string="Paradas dentro del tramo (opcional)"/>
+                    <field name="parada_ids">
+                        <list editable="bottom">
+                            <field name="workcenter_tipo" column_invisible="1"/>
+                            <field name="loss_id" options="{'no_create': True}"/>
+                            <field name="minutos" widget="float_time"/>
+                        </list>
+                    </field>
+                    <group invisible="not parada_ids">
+                        <field name="minutos_operando" widget="float_time"/>
+                    </group>
+                </div>
+
+                <div invisible="not hueco_minutos">
+                    <separator string="Hueco sin registrar antes del tramo"/>
+                    <p class="text-muted">
+                        Entre <field name="hueco_inicio" readonly="1" force_save="1" nolabel="1" class="oe_inline"/>
+                        y <field name="hueco_fin" readonly="1" force_save="1" nolabel="1" class="oe_inline"/>
+                        (<field name="hueco_minutos" widget="float_time" readonly="1" force_save="1" nolabel="1" class="oe_inline"/> min)
+                        no hay nada registrado. Si sabes qué pasó, escoge el motivo.
+                    </p>
+                    <group>
+                        <field name="motivo_hueco_id" options="{'no_create': True}"/>
+                    </group>
+                </div>
+
+                <footer>
+                    <button name="action_confirmar" type="object"
+                            string="Registrar avance" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mrp_workorder_progress_wizard" model="ir.actions.act_window">
+        <field name="name">Registrar avance</field>
+        <field name="res_model">mrp.workorder.progress.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_workorder_id': active_id}</field>
+    </record>
+
+</odoo>

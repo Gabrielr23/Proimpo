@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: Laura lo ajusta en Ajustes, Técnico, Parámetros del
+         sistema, y una actualización del módulo no se lo pisa. -->
+    <data noupdate="1">
+        <record id="param_umbral_rendimiento" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.umbral_rendimiento</field>
+            <field name="value">95</field>
+        </record>
+    </data>
+</odoo>

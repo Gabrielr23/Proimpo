@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mold_variant_form" model="ir.ui.view">
+        <field name="name">mrp.mold.variant.form</field>
+        <field name="model">mrp.mold.variant</field>
+        <field name="arch" type="xml">
+            <form string="Variante del Molde">
+                <sheet>
+                    <widget name="web_ribbon" title="Archivada"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Ej. Solo cuchara"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="mold_id" options="{'no_create': True}"/>
+                            <field name="cycle_time"/>
+                            <field name="shots_per_hour"/>
+                        </group>
+                        <group>
+                            <field name="cavity_total"/>
+                            <field name="sets_per_shot"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <separator string="Piezas y cavidades abiertas"/>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_tmpl_id"/>
+                            <field name="cavities"/>
+                        </list>
+                    </field>
+                    <group>
+                        <field name="note" placeholder="Ej. se tapan las cavidades de tenedor y cuchillo"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mold_variant_list" model="ir.ui.view">
+        <field name="name">mrp.mold.variant.list</field>
+        <field name="model">mrp.mold.variant</field>
+        <field name="arch" type="xml">
+            <list string="Variantes del Molde">
+                <field name="mold_id"/>
+                <field name="name"/>
+                <field name="complete_name" optional="hide"/>
+                <field name="pieces_summary"/>
+                <field name="cavity_total"/>
+                <field name="cycle_time"/>
+                <field name="sets_per_shot" optional="show"/>
+                <field name="shots_per_hour" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mold_variant_search" model="ir.ui.view">
+        <field name="name">mrp.mold.variant.search</field>
+        <field name="model">mrp.mold.variant</field>
+        <field name="arch" type="xml">
+            <search string="Variantes del Molde">
+                <field name="mold_id"/>
+                <field name="name"/>
+                <field name="line_ids" string="Pieza"
+                       filter_domain="[('line_ids.product_tmpl_id', 'ilike', self)]"/>
+                <filter name="archivadas" string="Archivadas"
+                        domain="[('active', '=', False)]"/>
+                <filter name="group_mold" string="Molde"
+                        context="{'group_by': 'mold_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mold_variant" model="ir.actions.act_window">
+        <field name="name">Variantes del Molde</field>
+        <field name="res_model">mrp.mold.variant</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_mold': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Ningún molde tiene variantes todavía
+            </p>
+            <p>
+                Para moldes de varias piezas o con cavidades que se tapan:
+                marca "¿Tiene Variantes?" en el molde y crea una variante por
+                cada combinación que se corra, con su ciclo medido.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_mold_variant"
+              name="Variantes del Molde"
+              parent="mrp_mold_management.menu_mold_root"
+              action="action_mold_variant"
+              sequence="2"/>
+
+</odoo>

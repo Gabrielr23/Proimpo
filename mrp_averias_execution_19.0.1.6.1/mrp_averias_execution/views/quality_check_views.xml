@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        v1 de este ajuste embebía la tabla de averías directo en el
+        sheet; Laura reportó que salía en TODOS los controles de
+        calidad, no solo en los que tienen averías (el xpath apuntaba
+        al formulario base, compartido por peso/dimensiones/etc). Se
+        reemplaza por un botón inteligente, condicionado a que haya
+        averías, para que solo se vea donde aplica.
+
+        Mismo xpath genérico sobre //sheet (a propósito: no se conoce
+        con certeza si esta instancia ya tiene un button_box existente
+        en el formulario base de quality.check, así que se crea uno
+        propio en vez de apuntarle a uno que podría no existir). Efecto
+        visual: el botón queda al final del formulario, no arriba a la
+        derecha como los botones inteligentes nativos; si se ve mal
+        ubicado, se puede reposicionar apuntando a un anchor más
+        preciso una vez confirmado en vivo.
+    -->
+    <record id="view_quality_check_form_averias" model="ir.ui.view">
+        <field name="name">quality.check.form.averias</field>
+        <field name="model">quality.check</field>
+        <field name="inherit_id" ref="quality_control.quality_check_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="oe_button_box" name="averias_button_box">
+                    <button name="action_ver_averias" type="object"
+                            class="oe_stat_button" icon="fa-exclamation-triangle"
+                            invisible="averia_cantidad_total == 0">
+                        <field name="averia_cantidad_total"
+                               widget="statinfo" string="Averías"/>
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
