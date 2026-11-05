@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1.7.0: los 4 tipos que antes estaban fijos en el código. noupdate:
+         Laura puede editarlos (nombre, texto, secuencia) sin que una
+         actualización los pise. Debe cargarse ANTES de las razones de
+         pérdida y las categorías de avería, que usan estos códigos. -->
+    <data noupdate="1">
+        <record id="tipo_ct_inyectoras" model="mrp.workcenter.tipo">
+            <field name="name">Inyectoras</field>
+            <field name="codigo">inyectoras</field>
+            <field name="texto_etiqueta">inyector</field>
+            <field name="sequence">10</field>
+        </record>
+        <record id="tipo_ct_sopladoras" model="mrp.workcenter.tipo">
+            <field name="name">Sopladoras</field>
+            <field name="codigo">sopladoras</field>
+            <field name="texto_etiqueta">soplador</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="tipo_ct_impresion" model="mrp.workcenter.tipo">
+            <field name="name">Impresión</field>
+            <field name="codigo">impresion</field>
+            <field name="texto_etiqueta">impres</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="tipo_ct_sellado" model="mrp.workcenter.tipo">
+            <field name="name">Sellado</field>
+            <field name="codigo">sellado</field>
+            <field name="texto_etiqueta">sellado</field>
+            <field name="sequence">40</field>
+        </record>
+    </data>
+</odoo>

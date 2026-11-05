@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
+from .mrp_workcenter_tipo import opciones_tipo_ct
+
 
 class MrpAveriaCategoria(models.Model):
     """Catalogo de categorias de averia para la hoja de trabajo
@@ -25,12 +27,8 @@ class MrpAveriaCategoria(models.Model):
     _order = 'name'
 
     name = fields.Char(required=True)
-    tipo_centro_trabajo = fields.Selection([
-        ('inyectoras', "Inyectoras"),
-        ('sopladoras', "Sopladoras"),
-        ('impresion', "Impresión"),
-        ('sellado', "Sellado"),
-    ], string="Tipo de Centro de Trabajo",
+    tipo_centro_trabajo = fields.Selection(
+        selection=opciones_tipo_ct, string="Tipo de Centro de Trabajo",
         help="Si se deja vacío, la categoría aplica a todos los tipos "
              "de Centro de Trabajo.")
     active = fields.Boolean(default=True)

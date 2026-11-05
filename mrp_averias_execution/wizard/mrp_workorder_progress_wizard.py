@@ -28,6 +28,12 @@ class MrpWorkorderProgressWizard(models.TransientModel):
     A4: paradas declaradas dentro del tramo (motivo + minutos), que se
         separan al final del tramo, y hueco sin registrar antes del
         tramo, si lo hay.
+    1.7.0: Desde / Hasta editables (registro al final del turno con el
+        "horizontal"). Vienen prellenados: Desde = inicio del tramo
+        abierto o fin del último tramo registrado; Hasta = ahora. Al
+        confirmar NO se abre tramo nuevo, salvo "Sigue produciendo".
+        Traslape con otro tramo de la misma orden: bloquea; con otra
+        orden en la misma máquina: solo aviso.
     """
     _name = 'mrp.workorder.progress.wizard'
     _description = "Registrar avance de orden de trabajo"
@@ -41,6 +47,19 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         related='workorder_id.workcenter_id.tipo_centro_trabajo')
     tramo_inicio = fields.Datetime(
         related='linea_id.date_start', string="Tramo desde")
+    fecha_desde = fields.Datetime(
+        string="Desde", required=True,
+        help="Inicio del periodo que se registra. Por defecto, el inicio "
+             "del tramo en curso o el fin del último tramo registrado.")
+    fecha_hasta = fields.Datetime(
+        string="Hasta", required=True, default=fields.Datetime.now,
+        help="Fin del periodo que se registra. Por defecto, ahora.")
+    sigue_produciendo = fields.Boolean(
+        string="Sigue produciendo",
+        help="Marcado: después de Hasta queda un tramo en curso (registro "
+             "hora a hora). Sin marcar: no queda nada abierto (registro al "
+             "final del turno).")
+    aviso_traslape = fields.Text(compute='_compute_traslapes')
 
     cantidad = fields.Float(
         string="Buenas",
@@ -84,9 +103,9 @@ class MrpWorkorderProgressWizard(models.TransientModel):
     parada_ids = fields.One2many(
         'mrp.workorder.progress.wizard.parada', 'wizard_id',
         string="Paradas dentro del tramo")
-    hueco_inicio = fields.Datetime(string="Hueco desde", readonly=True)
-    hueco_fin = fields.Datetime(string="Hueco hasta", readonly=True)
-    hueco_minutos = fields.Float(string="Minutos sin registrar", readonly=True)
+    hueco_inicio = fields.Datetime(string="Hueco desde", compute='_compute_hueco')
+    hueco_fin = fields.Datetime(string="Hueco hasta", compute='_compute_hueco')
+    hueco_minutos = fields.Float(string="Minutos sin registrar", compute='_compute_hueco')
     motivo_hueco_id = fields.Many2one(
         'mrp.workcenter.productivity.loss', string="Motivo del hueco",
         domain=DOMINIO_PARADA,
@@ -124,42 +143,106 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         if not wo:
             return res
         linea = self._tramo_abierto(wo)
-        if not linea:
-            return res
-        res['linea_id'] = linea.id
-        cambio = self._hubo_cambio_turno(linea, fields.Datetime.now())
-        res['cambio_turno'] = cambio
-        if not cambio and 'employee_id' in linea._fields and linea.employee_id:
-            res['employee_id'] = linea.employee_id.id
-
-        anterior = self.env['mrp.workcenter.productivity'].search([
-            ('workorder_id', '=', wo.id),
-            ('id', '!=', linea.id),
-            ('date_end', '!=', False),
-            ('date_end', '<=', linea.date_start),
-        ], limit=1, order='date_end desc')
-        if anterior:
-            hueco = (linea.date_start - anterior.date_end).total_seconds()
-            if hueco > 60:
-                res.update({
-                    'hueco_inicio': anterior.date_end,
-                    'hueco_fin': linea.date_start,
-                    'hueco_minutos': hueco / 60.0,
-                })
+        ultimo = self._ultimo_cerrado(wo)
+        if linea:
+            res['linea_id'] = linea.id
+            res['fecha_desde'] = linea.date_start
+            cambio = self._hubo_cambio_turno(linea, fields.Datetime.now())
+            res['cambio_turno'] = cambio
+            if not cambio and 'employee_id' in linea._fields and linea.employee_id:
+                res['employee_id'] = linea.employee_id.id
+        elif ultimo:
+            res['fecha_desde'] = ultimo.date_end
+            cambio = self._hubo_cambio_turno(ultimo, fields.Datetime.now())
+            res['cambio_turno'] = cambio
+            if not cambio and 'employee_id' in ultimo._fields and ultimo.employee_id:
+                res['employee_id'] = ultimo.employee_id.id
         return res
 
-    @api.depends('cantidad', 'parada_ids.minutos', 'linea_id')
+    @api.model
+    def _ultimo_cerrado(self, workorder, antes_de=None):
+        dominio = [
+            ('workorder_id', '=', workorder.id),
+            ('date_end', '!=', False),
+        ]
+        if antes_de:
+            dominio.append(('date_end', '<=', antes_de))
+        return self.env['mrp.workcenter.productivity'].search(
+            dominio, limit=1, order='date_end desc')
+
+    @api.depends('fecha_desde', 'workorder_id')
+    def _compute_hueco(self):
+        for wiz in self:
+            wiz.hueco_inicio = wiz.hueco_fin = False
+            wiz.hueco_minutos = 0.0
+            if not (wiz.fecha_desde and wiz.workorder_id):
+                continue
+            anterior = wiz._ultimo_cerrado(wiz.workorder_id, wiz.fecha_desde)
+            if anterior:
+                hueco = (wiz.fecha_desde - anterior.date_end).total_seconds()
+                if hueco > 60:
+                    wiz.hueco_inicio = anterior.date_end
+                    wiz.hueco_fin = wiz.fecha_desde
+                    wiz.hueco_minutos = hueco / 60.0
+
+    def _lineas_que_cruzan(self, dominio_extra):
+        """Líneas de Seguimiento de tiempo que se cruzan con
+        [Desde, Hasta]. Una línea abierta cuenta hasta ahora."""
+        self.ensure_one()
+        ahora = fields.Datetime.now()
+        lineas = self.env['mrp.workcenter.productivity'].search(dominio_extra + [
+            ('date_start', '<', self.fecha_hasta),
+            '|', ('date_end', '=', False), ('date_end', '>', self.fecha_desde),
+        ])
+        return lineas.filtered(lambda l: (l.date_end or ahora) > self.fecha_desde)
+
+    def _texto_linea(self, linea):
+        def hora(dt):
+            return fields.Datetime.context_timestamp(self, dt).strftime('%d-%m %H:%M')
+        fin = hora(linea.date_end) if linea.date_end else _("en curso")
+        return "%s %s a %s (%s)" % (
+            linea.workorder_id.production_id.name or '', hora(linea.date_start), fin,
+            linea.loss_id.name or '')
+
+    def _traslapes_misma_orden(self):
+        self.ensure_one()
+        return self._lineas_que_cruzan([
+            ('workorder_id', '=', self.workorder_id.id),
+            ('id', '!=', self.linea_id.id or 0),
+        ])
+
+    @api.depends('fecha_desde', 'fecha_hasta', 'workorder_id', 'linea_id')
+    def _compute_traslapes(self):
+        for wiz in self:
+            avisos = []
+            if wiz.fecha_desde and wiz.fecha_hasta and wiz.workorder_id \
+                    and wiz.fecha_desde < wiz.fecha_hasta:
+                misma = wiz._traslapes_misma_orden()
+                if misma:
+                    avisos.append(_(
+                        "Se cruza con otro tramo de esta orden (no se podrá "
+                        "guardar): %s", "; ".join(wiz._texto_linea(l) for l in misma[:3])))
+                otras = wiz._lineas_que_cruzan([
+                    ('workcenter_id', '=', wiz.workorder_id.workcenter_id.id),
+                    ('workorder_id', '!=', wiz.workorder_id.id),
+                ])
+                if otras:
+                    avisos.append(_(
+                        "En esta máquina también hay tiempo de otras órdenes en "
+                        "este periodo: %s", "; ".join(wiz._texto_linea(l) for l in otras[:3])))
+            wiz.aviso_traslape = "\n".join(avisos) or False
+
+    @api.depends('cantidad', 'parada_ids.minutos', 'fecha_desde', 'fecha_hasta')
     def _compute_rendimiento(self):
         Productividad = self.env['mrp.workcenter.productivity']
         plena = Productividad._perdida_plena()
         reducida = Productividad._perdida_reducida()
         umbral = Productividad._umbral_rendimiento()
-        ahora = fields.Datetime.now()
         for wiz in self:
             minutos = 0.0
-            if wiz.linea_id and wiz.linea_id.date_start:
+            if wiz.fecha_desde and wiz.fecha_hasta:
                 minutos = max(
-                    (ahora - wiz.linea_id.date_start).total_seconds() / 60.0, 0.0)
+                    (wiz.fecha_hasta - wiz.fecha_desde).total_seconds() / 60.0, 0.0)
             paradas = sum(wiz.parada_ids.mapped('minutos'))
             operando = max(minutos - paradas, 0.0)
             segundos = wiz.workorder_id._averia_segundos_por_pieza() if wiz.workorder_id else 0.0
@@ -203,29 +286,31 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         wo = self.workorder_id
         Productividad = self.env['mrp.workcenter.productivity']
         sin_log = {'seguimiento_sin_log': True, 'sin_clasificacion': True}
+        ahora = fields.Datetime.now().replace(microsecond=0)
 
         linea = self._tramo_abierto(wo)
-        if not linea:
+        if (linea or self.linea_id) and linea != self.linea_id:
             raise UserError(_(
-                "No hay un tramo abierto en Seguimiento de tiempo de esta "
-                "orden. Usa \"Iniciar\" primero."))
-        if linea != self.linea_id:
-            raise UserError(_(
-                "El tramo abierto cambió mientras tenías esta ventana "
+                "El tramo en curso cambió mientras tenías esta ventana "
                 "abierta. Ciérrala y vuelve a registrar el avance."))
 
-        ahora = fields.Datetime.now().replace(microsecond=0)
-        minutos_tramo = (ahora - linea.date_start).total_seconds() / 60.0
+        desde = self.fecha_desde.replace(microsecond=0)
+        hasta = self.fecha_hasta.replace(microsecond=0)
+        minutos_tramo = (hasta - desde).total_seconds() / 60.0
         sin_produccion = (self.cantidad or 0) <= 0
         con_empleado = 'employee_id' in Productividad._fields
 
         # --- validaciones --------------------------------------------
         if minutos_tramo <= 0:
+            raise UserError(_("\"Hasta\" debe ser posterior a \"Desde\"."))
+        if hasta > ahora + timedelta(minutes=1):
+            raise UserError(_("\"Hasta\" no puede estar en el futuro."))
+        misma = self._traslapes_misma_orden()
+        if misma:
             raise UserError(_(
-                "El tramo abierto empieza en el futuro (%(inicio)s). Corrige "
-                "su hora de inicio en Seguimiento de tiempo.",
-                inicio=fields.Datetime.context_timestamp(
-                    self, linea.date_start).strftime('%d-%m-%Y %H:%M')))
+                "El periodo se cruza con otro tramo de esta orden:\n%s\n\n"
+                "Ajusta Desde / Hasta, o corrige ese tramo en Seguimiento "
+                "de tiempo.", "\n".join(self._texto_linea(l) for l in misma)))
         if sin_produccion and not self.motivo_parada_id:
             raise UserError(_(
                 "El tramo no tiene unidades buenas, así que no puede quedar "
@@ -242,30 +327,44 @@ class MrpWorkorderProgressWizard(models.TransientModel):
                 "Si todo el tramo fue parada, registra 0 buenas y escoge "
                 "el motivo.", p=total_paradas, t=minutos_tramo))
 
-        # --- 1. cerrar el tramo -------------------------------------
-        fin_productivo = ahora - timedelta(minutes=total_paradas)
-        vals_cierre = {
+        # --- 1. el tramo registrado ------------------------------------
+        # En vivo solo si es el tramo en curso, sin tocar su inicio y
+        # cerrado ahora (hora a hora). Con fechas puestas a mano, no.
+        en_vivo = bool(linea) and linea.date_start == desde \
+            and abs((ahora - hasta).total_seconds()) <= 300
+        fin_productivo = (hasta - timedelta(minutes=total_paradas)).replace(microsecond=0)
+        vals_tramo = {
             'x_studio_cantidad': self.cantidad,
             'x_studio_reporta_averia': self.reporta_averia,
-            'date_end': fin_productivo.replace(microsecond=0),
+            'date_start': desde,
+            'date_end': fin_productivo,
+            'registro_en_vivo': en_vivo,
         }
         if sin_produccion:
-            vals_cierre['loss_id'] = self.motivo_parada_id.id
-        # Mismo turno: el operario escogido es el de este tramo (corrige,
-        # p. ej., el que puso Iniciar con el usuario conectado). Cambio de
-        # turno: el tramo que cierra conserva el operario del turno que sale.
-        if con_empleado and not self.cambio_turno:
-            vals_cierre['employee_id'] = self.employee_id.id or False
-        linea.with_context(**sin_log).write(vals_cierre)
+            vals_tramo['loss_id'] = self.motivo_parada_id.id
+        # El operario escogido es el del tramo registrado. Excepción: hora
+        # a hora con cambio de turno, el tramo que cierra conserva el
+        # operario que sale y el escogido va al tramo nuevo.
+        if con_empleado and not (self.sigue_produciendo and self.cambio_turno and linea):
+            vals_tramo['employee_id'] = self.employee_id.id or False
+        if linea:
+            linea.with_context(**sin_log).write(vals_tramo)
+            tramo = linea
+        else:
+            vals = wo._prepare_timeline_vals(0.0, desde, fin_productivo)
+            vals.update(vals_tramo)
+            if sin_produccion:
+                vals['loss_id'] = self.motivo_parada_id.id
+            tramo = Productividad.with_context(**sin_log).create(vals)
         if not sin_produccion:
-            linea._clasificar_rendimiento(causa=self.causa_id or None)
+            tramo._clasificar_rendimiento(causa=self.causa_id or None)
 
         # --- 2. paradas declaradas, al final del tramo ----------------
         inicio = fin_productivo
         nuevas = []
         for parada in paradas:
             fin = inicio + timedelta(minutes=parada.minutos)
-            nuevas.append(self._vals_linea(inicio, fin, parada.loss_id))
+            nuevas.append(self._vals_linea(inicio, fin, parada.loss_id, en_vivo=en_vivo))
             inicio = fin
 
         # --- 3. hueco sin registrar antes del tramo -------------------
@@ -277,23 +376,24 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         if nuevas:
             Productividad.with_context(**sin_log).create(nuevas)
 
-        # --- 4. abrir el tramo siguiente a la misma hora --------------
-        # Otro tramo abierto del usuario conectado en esta orden (quedó
-        # de antes) impediría abrir el nuevo: se cierra ahora.
-        Productividad.search([
-            ('workorder_id', '=', wo.id),
-            ('date_end', '=', False),
-            ('user_id', '=', self.env.uid),
-        ])._close()
-        vals_nuevo = wo._prepare_timeline_vals(wo.duration, ahora)
-        if con_empleado:
-            vals_nuevo['employee_id'] = self.employee_id.id or False
-        Productividad.with_context(**sin_log).create(vals_nuevo)
+        # --- 4. tramo siguiente, solo si sigue produciendo ------------
+        if self.sigue_produciendo:
+            Productividad.search([
+                ('workorder_id', '=', wo.id),
+                ('date_end', '=', False),
+                ('user_id', '=', self.env.uid),
+            ])._close()
+            vals_nuevo = wo._prepare_timeline_vals(wo.duration, hasta)
+            if con_empleado:
+                vals_nuevo['employee_id'] = self.employee_id.id or False
+            Productividad.with_context(**sin_log).create(vals_nuevo)
+        if wo.state == 'ready':
+            wo.state = 'progress'
 
         if self.reporta_averia:
             # Una hora puede tener varios tipos de avería: se abre de una
             # vez la hoja para cargarlos (mismo método del botón Tipificar).
-            return linea.action_tipificar_averia()
+            return tramo.action_tipificar_averia()
         return {'type': 'ir.actions.act_window_close'}
 
 

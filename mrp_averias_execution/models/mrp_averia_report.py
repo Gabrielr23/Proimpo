@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models, tools
 
+from .mrp_workcenter_tipo import opciones_tipo_ct
+
 
 class MrpAveriaReport(models.Model):
     """Reemplazo de "Averías Tipificadas" (Fase 6, primer corte).
@@ -72,12 +74,8 @@ class MrpAveriaReport(models.Model):
 
     workcenter_id = fields.Many2one(
         'mrp.workcenter', string="Centro de trabajo", readonly=True)
-    tipo_centro_trabajo = fields.Selection([
-        ('inyectoras', "Inyectoras"),
-        ('sopladoras', "Sopladoras"),
-        ('impresion', "Impresión"),
-        ('sellado', "Sellado"),
-    ], string="Tipo de CT", readonly=True)
+    tipo_centro_trabajo = fields.Selection(
+        selection=opciones_tipo_ct, string="Tipo de CT", readonly=True)
     operacion_id = fields.Many2one(
         'mrp.routing.workcenter', string="Operación", readonly=True)
 

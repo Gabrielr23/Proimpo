@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.6.1',
+    'version': '18.0.1.7.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -42,6 +42,12 @@ agrega:
     dentro del tramo y huecos con motivo, bitácora de correcciones del
     Seguimiento de tiempo (Fabricación > Informes), P03 y P10 separadas.
   * 18.0.1.6.1: minutos del wizard en formato minutos:segundos.
+  * 18.0.1.7.0: Registrar avance con Desde / Hasta editables (registro
+    al final del turno), sin tramo nuevo salvo "Sigue produciendo";
+    traslapes: bloquea en la misma orden, avisa en la misma máquina.
+    Catálogo editable de Tipos de Centro de Trabajo (Fabricación >
+    Configuración). Una línea agregada a mano sin Fin ya no se borra
+    al guardar (inverso nativo de Duración real).
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.
@@ -65,6 +71,8 @@ este módulo define un modelo con el mismo nombre técnico
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/mrp_workcenter_tipo_data.xml',
+        'views/mrp_workcenter_tipo_views.xml',
         'views/mrp_workorder_progress_wizard_views.xml',
         'views/mrp_averia_categoria_views.xml',
         'views/mrp_averia_linea_views.xml',

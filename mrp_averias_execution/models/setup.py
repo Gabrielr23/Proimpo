@@ -76,6 +76,11 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
             "Bitácora de Seguimiento de tiempo",
             self._submenu(fabricacion, ['Informes', 'Reportes', 'Reporting']),
             'mrp_averias_execution.action_mrp_seguimiento_log', 90)
+        # 1.7.0: catálogo editable de tipos de Centro de Trabajo.
+        self._ubicar_menu(
+            "Tipos de Centro de Trabajo",
+            self._submenu(fabricacion, ['Configuración', 'Configuration']),
+            'mrp_averias_execution.action_mrp_workcenter_tipo', 90)
 
     def fix_catalogo_p03_p10(self):
         """Parte "P03 Ajuste de proceso / Proceso inestable (P10)" en
@@ -146,7 +151,7 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
             '<xpath expr="//button[@name=\'button_start\']" position="after">'
             f'<button name="{action.id}" type="action" '
             'string="Registrar avance" class="btn-primary" '
-            'invisible="state != \'progress\'"/>'
+            'invisible="state not in (\'ready\', \'progress\')"/>'
             '</xpath>'
             '</data>'
         )

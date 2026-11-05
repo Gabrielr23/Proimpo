@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
+from .mrp_workcenter_tipo import opciones_tipo_ct
+
 
 class MrpWorkcenterProductivityLoss(models.Model):
     """Fase 5: extiende el catálogo nativo de Razones de pérdida para
@@ -19,12 +21,8 @@ class MrpWorkcenterProductivityLoss(models.Model):
     """
     _inherit = 'mrp.workcenter.productivity.loss'
 
-    tipo_centro_trabajo = fields.Selection([
-        ('inyectoras', "Inyectoras"),
-        ('sopladoras', "Sopladoras"),
-        ('impresion', "Impresión"),
-        ('sellado', "Sellado"),
-    ], string="Tipo de Centro de Trabajo",
+    tipo_centro_trabajo = fields.Selection(
+        selection=opciones_tipo_ct, string="Tipo de Centro de Trabajo",
         help="Si se deja vacío, la razón aplica a todos los tipos de "
              "Centro de Trabajo (por ejemplo, paradas periféricas / "
              "servicios críticos).")
