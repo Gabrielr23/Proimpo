@@ -64,3 +64,42 @@ class MrpWorkorder(models.Model):
         if self.operation_id and self.operation_id.time_cycle_manual:
             return self.operation_id.time_cycle_manual * 60.0
         return 0.0
+
+    # --- 1.6.2: el inverso nativo de "Duración real" borraba tramos ---
+    # Tolerancia (minutos) para la diferencia entre la duración que manda
+    # el formulario y la que calcula el servidor cuando hay un tramo
+    # abierto: el formulario la calcula segundos antes de guardar.
+    _TOLERANCIA_DURACION = 1.0
+
+    def write(self, vals):
+        """Al guardar el formulario con líneas de Seguimiento de tiempo
+        nuevas o editadas, el cliente también manda "Duración real"
+        (duration), calculada en el onchange unos segundos antes. Como
+        duration tiene inverso (_set_duration), Odoo compara ese valor
+        con el que calcula al guardar y "quita" la diferencia empezando
+        por el tramo más nuevo: una línea agregada a mano sin Fin dura 0
+        y se borra (si tenía ¿Avería?, el control de calidad la
+        referencia y el borrado falla con un error de llave foránea; sin
+        avería, la línea desaparecía en silencio).
+
+        Si en la misma escritura vienen las líneas, ellas mandan: la
+        duración se recalcula sola a partir de ellas.
+        """
+        if 'time_ids' in vals and 'duration' in vals:
+            vals = dict(vals)
+            vals.pop('duration')
+        return super().write(vals)
+
+    def _set_duration(self):
+        """Segundo seguro para el mismo problema (por ejemplo, si solo
+        llega duration): con un tramo abierto, una diferencia menor a la
+        tolerancia es el reloj corriendo entre el onchange y el
+        guardado, no un cambio pedido por el usuario. Se ignora."""
+        ajustar = self.browse()
+        for order in self:
+            delta = order.duration - order.get_duration()
+            abierta = order.time_ids.filtered(lambda t: not t.date_end)
+            if abierta and abs(delta) < self._TOLERANCIA_DURACION:
+                continue
+            ajustar |= order
+        return super(MrpWorkorder, ajustar)._set_duration()

@@ -20,17 +20,22 @@
                         <field name="reporta_averia"/>
                         <field name="employee_id" options="{'no_create': True}"/>
                         <div colspan="2" class="text-warning" invisible="not cambio_turno">
-                            Cambio de turno: escoge el operario que entra.
+                            Cambio de turno: revisa el operario.
                         </div>
                     </group>
                     <group>
-                        <field name="tramo_inicio"/>
-                        <field name="minutos_tramo"/>
+                        <field name="fecha_desde"/>
+                        <field name="fecha_hasta"/>
+                        <field name="minutos_tramo" widget="float_time"/>
                         <field name="piezas_estandar" invisible="not segundos_pieza or sin_produccion"/>
                         <field name="rendimiento" invisible="not segundos_pieza or sin_produccion"/>
                         <field name="tipo_sugerido"/>
                     </group>
                 </group>
+
+                <div class="alert alert-warning" role="alert" invisible="not aviso_traslape">
+                    <field name="aviso_traslape" nolabel="1" readonly="1"/>
+                </div>
 
                 <group invisible="not sin_produccion">
                     <field name="motivo_parada_id" required="sin_produccion"
@@ -47,26 +52,30 @@
                         <list editable="bottom">
                             <field name="workcenter_tipo" column_invisible="1"/>
                             <field name="loss_id" options="{'no_create': True}"/>
-                            <field name="minutos"/>
+                            <field name="minutos" widget="float_time"/>
                         </list>
                     </field>
                     <group invisible="not parada_ids">
-                        <field name="minutos_operando"/>
+                        <field name="minutos_operando" widget="float_time"/>
                     </group>
                 </div>
 
                 <div invisible="not hueco_minutos">
                     <separator string="Hueco sin registrar antes del tramo"/>
                     <p class="text-muted">
-                        Entre <field name="hueco_inicio" readonly="1" force_save="1" nolabel="1" class="oe_inline"/>
-                        y <field name="hueco_fin" readonly="1" force_save="1" nolabel="1" class="oe_inline"/>
-                        (<field name="hueco_minutos" readonly="1" force_save="1" nolabel="1" class="oe_inline"/> min)
+                        Entre <field name="hueco_inicio" readonly="1" nolabel="1" class="oe_inline"/>
+                        y <field name="hueco_fin" readonly="1" nolabel="1" class="oe_inline"/>
+                        (<field name="hueco_minutos" widget="float_time" readonly="1" nolabel="1" class="oe_inline"/> min)
                         no hay nada registrado. Si sabes qué pasó, escoge el motivo.
                     </p>
                     <group>
                         <field name="motivo_hueco_id" options="{'no_create': True}"/>
                     </group>
                 </div>
+
+                <group>
+                    <field name="sigue_produciendo"/>
+                </group>
 
                 <footer>
                     <button name="action_confirmar" type="object"

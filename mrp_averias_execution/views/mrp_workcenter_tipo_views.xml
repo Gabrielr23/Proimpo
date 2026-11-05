@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_workcenter_tipo_list" model="ir.ui.view">
+        <field name="name">mrp.workcenter.tipo.list</field>
+        <field name="model">mrp.workcenter.tipo</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="texto_etiqueta"/>
+                <field name="codigo" readonly="id" optional="show"/>
+                <field name="workcenter_count"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mrp_workcenter_tipo_search" model="ir.ui.view">
+        <field name="name">mrp.workcenter.tipo.search</field>
+        <field name="model">mrp.workcenter.tipo</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="inactive" string="Archivados"
+                        domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mrp_workcenter_tipo" model="ir.actions.act_window">
+        <field name="name">Tipos de Centro de Trabajo</field>
+        <field name="res_model">mrp.workcenter.tipo</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea un tipo de Centro de Trabajo</p>
+            <p>El tipo de cada Centro de Trabajo se calcula solo: el primer
+               tipo de la lista cuyo "Texto en la etiqueta" aparezca en una
+               de sus etiquetas. Las razones de pérdida y las categorías de
+               avería se filtran por este tipo.</p>
+        </field>
+    </record>
+
+</odoo>
