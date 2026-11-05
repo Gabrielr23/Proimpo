@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '19.0.1.6.1',
+    'version': '19.0.1.7.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -46,6 +46,9 @@ agrega:
     catálogo de razones de pérdida carga la categoría con loss_id (en 19
     loss_type ya no se guarda) y, al actualizar, llena la categoría de las
     razones que quedaron sin ella al migrar desde 18.
+  * 19.0.1.7.0: misma funcionalidad que 18.0.1.7.0 (Registrar avance
+    con Desde / Hasta, catálogo editable de Tipos de Centro de Trabajo,
+    línea sin Fin que ya no se borra al guardar).
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.
@@ -69,6 +72,8 @@ este módulo define un modelo con el mismo nombre técnico
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/mrp_workcenter_tipo_data.xml',
+        'views/mrp_workcenter_tipo_views.xml',
         'views/mrp_workorder_progress_wizard_views.xml',
         'views/mrp_averia_categoria_views.xml',
         'views/mrp_averia_linea_views.xml',
