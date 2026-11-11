@@ -25,14 +25,18 @@ BASE_FIJA = {
     'HEN': 1.75,    # 1 + 0.75 extra nocturna
     'HRN': 0.35,    # 0.35 recargo nocturno
     'HEDDF': 1.25,  # 1 + 0.25 + dominical
-    'HRDDF': 0.00,  #           dominical
+    'HRDDF': 1.00,  # 1 +        dominical  (v1.2.1: hora dominical/festiva TRABAJADA,
+                    # adicional a las 105 h base, como HFD de CGUNO: 1 + 90 % = 1,90)
     'HENDF': 1.75,  # 1 + 0.75 + dominical
     'HRNDF': 0.35,  # 0.35 +     dominical
 }
 LLEVA_DOMINICAL = {'HEDDF', 'HRDDF', 'HENDF', 'HRNDF'}
 CODIGOS_EXTRA = list(BASE_FIJA.keys())
 # Novedades que se cargan en VALOR (pesos), no en horas
-CODIGOS_VALOR = ['COM', 'BON', 'BONNS']
+# v1.2.2: + auxilio de alimentacion y mayores/menores valores pagados (reliquidacion
+# mensual de comisiones y bonificaciones en la 2Q). Siempre en valor POSITIVO: la
+# regla MVCOM/MVBON ya lo convierte en descuento.
+CODIGOS_VALOR = ['COM', 'BON', 'BONNS', 'AUXALI', 'MVCOM', 'MVBON', 'MNCOM', 'MNBON', 'RETRO']  # v1.2.3: + retroactivo
 TODOS_CODIGOS = CODIGOS_EXTRA + CODIGOS_VALOR
 
 
