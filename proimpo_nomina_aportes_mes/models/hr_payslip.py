@@ -30,7 +30,30 @@ class HrPayslip(models.Model):
         # (3) el mas reciente. Asi evita los borradores viejos/vacios pero usa el 1Q
         # aunque quede en borrador, siempre que este calculado.
         rank = {'paid': 3, 'done': 3, 'verify': 2, 'draft': 1}
-        return max(cands, key=lambda s: (rank.get(s.state, 0), 1 if s.line_ids else 0, s.id))
+        slip1 = max(cands, key=lambda s: (rank.get(s.state, 0), 1 if s.line_ids else 0, s.id))
+        return self._am_asegurar_calculado(slip1)
+
+    def _am_asegurar_calculado(self, slip1):
+        """v1.3.4: si la 1Q existe pero no tiene lineas (se esta recalculando en el
+        mismo lote, o se regenero despues de la 2Q), se calcula primero para que
+        los helpers mensuales (IBC, FSP, exoneracion, transporte, RTF) la vean."""
+        if slip1 and not slip1.line_ids and slip1.state in ('draft', 'verify'):
+            try:
+                slip1.compute_sheet()
+            except Exception:  # noqa: BLE001
+                pass
+        return slip1
+
+    def compute_sheet(self):
+        """v1.3.4: al calcular varios recibos a la vez (lotes 1Q y 2Q juntos) se
+        calculan en orden de fecha, para que la 1Q siempre quede liquidada antes
+        que la 2Q del mismo mes."""
+        if len(self) > 1:
+            res = True
+            for s in self.sorted(key=lambda s: (s.date_from or s.create_date.date(), s.id)):
+                res = super(HrPayslip, s).compute_sheet()
+            return res
+        return super().compute_sheet()
 
     def _am_line_total(self, code):
         """Total de una regla (por código) en este recibo ya calculado."""
