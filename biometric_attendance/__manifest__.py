@@ -36,6 +36,7 @@
     'license': 'LGPL-3',
     'depends': [
         'base',
+        'mail',
         'hr',
         'hr_attendance',
     ],
