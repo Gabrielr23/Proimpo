@@ -82,7 +82,7 @@ class HrContract(models.Model):
         ct = self
         cero = {'ces': 0., 'int': 0., 'prima': 0., 'vac': 0., 'base_ces': 0., 'base_vac': 0.,
                 'dias_ano': 0, 'dias_sem': 0, 'dias_tot': 0}
-        if ct.integral_salary or not ct.date_start or ct.date_start > corte:
+        if not ct.date_start or ct.date_start > corte:
             return cero
         y = corte.year
         ini = ct.date_start
@@ -93,9 +93,16 @@ class HrContract(models.Model):
         dias_ces = dias360(d_ces, corte)
         dias_pri = dias360(d_pri, corte)
         dias_vac = dias360(ini, corte)
-        ces = base_prest * dias_ces / 360.0
-        interes = ces * dias_ces / 360.0 * 0.12
-        prima = base_prest * dias_pri / 360.0
+        # v1.1.2: salario integral (CST art. 132) ya incluye cesantias, intereses y prima:
+        # no se causan. Las VACACIONES si se causan, sobre el 100 % del integral.
+        if ct.integral_salary:
+            ces = interes = prima = 0.0
+            base_prest = 0.0
+            dias_ces = dias_pri = 0
+        else:
+            ces = base_prest * dias_ces / 360.0
+            interes = ces * dias_ces / 360.0 * 0.12
+            prima = base_prest * dias_pri / 360.0
         vac = base_vac * dias_vac / 720.0 - self._proimpo_vac_pagadas(corte)
         return {'ces': ces, 'int': interes, 'prima': prima, 'vac': vac,
                 'base_ces': base_prest, 'base_vac': base_vac,
