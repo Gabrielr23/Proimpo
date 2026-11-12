@@ -25,7 +25,7 @@ ARL_MAP = {
 #   subsistemas: p=pension  s=salud  a=arl  c=caja   (parafiscales siguen la regla alto ingreso 'f')
 # Validado byte a byte contra archivo real de CGUNO (PPI...02).
 _PILA_NOV_POS = {
-    'VAC': (149, 'X', 'psac'),   # vacaciones
+    'VAC': (149, 'X', 'psc'),    # vacaciones: NO cotiza ARL (anexo tecnico PILA) - v2.6.0
     'LR':  (149, 'L', 'psc'),    # licencia remunerada (incluye dia de la familia)
     'IGE': (147, 'X', 'ps'),     # incapacidad general
     'IRL': (153, '2', 'ps'),     # incapacidad riesgos laborales: pos 153='2' (validado vs julio)
@@ -101,8 +101,11 @@ class HrPayslip(models.Model):
         wage = ct.wage or 0.0
         lectiva = ct.pila_etapa_aprendiz == 'lectiva'
         pensionado = bool(ct.pila_pensionado)
-        # Exoneracion Art. 114-1 sobre el IBC del MES (como el recibo y CGUNO), no el basico
-        alto_ingreso = (d.get('ibc') or 0.0) >= 10 * smmlv
+        # v2.6.0: exoneracion Art. 114-1 sobre la TOTALIDAD de lo devengado en el mes
+        # (salarial + no salarial + transporte; Decreto 1828/2013 art. 7, doctrina DIAN),
+        # no sobre el IBC. Si no hay devengado consolidado se usa el IBC.
+        devengado = d.get('gross') or d.get('ibc') or 0.0
+        alto_ingreso = devengado >= 10 * smmlv
 
         buf = list(BASE02)
 
@@ -239,9 +242,11 @@ class HrPayslip(models.Model):
             e = s.employee_id
             d = emp.setdefault(e.id, {
                 'emp': e, 'contract': s.contract_id, 'ibc': 0.0, 'dias': 0.0,
-                'devsal': 0.0, 'slip': s,
+                'devsal': 0.0, 'gross': 0.0, 'slip': s,
             })
             d['ibc'] += s._pila_line('IBC') + s._pila_line('IBCAPR')
+            d['gross'] += sum(s.line_ids.filtered(
+                lambda l: l.category_id.code == 'GROSS').mapped('total'))
             d['dias'] += s._dias_cotizados_pila()
             d['devsal'] += sum(s.line_ids.filtered(
                 lambda l: l.category_id.code == 'DEVSAL').mapped('total'))

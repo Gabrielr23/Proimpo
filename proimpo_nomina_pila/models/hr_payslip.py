@@ -165,6 +165,25 @@ class HrPayslip(models.Model):
         res['horas'] = round(res['horas'], 2)
         return res
 
+    def _pila_ibc_arl(self, ibc):
+        """v2.6.0: IBC de riesgos laborales del recibo = IBC menos la parte de los dias
+        sin exposicion (vacaciones, licencia remunerada, incapacidad general, maternidad
+        y suspension), segun el anexo tecnico de la PILA. La incapacidad laboral (IRL)
+        si cotiza ARL. La parte de salario de cada dia = (IBC - variable) / dias."""
+        self.ensure_one()
+        ibc = ibc or 0.0
+        if ibc <= 0 or not self.contract_id:
+            return 0.0
+        seg = self._pila_segmentos(self.employee_id, self.contract_id, self.date_from, self.date_to)
+        sin_arl = sum(seg.get(k, 0) for k in ('VAC', 'LR', 'IGE', 'LMA', 'SLN'))
+        dias = seg.get('total') or 0
+        if not sin_arl or not dias:
+            return ibc
+        variable = sum(self.line_ids.filtered(
+            lambda l: l.category_id and l.category_id.code == 'DEVSAL').mapped('total'))
+        base_dia = max(ibc - max(variable, 0.0), 0.0) / float(dias)
+        return max(ibc - base_dia * min(sin_arl, dias), 0.0)
+
     def _pila_segmentos(self, e, ct, first, last):
         """Divide los dias del mes por novedad PILA a partir de las ausencias de Odoo.
         Devuelve {'total':d, 'worked':d, 'VAC':d, 'LR':d, 'IGE':d, 'IRL':d, 'LMA':d, 'SLN':d}."""

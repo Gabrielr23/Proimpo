@@ -34,9 +34,9 @@ FORMULAS = {
         "+ categories.get('AUXT', 0)"
     ),
     'FSP': "result = payslip._proimpo_fsp(IBC)",
-    'APSALUD': "result = payslip._proimpo_parafiscal(IBC, 0.085, 'APSALUD')",
-    'APSENA': "result = payslip._proimpo_parafiscal(IBC, 0.02, 'APSENA')",
-    'APICBF': "result = payslip._proimpo_parafiscal(IBC, 0.03, 'APICBF')",
+    'APSALUD': "result = payslip._proimpo_parafiscal(IBC, 0.085, 'APSALUD', categories.get('GROSS', 0.0))",
+    'APSENA': "result = payslip._proimpo_parafiscal(IBC, 0.02, 'APSENA', categories.get('GROSS', 0.0))",
+    'APICBF': "result = payslip._proimpo_parafiscal(IBC, 0.03, 'APICBF', categories.get('GROSS', 0.0))",
 }
 
 # Fórmula de la regla de ajuste del auxilio de transporte (umbral mensual)

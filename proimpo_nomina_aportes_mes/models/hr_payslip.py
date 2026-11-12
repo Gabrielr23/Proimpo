@@ -105,15 +105,31 @@ class HrPayslip(models.Model):
     # ------------------------------------------------------------------
     # Parafiscales / salud empleador: exoneración sobre el IBC del MES
     # ------------------------------------------------------------------
-    def _proimpo_parafiscal(self, ibc_quincena, tasa, code_1q):
-        """Aporte patronal (SENA/ICBF/salud empleador) con exoneración Art. 114-1
-        evaluada sobre el IBC del MES (>= 10 SMMLV). Reconcilia lo aplicado en la 1Q.
-        Devuelve el valor POSITIVO."""
+    def _proimpo_devengado_mes(self, dev_quincena):
+        """v1.3.6: total devengado del MES (salarial + no salarial + transporte):
+        esta quincena + 1Q (si es 2Q), leyendo la categoria GROSS de la 1Q."""
+        self.ensure_one()
+        total = dev_quincena or 0.0
+        if self._am_es_2q():
+            slip1 = self._am_slip_1q()
+            if slip1:
+                total += sum(l.total for l in slip1.line_ids
+                             if l.category_id and l.category_id.code == 'GROSS')
+        return total
+
+    def _proimpo_parafiscal(self, ibc_quincena, tasa, code_1q, dev_quincena=None):
+        """Aporte patronal (SENA/ICBF/salud empleador) con exoneración Art. 114-1.
+        v1.3.6: el umbral de 10 SMMLV se evalúa sobre la TOTALIDAD de lo devengado en
+        el mes (Decreto 1828/2013 art. 7 y doctrina DIAN: salarial + no salarial +
+        auxilio de transporte), no sobre el IBC. El aporte sí se liquida sobre el IBC.
+        Si la regla no pasa dev_quincena, se usa el IBC (comportamiento anterior).
+        Reconcilia lo aplicado en la 1Q. Devuelve el valor POSITIVO."""
         self.ensure_one()
         smmlv = self.contract_id.company_id.smmlv_value or 0.0
         ibc_mes = self._proimpo_ibc_mes(ibc_quincena)
-        if smmlv and ibc_mes < 10.0 * smmlv:
-            return 0.0  # exonerado (gana menos de 10 SMMLV en el mes)
+        dev_mes = self._proimpo_devengado_mes(dev_quincena) if dev_quincena is not None else ibc_mes
+        if smmlv and dev_mes < 10.0 * smmlv:
+            return 0.0  # exonerado (devenga menos de 10 SMMLV en el mes)
         aporte_mes = ibc_mes * tasa
         ya_1q = 0.0
         if self._am_es_2q():
@@ -137,11 +153,16 @@ class HrPayslip(models.Model):
         slip1 = self._am_slip_1q()
         sal_1q = 0.0
         trans_1q = 0.0
+        # v1.3.5: las horas extras y recargos NO cuentan para el tope de 2 SMMLV del
+        # auxilio (solo salario basico + variable salarial: comisiones, bonos salariales).
+        EXTRAS = ('HED', 'HEN', 'HRN', 'HEDDF', 'HRDDF', 'HENDF', 'HRNDF')
         if slip1:
             sal_1q = sum(l.total for l in slip1.line_ids
-                         if l.category_id and l.category_id.code in ('BASIC', 'DEVSAL'))
+                         if l.category_id and l.category_id.code in ('BASIC', 'DEVSAL')
+                         and l.code not in EXTRAS)
             trans_1q = slip1._am_line_total('TRANS')
-        sal_mes = (sal_quincena or 0.0) + sal_1q
+        extras_q = sum(e.total for e in self.earn_ids if e.code in EXTRAS) if 'earn_ids' in self._fields else 0.0
+        sal_mes = (sal_quincena or 0.0) - extras_q + sal_1q
         if sal_mes > 2.0 * smmlv:
             return - ((trans_quincena or 0.0) + trans_1q)
         return 0.0
