@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 # Fórmulas correctas por código de regla
 FORMULAS = {
     # v1.3.0: salario integral cotiza sobre el 70% (Art. 18 Ley 100 / Art. 132 CST) y el
-    # tope de 25 SMMLV es mensual (proporcional a los dias del periodo).
+    # tope de 25 SMMLV es mensual (v1.3.4: menos lo ya cotizado en el mes).
     'IBC': (
         "smmlv = contract.company_id.smmlv_value\n"
         "# v1.3.3: dias comerciales recortados al contrato (ingresos/retiros en la quincena)\n"
@@ -15,7 +15,13 @@ FORMULAS = {
         "base = categories.get('BASIC', 0) + categories.get('DEVSAL', 0)\n"
         "if contract.integral_salary:\n"
         "    base = base * 0.70\n"
-        "tope = 25 * smmlv * min(dias, 30) / 30.0\n"
+        "# v1.3.4: tope de 25 SMMLV MENSUAL: se descuenta el IBC ya liquidado en el mes\n"
+        "ibc_prev = 0.0\n"
+        "ini_mes = payslip.date_from.replace(day=1)\n"
+        "otros = payslip.env['hr.payslip'].search([('employee_id', '=', payslip.employee_id.id), ('id', '!=', payslip.id), ('state', 'in', ('draft', 'verify', 'done', 'paid')), ('date_from', '>=', ini_mes), ('date_to', '<', payslip.date_from)])\n"
+        "for s in otros:\n"
+        "    ibc_prev += sum(l.total for l in s.line_ids if l.code == 'IBC')\n"
+        "tope = max(25.0 * smmlv - ibc_prev, 0.0)\n"
         "# v1.3.1: el piso de 1 SMMLV no aplica a los dias de vacaciones ya pagados (y cotizados)\n"
         "# en un periodo anterior (pago anticipado): el piso es proporcional a los dias pagados aqui.\n"
         "v = payslip._vac_disfrutadas()\n"
@@ -28,9 +34,9 @@ FORMULAS = {
         "+ categories.get('AUXT', 0)"
     ),
     'FSP': "result = payslip._proimpo_fsp(IBC)",
-    'APSALUD': "result = payslip._proimpo_parafiscal(IBC, 0.085, 'APSALUD')",
-    'APSENA': "result = payslip._proimpo_parafiscal(IBC, 0.02, 'APSENA')",
-    'APICBF': "result = payslip._proimpo_parafiscal(IBC, 0.03, 'APICBF')",
+    'APSALUD': "result = payslip._proimpo_parafiscal(IBC, 0.085, 'APSALUD', categories.get('GROSS', 0.0))",
+    'APSENA': "result = payslip._proimpo_parafiscal(IBC, 0.02, 'APSENA', categories.get('GROSS', 0.0))",
+    'APICBF': "result = payslip._proimpo_parafiscal(IBC, 0.03, 'APICBF', categories.get('GROSS', 0.0))",
 }
 
 # Fórmula de la regla de ajuste del auxilio de transporte (umbral mensual)
