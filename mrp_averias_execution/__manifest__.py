@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.9.0',
+    'version': '18.0.1.10.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -60,6 +60,14 @@ agrega:
     recuadro Ciclo en el panel; proyección sin paradas autorizadas
     (tablero OEE) ni setup del plan; informe Ciclo meta vs real
     (Fabricación > Informes). La casilla Programada queda sin uso.
+  * 18.0.1.10.0: OEE de la orden en el panel (Disponibilidad x
+    Rendimiento x Calidad) con la regla del tablero OEE: tiempo en marcha
+    sin paradas autorizadas ni tramos de más de 12 h; color contra la
+    meta OEE del centro de trabajo. Rendimiento y ciclo real usan el
+    mismo tiempo en marcha. Tramos cruzados de la misma orden (líneas
+    puestas a mano): aviso al final de la orden y, en el OEE, el tiempo
+    repetido cuenta una vez. Registrar avance sigue bloqueando el cruce
+    en la misma orden y solo avisa con otras órdenes.
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.

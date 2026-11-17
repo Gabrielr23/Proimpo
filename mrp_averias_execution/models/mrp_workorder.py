@@ -165,20 +165,58 @@ class MrpWorkorder(models.Model):
             wo.sudo().write({'ciclo_meta': spp or 0.0, 'ciclo_meta_origen': origen or False})
         return True
 
-    def _tramos_produccion(self):
-        return self.time_ids.filtered(lambda l: l.date_end and l.date_start and (
-            (l.x_studio_cantidad or 0) + (l.x_studio_averias or 0)) > 0)
+    # --- 1.10.0: tiempos con la misma regla del tablero OEE ---------------
+    def _clase_oee(self, linea):
+        """Igual que mrp_oee_report: 'autorizada' (Parada autorizada),
+        'marcha' (motivo de tipo Productivo, Rendimiento o Calidad) o
+        'parada' (Disponibilidad no autorizada)."""
+        if self._es_autorizada(linea):
+            return 'autorizada'
+        tipo = linea.loss_id.loss_type if linea.loss_id else 'productive'
+        if tipo in ('productive', 'performance', 'quality'):
+            return 'marcha'
+        return 'parada'
+
+    def _cifras_oee(self):
+        """Minutos y piezas de los tramos cerrados, como el tablero OEE.
+        Un tramo de más de horas_max_tramo (12 h) es un registro olvidado:
+        no cuenta (ni tiempo ni piezas) y sale en los avisos."""
+        self.ensure_one()
+        horas_max = self.env['mrp.workcenter.productivity']._parametro('horas_max_tramo', 12)
+        c = {'marcha': 0.0, 'parada': 0.0, 'autorizada': 0.0,
+             'buenas': 0.0, 'averias': 0.0, 'buenas_marcha': 0.0, 'olvidados': 0, 'cruzados': 0}
+        fin_max = None
+        for linea in self.time_ids.filtered(
+                lambda l: l.date_start and l.date_end).sorted('date_start'):
+            minutos = (linea.date_end - linea.date_start).total_seconds() / 60.0
+            if minutos > horas_max * 60.0:
+                c['olvidados'] += 1
+                continue
+            # Tramos cruzados de la misma orden: el reloj cuenta una vez
+            # (como el tablero); las piezas cuentan completas.
+            inicio = max(linea.date_start, fin_max) if fin_max else linea.date_start
+            if fin_max and linea.date_start < fin_max:
+                c['cruzados'] += 1
+            minutos = max((linea.date_end - inicio).total_seconds() / 60.0, 0.0)
+            fin_max = max(fin_max, linea.date_end) if fin_max else linea.date_end
+            clase = self._clase_oee(linea)
+            c[clase] += minutos
+            c['buenas'] += linea.x_studio_cantidad or 0.0
+            c['averias'] += linea.x_studio_averias or 0.0
+            if clase == 'marcha':
+                c['buenas_marcha'] += linea.x_studio_cantidad or 0.0
+        c['piezas'] = c['buenas'] + c['averias']
+        return c
 
     @api.depends('ciclo_meta', 'time_ids.x_studio_cantidad', 'time_ids.x_studio_averias',
-                 'time_ids.date_start', 'time_ids.date_end')
+                 'time_ids.date_start', 'time_ids.date_end', 'time_ids.loss_id')
     def _compute_ciclo_real(self):
+        """1.10.0: tiempo en marcha (regla del tablero OEE) ÷ piezas."""
         for wo in self:
-            produccion = wo._tramos_produccion()
-            segundos = sum((l.date_end - l.date_start).total_seconds() for l in produccion)
-            piezas = sum(produccion.mapped('x_studio_cantidad')) + sum(
-                produccion.mapped('x_studio_averias'))
-            wo.piezas_registradas = piezas
-            wo.ciclo_real = segundos / piezas if piezas and segundos else 0.0
+            c = wo._cifras_oee()
+            segundos = c['marcha'] * 60.0
+            wo.piezas_registradas = c['piezas']
+            wo.ciclo_real = segundos / c['piezas'] if c['piezas'] and segundos else 0.0
             wo.rendimiento_orden = (wo.ciclo_meta / wo.ciclo_real * 100.0
                                     if wo.ciclo_meta and wo.ciclo_real else 0.0)
 
@@ -230,21 +268,26 @@ class MrpWorkorder(models.Model):
 
     # --- 1.8.0: panel de avance -------------------------------------------
     def _resumen_avance(self):
-        """Cifras del panel. Rendimiento y ritmo solo con los tramos
-        cerrados que tienen piezas (los setups y paradas no se miden)."""
+        """Cifras del panel. 1.10.0: rendimiento, ritmo y OEE con la regla
+        del tablero OEE: tiempo en marcha = tramos cerrados con motivo
+        Productivo, Rendimiento o Calidad; sin paradas autorizadas ni
+        tramos de más de 12 h."""
         self.ensure_one()
         lineas = self.time_ids
         buenas = sum(lineas.mapped('x_studio_cantidad'))
         averias = sum(lineas.mapped('x_studio_averias'))
-        produccion = self._tramos_produccion()
-        segundos_prod = sum(
-            (l.date_end - l.date_start).total_seconds() for l in produccion)
-        piezas_prod = sum(produccion.mapped('x_studio_cantidad')) + sum(
-            produccion.mapped('x_studio_averias'))
-        buenas_prod = sum(produccion.mapped('x_studio_cantidad'))
+        c = self._cifras_oee()
+        segundos_prod = c['marcha'] * 60.0
+        piezas_prod = c['piezas']
+        buenas_prod = c['buenas']
         spp = self._averia_segundos_por_pieza()
         cantidad = self.qty_production or 0.0
-        rend = (piezas_prod * spp / segundos_prod * 100.0) if spp and segundos_prod else None
+        rend = (piezas_prod * spp / segundos_prod * 100.0) if spp and segundos_prod and piezas_prod else None
+        # OEE de la orden = Disponibilidad × Rendimiento × Calidad.
+        cargado = c['marcha'] + c['parada']
+        disp = (c['marcha'] / cargado * 100.0) if cargado else None
+        cal = (c['buenas'] / piezas_prod * 100.0) if piezas_prod else None
+        oee = (disp * rend * cal / 10000.0) if None not in (disp, rend, cal) else None
         faltan = max(cantidad - buenas, 0.0)
         horas_ritmo = (faltan / (buenas_prod / segundos_prod) / 3600.0
                        if buenas_prod and segundos_prod else None)
@@ -294,6 +337,8 @@ class MrpWorkorder(models.Model):
             'setup_plan': setup_plan, 'minutos_autorizados': minutos_autorizados,
             'ciclo_real': (segundos_prod / piezas_prod) if piezas_prod and segundos_prod else None,
             'diferencia': diferencia, 'fin_estimado': fin_estimado,
+            'disp': disp, 'cal': cal, 'oee': oee, 'oee_cifras': c,
+            'oee_meta': (self.workcenter_id.oee_target or 0.0) if self.workcenter_id else 0.0,
         }
 
     def _fecha_local(self, valor, formato='%d-%m %H:%M'):
@@ -315,8 +360,8 @@ class MrpWorkorder(models.Model):
                  valor=valor, detalle=detalle, extra=extra)
 
     @api.depends('time_ids', 'time_ids.x_studio_cantidad', 'time_ids.x_studio_averias',
-                 'time_ids.date_start', 'time_ids.date_end', 'qty_production',
-                 'duration_expected')
+                 'time_ids.date_start', 'time_ids.date_end', 'time_ids.loss_id',
+                 'qty_production', 'duration_expected')
     def _compute_panel_avance(self):
         Prod = self.env['mrp.workcenter.productivity']
         for wo in self:
@@ -334,11 +379,8 @@ class MrpWorkorder(models.Model):
                 "%s / %s · %s %%" % (fmt(r['buenas']), fmt(r['cantidad']), fmt(r['avance'])),
                 _("Averías %(n)s (%(p)s %%)", n=fmt(r['averias']), p=fmt(r['averias_pct'], 1)),
                 extra=barra)]
-            if r['rend'] is not None:
-                tarjetas.append(wo._tarjeta(
-                    _("Rendimiento promedio"), "%s %%" % fmt(r['rend']),
-                    _("Solo tramos con producción"),
-                    Prod._nivel_rendimiento(r['rend'])))
+            if r['rend'] is not None or r['disp'] is not None:
+                tarjetas.append(wo._tarjeta_oee(r))
             if r['spp']:
                 origen = wo.ciclo_meta_origen or wo._ciclo_meta_vivo()[1] or ''
                 congelado = _("fijado al iniciar") if wo.ciclo_meta else _("aún no fijado")
@@ -348,7 +390,7 @@ class MrpWorkorder(models.Model):
                         '<strong style="font-size:18px;color:#1F2937">{t}</strong>'
                         '<span style="font-size:12px;color:#4B5563">{h}</span>').format(
                         t=_("Real: %s s / pieza", fmt(r['ciclo_real'], 1)),
-                        h=_("%s piezas/h · tramos con producción", fmt(3600.0 / r['ciclo_real'])))
+                        h=_("%s piezas/h · tiempo en marcha", fmt(3600.0 / r['ciclo_real'])))
                 tarjetas.append(wo._tarjeta(
                     _("Ciclo"), _("Meta: %s s / pieza", fmt(r['spp'], 1)),
                     "", extra=Markup(
@@ -387,6 +429,82 @@ class MrpWorkorder(models.Model):
                 '<div style="display:flex;flex-wrap:wrap;gap:12px">%s</div>') % Markup('').join(tarjetas)
             wo.avisos_html = wo._avisos_orden(r) or False
 
+    def _nivel_oee(self, valor, meta):
+        """Verde desde la meta OEE del centro de trabajo; amarillo hasta
+        15 puntos por debajo; rojo más abajo."""
+        if valor is None:
+            return 'na'
+        meta = meta or 90.0
+        if valor >= meta:
+            return 'verde'
+        if valor >= meta - 15.0:
+            return 'amarillo'
+        return 'rojo'
+
+    def _tarjeta_oee(self, r):
+        """Tarjeta Rendimiento y OEE: rendimiento arriba (como en 1.8.0) y,
+        debajo, Disponibilidad × Rendimiento × Calidad = OEE."""
+        Prod = self.env['mrp.workcenter.productivity']
+        c = r['oee_cifras']
+
+        def pct(valor):
+            return '—' if valor is None else '%s %%' % fmt(valor)
+
+        def chip(valor, nivel, grande=False):
+            fondo, texto = COLORES[nivel]
+            if nivel == 'na':
+                fondo, texto = '#F3F4F6', '#1F2937'
+            return Markup(
+                '<span style="background:{f};color:{t};border-radius:4px;padding:0 6px;white-space:nowrap;'
+                'font-weight:700;font-size:{s}px">{v}</span>').format(
+                f=fondo, t=texto, s=18 if grande else 13, v=pct(valor))
+
+        def fila(nombre, valor, nivel, ayuda):
+            return Markup(
+                '<div title="{a}" style="display:flex;justify-content:space-between;align-items:center;'
+                'gap:8px;font-size:13px;color:#1F2937"><span>{n}</span>{c}</div>').format(
+                n=nombre, a=ayuda, c=chip(valor, nivel))
+
+        nivel_rend = Prod._nivel_rendimiento(r['rend'])
+        nivel_oee = self._nivel_oee(r['oee'], r['oee_meta'])
+        filas = [
+            fila(_("Disponibilidad"), r['disp'], 'na',
+                 _("en marcha ÷ (en marcha + paradas)")),
+            fila(_("Rendimiento"), r['rend'], nivel_rend,
+                 _("piezas al ciclo meta ÷ en marcha")),
+            fila(_("Calidad"), r['cal'], 'na', _("buenas ÷ (buenas + averías)")),
+        ]
+        notas = [_("En marcha %(m)s · paradas %(p)s",
+                   m=fmt_horas(c['marcha'] / 60.0), p=fmt_horas(c['parada'] / 60.0))]
+        if c['autorizada']:
+            notas.append(_("sin paradas autorizadas (%s)", fmt_horas(c['autorizada'] / 60.0)))
+        if r['oee_meta']:
+            notas.append(_("meta OEE del CT %s %%", fmt(r['oee_meta'])))
+        if c['olvidados']:
+            notas.append(_("sin %s tramo(s) de más de 12 h: por revisar", c['olvidados']))
+        if c['cruzados']:
+            notas.append(_("%s tramo(s) cruzados: el tiempo repetido cuenta una vez", c['cruzados']))
+        formula = ''
+        if r['oee'] is not None:
+            formula = "%s × %s × %s = %s" % (pct(r['disp']), pct(r['rend']), pct(r['cal']), pct(r['oee']))
+        return Markup(
+            '<div style="flex:1 1 220px;min-width:200px;border:1px solid #E5E7EB;background:#FFFFFF;'
+            'border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">'
+            '<span style="font-size:12px;color:#4B5563">{t1}</span>'
+            '<div>{rend}</div>'
+            '<span style="font-size:12px;color:#4B5563">{d1}</span>'
+            '<div style="border-top:1px solid #E5E7EB;margin:4px 0"></div>'
+            '<div style="display:flex;justify-content:space-between;align-items:center">'
+            '<span style="font-size:12px;color:#4B5563">{t2}</span>{oee}</div>'
+            '{filas}'
+            '<span style="font-size:12px;color:#1F2937">{formula}</span>'
+            '<span style="font-size:11px;color:#6B7280">{notas}</span></div>'
+        ).format(
+            t1=_("Rendimiento"), rend=chip(r['rend'], nivel_rend, grande=True),
+            d1=_("Tiempo en marcha, sin paradas"),
+            t2=_("OEE de la orden"), oee=chip(r['oee'], nivel_oee, grande=True),
+            filas=Markup('').join(filas), formula=formula, notas=" · ".join(notas))
+
     def _avisos_orden(self, r):
         """Mensajes al final de la orden: registros por revisar, orden
         que supera la cantidad y consumo de materia prima por revisar."""
@@ -399,9 +517,19 @@ class MrpWorkorder(models.Model):
         bloques = []
 
         detalles = []
+        anterior = None
         for linea in self.time_ids.filtered('date_end').sorted('date_start'):
             horas = (linea.date_end - linea.date_start).total_seconds() / 3600.0
             tramo = "%s a %s" % (self._fecha_local(linea.date_start), self._fecha_local(linea.date_end, '%H:%M'))
+            # 1.10.0: tramos de esta orden que se cruzan (ya no se bloquean)
+            if anterior and linea.date_start < anterior.date_end:
+                detalles.append(_(
+                    "%(t)s: se cruza con el tramo %(o)s de esta orden; ese tiempo está "
+                    "registrado dos veces. Corrige Inicio o Fin de uno de los dos.",
+                    t=tramo, o="%s a %s" % (self._fecha_local(anterior.date_start),
+                                            self._fecha_local(anterior.date_end, '%H:%M'))))
+            if not anterior or linea.date_end > anterior.date_end:
+                anterior = linea
             if horas > horas_max:
                 detalles.append(_(
                     "%(t)s: el periodo dura %(h)s h, más que un turno (%(m)s h). Revisa Inicio y Fin.",
