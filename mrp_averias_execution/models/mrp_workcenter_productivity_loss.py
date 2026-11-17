@@ -27,6 +27,6 @@ class MrpWorkcenterProductivityLoss(models.Model):
              "Centro de Trabajo (por ejemplo, paradas periféricas / "
              "servicios críticos).")
     es_programada = fields.Boolean(
-        string="Programada",
-        help="Parada programada (setup, cambio de molde, etc.) vs. no "
-             "programada (falla, falta de material, etc.).")
+        string="Programada (sin uso)",
+        help="No se usa en ningún cálculo desde la versión 1.9.0. Usar la "
+             "casilla Parada autorizada del tablero OEE.")

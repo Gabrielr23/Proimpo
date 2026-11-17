@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.8.0',
+    'version': '18.0.1.9.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -55,6 +55,11 @@ agrega:
     que supera la cantidad, consumo de materia prima por revisar). En
     Registrar avance, rendimiento con color y alertas que no bloquean.
     Botón Registrar avance en la vista de la orden de trabajo.
+  * 18.0.1.9.0: ciclo estándar meta congelado al registrar el primer
+    tiempo de la orden (respeta la variante del molde) y ciclo real;
+    recuadro Ciclo en el panel; proyección sin paradas autorizadas
+    (tablero OEE) ni setup del plan; informe Ciclo meta vs real
+    (Fabricación > Informes). La casilla Programada queda sin uso.
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.

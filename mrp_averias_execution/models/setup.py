@@ -76,6 +76,10 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
             "Bitácora de Seguimiento de tiempo",
             self._submenu(fabricacion, ['Informes', 'Reportes', 'Reporting']),
             'mrp_averias_execution.action_mrp_seguimiento_log', 90)
+        self._ubicar_menu(
+            "Ciclo meta vs real",
+            self._submenu(fabricacion, ['Informes', 'Reportes', 'Reporting']),
+            'mrp_averias_execution.action_ciclo_meta_real', 91)
         # 1.7.0: catálogo editable de tipos de Centro de Trabajo.
         self._ubicar_menu(
             "Tipos de Centro de Trabajo",
@@ -125,6 +129,23 @@ class MrpAveriasExecutionSetup(models.AbstractModel):
                 'tipo_centro_trabajo': 'inyectoras',
                 'es_programada': False,
             })
+
+    def fix_congelar_ciclo_meta(self):
+        """1.9.0: fija el ciclo meta de las órdenes que ya tienen tiempo
+        registrado (en proceso, o terminadas en los últimos 90 días), con
+        el molde o la LdM de hoy. Las nuevas lo fijan solas al registrar
+        el primer tiempo."""
+        from datetime import timedelta
+        from odoo import fields
+        WO = self.env['mrp.workorder'].sudo()
+        desde = fields.Datetime.now() - timedelta(days=90)
+        ordenes = WO.search([
+            ('ciclo_meta', '=', 0),
+            ('time_ids', '!=', False),
+            '|', ('state', '=', 'progress'),
+            '&', ('state', '=', 'done'), ('date_finished', '>=', desde),
+        ])
+        ordenes._congelar_ciclo_meta()
 
     def fix_registrar_avance_button(self):
         """Agrega el botón "Registrar avance" en la orden de trabajo,

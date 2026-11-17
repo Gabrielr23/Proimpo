@@ -35,6 +35,31 @@ class MrpWorkorder(models.Model):
     avisos_html = fields.Html(
         string="Avisos", compute='_compute_panel_avance', sanitize=False)
 
+    # --- 1.9.0: ciclo estándar meta (congelado) y ciclo real -------------
+    ciclo_meta = fields.Float(
+        string="Ciclo estándar meta (s/pieza)", readonly=True, copy=False,
+        aggregator='avg',
+        digits=(16, 2),
+        help="Segundos por pieza que se exigen a esta orden. Se fija la "
+             "primera vez que se registra tiempo en la orden (Iniciar, "
+             "Registrar avance o una línea a mano) y ya no cambia aunque "
+             "después se modifique el molde o la LdM.")
+    ciclo_meta_origen = fields.Char(
+        string="Origen del ciclo meta", readonly=True, copy=False)
+    ciclo_real = fields.Float(
+        string="Ciclo real (s/pieza)", compute='_compute_ciclo_real',
+        aggregator='avg',
+        store=True, digits=(16, 2),
+        help="Lo que de verdad tardó la máquina en esta orden: segundos de "
+             "los tramos con piezas ÷ (buenas + averías).")
+    rendimiento_orden = fields.Float(
+        string="Rendimiento (%)", compute='_compute_ciclo_real', store=True,
+        digits=(16, 0), aggregator='avg',
+        help="Ciclo meta ÷ ciclo real.")
+    piezas_registradas = fields.Float(
+        string="Piezas (buenas + averías)", compute='_compute_ciclo_real',
+        store=True)
+
     def _recompute_acumulado(self):
         """Recalcula x_studio_acumulado sumando x_studio_cantidad de
         todas las lineas de Seguimiento de tiempo de esta orden.
@@ -74,26 +99,95 @@ class MrpWorkorder(models.Model):
         return vals
 
     def _averia_segundos_por_pieza(self):
-        """Estándar en segundos por pieza, con la misma regla que
-        mrp_oee_report: ciclo efectivo del molde (actual, o teórico si
-        no hay actual) ÷ cavidades; sin molde, la duración por defecto
-        de la operación de la LdM (time_cycle_manual, minutos por
-        unidad -- el módulo de moldes la actualiza al aplicar una
-        revisión). Eficiencia del CT no aplica.
+        """Ciclo estándar meta en segundos por pieza. Si la orden ya lo
+        tiene congelado (1.9.0), ese; si no, el que dan hoy el molde o
+        la operación (ver _ciclo_meta_vivo)."""
+        self.ensure_one()
+        if self.ciclo_meta:
+            return self.ciclo_meta
+        return self._ciclo_meta_vivo()[0]
 
-        El módulo de moldes no es dependencia (producción no lo tiene):
-        sus campos se leen solo si existen.
+    def _ciclo_meta_vivo(self):
+        """(segundos por pieza, origen) con los datos de hoy.
+
+        Con molde (módulo de moldes, si está instalado): la misma regla
+        que usa ese módulo para el objetivo por hora (_mold_minutes):
+        respeta la variante del molde de la operación (ciclo medido ÷
+        unidades por disparo) y, si no hay variante, ciclo efectivo ÷
+        cavidades. Sin molde: duración por defecto de la operación de la
+        LdM (time_cycle_manual, minutos por unidad). La eficiencia del
+        centro de trabajo no aplica: la meta es el ciclo ideal.
         """
         self.ensure_one()
         if 'mold_id' in self._fields and self.mold_id:
             mold = self.mold_id
-            ciclo = mold['cycle_time_effective'] if 'cycle_time_effective' in mold._fields else 0.0
-            cavidades = mold['cavity_count'] if 'cavity_count' in mold._fields else 0
-            if ciclo and cavidades:
-                return ciclo / cavidades
+            variante = self['mold_variant_id'] if 'mold_variant_id' in self._fields else False
+            minutos = 0.0
+            if hasattr(self, '_mold_minutes'):
+                minutos = self._mold_minutes(mold) or 0.0
+            if not minutos:
+                ciclo = mold['cycle_time_effective'] if 'cycle_time_effective' in mold._fields else 0.0
+                cavidades = mold['cavity_count'] if 'cavity_count' in mold._fields else 0
+                if ciclo and cavidades:
+                    minutos = ciclo / cavidades / 60.0
+            if minutos:
+                spp = minutos * 60.0
+                if variante and self.operation_id and mold == self.operation_id.mold_id:
+                    origen = _("Molde %(m)s, variante %(v)s: %(c)s s por disparo",
+                               m=mold.display_name, v=variante.name,
+                               c=fmt(variante.cycle_time or 0.0, 1))
+                else:
+                    ciclo = mold['cycle_time_effective'] if 'cycle_time_effective' in mold._fields else 0.0
+                    cav = mold['cavity_count'] if 'cavity_count' in mold._fields else 0
+                    origen = _("Molde %(m)s: %(c)s s ÷ %(n)s cavidades",
+                               m=mold.display_name, c=fmt(ciclo, 1), n=cav)
+                return spp, origen
         if self.operation_id and self.operation_id.time_cycle_manual:
-            return self.operation_id.time_cycle_manual * 60.0
-        return 0.0
+            return (self.operation_id.time_cycle_manual * 60.0,
+                    _("Operación %(o)s de la LdM: %(m)s min por unidad",
+                      o=self.operation_id.name,
+                      m=fmt(self.operation_id.time_cycle_manual, 3)))
+        return 0.0, False
+
+    def _congelar_ciclo_meta(self):
+        """Fija el ciclo meta la primera vez que la orden tiene tiempo
+        registrado. No lo vuelve a cambiar."""
+        for wo in self.filtered(lambda w: not w.ciclo_meta):
+            spp, origen = wo._ciclo_meta_vivo()
+            if spp:
+                wo.sudo().write({'ciclo_meta': spp, 'ciclo_meta_origen': origen})
+
+    def action_actualizar_ciclo_meta(self):
+        """Solo para corregir una meta mal tomada (molde equivocado al
+        iniciar): vuelve a tomarla del molde o de la LdM de hoy."""
+        for wo in self:
+            spp, origen = wo._ciclo_meta_vivo()
+            wo.sudo().write({'ciclo_meta': spp or 0.0, 'ciclo_meta_origen': origen or False})
+        return True
+
+    def _tramos_produccion(self):
+        return self.time_ids.filtered(lambda l: l.date_end and l.date_start and (
+            (l.x_studio_cantidad or 0) + (l.x_studio_averias or 0)) > 0)
+
+    @api.depends('ciclo_meta', 'time_ids.x_studio_cantidad', 'time_ids.x_studio_averias',
+                 'time_ids.date_start', 'time_ids.date_end')
+    def _compute_ciclo_real(self):
+        for wo in self:
+            produccion = wo._tramos_produccion()
+            segundos = sum((l.date_end - l.date_start).total_seconds() for l in produccion)
+            piezas = sum(produccion.mapped('x_studio_cantidad')) + sum(
+                produccion.mapped('x_studio_averias'))
+            wo.piezas_registradas = piezas
+            wo.ciclo_real = segundos / piezas if piezas and segundos else 0.0
+            wo.rendimiento_orden = (wo.ciclo_meta / wo.ciclo_real * 100.0
+                                    if wo.ciclo_meta and wo.ciclo_real else 0.0)
+
+    @staticmethod
+    def _es_autorizada(linea):
+        """Parada autorizada del tablero OEE (mrp_oee_report). Sin ese
+        módulo instalado, ninguna lo es."""
+        perdida = linea.loss_id
+        return bool('oee_authorized_stop' in perdida._fields and perdida.oee_authorized_stop)
 
     # --- 1.6.2: el inverso nativo de "Duración real" borraba tramos ---
     # Tolerancia (minutos) para la diferencia entre la duración que manda
@@ -142,8 +236,7 @@ class MrpWorkorder(models.Model):
         lineas = self.time_ids
         buenas = sum(lineas.mapped('x_studio_cantidad'))
         averias = sum(lineas.mapped('x_studio_averias'))
-        produccion = lineas.filtered(lambda l: l.date_end and l.date_start and (
-            (l.x_studio_cantidad or 0) + (l.x_studio_averias or 0)) > 0)
+        produccion = self._tramos_produccion()
         segundos_prod = sum(
             (l.date_end - l.date_start).total_seconds() for l in produccion)
         piezas_prod = sum(produccion.mapped('x_studio_cantidad')) + sum(
@@ -160,10 +253,21 @@ class MrpWorkorder(models.Model):
         # sobrescribe las fechas de la OT al pulsar Iniciar o Marcar como
         # hecha y no guarda las originales (decisión 17-11, opción B).
         horas = horas_ritmo if horas_ritmo is not None else horas_std
-        planeada = self.duration_expected or 0.0
+        # 1.9.0: las paradas autorizadas (no había producción planeada,
+        # setup o cambio dentro de su máximo, purga...) no cuentan contra
+        # la orden. Para comparar igual, al plan se le quita el setup del
+        # centro de trabajo que Odoo incluye en la duración esperada.
+        hay_autorizadas = 'oee_authorized_stop' in self.env['mrp.workcenter.productivity.loss']._fields
+        cerradas = lineas.filtered(lambda l: l.date_start and l.date_end)
+        autorizadas = cerradas.filtered(self._es_autorizada)
+        minutos_autorizados = sum(
+            (l.date_end - l.date_start).total_seconds() / 60.0 for l in autorizadas)
         registrada = sum(
-            (l.date_end - l.date_start).total_seconds() / 60.0
-            for l in lineas if l.date_start and l.date_end)
+            (l.date_end - l.date_start).total_seconds() / 60.0 for l in cerradas) - minutos_autorizados
+        setup_plan = 0.0
+        if hay_autorizadas and self.workcenter_id:
+            setup_plan = (self.workcenter_id.time_start or 0.0) + (self.workcenter_id.time_stop or 0.0)
+        planeada = max((self.duration_expected or 0.0) - setup_plan, 0.0)
         proyectada = registrada + (horas or 0.0) * 60.0
         diferencia = proyectada - planeada if planeada else None
         fin_estimado = fields.Datetime.now() + timedelta(hours=horas) if horas else None
@@ -187,6 +291,8 @@ class MrpWorkorder(models.Model):
             'horas_ritmo': horas_ritmo, 'horas_std': horas_std,
             'estado': estado, 'piezas': buenas + averias,
             'planeada': planeada, 'proyectada': proyectada,
+            'setup_plan': setup_plan, 'minutos_autorizados': minutos_autorizados,
+            'ciclo_real': (segundos_prod / piezas_prod) if piezas_prod and segundos_prod else None,
             'diferencia': diferencia, 'fin_estimado': fin_estimado,
         }
 
@@ -234,9 +340,20 @@ class MrpWorkorder(models.Model):
                     _("Solo tramos con producción"),
                     Prod._nivel_rendimiento(r['rend'])))
             if r['spp']:
+                origen = wo.ciclo_meta_origen or wo._ciclo_meta_vivo()[1] or ''
+                congelado = _("fijado al iniciar") if wo.ciclo_meta else _("aún no fijado")
+                real = Markup('')
+                if r['ciclo_real']:
+                    real = Markup(
+                        '<strong style="font-size:18px;color:#1F2937">{t}</strong>'
+                        '<span style="font-size:12px;color:#4B5563">{h}</span>').format(
+                        t=_("Real: %s s / pieza", fmt(r['ciclo_real'], 1)),
+                        h=_("%s piezas/h · tramos con producción", fmt(3600.0 / r['ciclo_real'])))
                 tarjetas.append(wo._tarjeta(
-                    _("Ciclo efectivo"), _("%s s / pieza", fmt(r['spp'], 1)),
-                    _("Ciclo ÷ cavidades · %s piezas/h", fmt(3600.0 / r['spp']))))
+                    _("Ciclo"), _("Meta: %s s / pieza", fmt(r['spp'], 1)),
+                    "", extra=Markup(
+                        '<span style="font-size:12px;color:#4B5563">{h} · {o} ({c})</span>{real}').format(
+                        h=_("%s piezas/h", fmt(3600.0 / r['spp'])), o=origen, c=congelado, real=real)))
             etiquetas = {
                 'completa': (_("Completa"), 'verde'),
                 'a_tiempo': (_("A tiempo"), 'verde'),
@@ -261,6 +378,10 @@ class MrpWorkorder(models.Model):
                 partes.append(_("fin estimado %s", wo._fecha_local(r['fin_estimado'], '%d-%m %H:%M')))
             if r['planeada']:
                 partes.append(_("duración planeada %s", fmt_horas(r['planeada'] / 60.0)))
+            if r['setup_plan'] or r['minutos_autorizados']:
+                partes.append(_("sin setup del plan (%(s)s) ni paradas autorizadas (%(a)s)",
+                                s=fmt_horas(r['setup_plan'] / 60.0),
+                                a=fmt_horas(r['minutos_autorizados'] / 60.0)))
             tarjetas.append(wo._tarjeta(_("Proyección"), etiqueta, " · ".join(partes), nivel))
             wo.panel_avance_html = Markup(
                 '<div style="display:flex;flex-wrap:wrap;gap:12px">%s</div>') % Markup('').join(tarjetas)

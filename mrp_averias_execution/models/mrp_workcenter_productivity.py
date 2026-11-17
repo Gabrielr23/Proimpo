@@ -98,6 +98,7 @@ class MrpWorkcenterProductivity(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
+        records.mapped('workorder_id')._congelar_ciclo_meta()
         records._crear_control_calidad()
         records.mapped('workorder_id')._recompute_acumulado()
         return records

@@ -15,6 +15,10 @@
                     <button name="%(mrp_averias_execution.action_mrp_workorder_progress_wizard)d"
                             type="action" string="Registrar avance" class="btn-primary"
                             invisible="state not in ('ready', 'progress', 'done')"/>
+                    <button name="action_actualizar_ciclo_meta" type="object"
+                            string="Actualizar ciclo meta" class="btn-link"
+                            groups="mrp.group_mrp_manager"
+                            confirm="¿Volver a tomar el ciclo meta del molde o de la LdM de hoy? Úsalo solo para corregir una meta mal tomada (por ejemplo, molde equivocado al iniciar)."/>
                 </div>
             </xpath>
             <xpath expr="//field[@name='time_ids']/list/field[@name='loss_id']" position="after">
@@ -29,6 +33,85 @@
                 <field name="avisos_html" nolabel="1" readonly="1"
                        invisible="not avisos_html" class="w-100"/>
             </xpath>
+        </field>
+    </record>
+
+    <!-- 1.9.0: informe Ciclo meta vs real (para pedir ajustes de LdM). -->
+    <record id="view_ciclo_meta_real_list" model="ir.ui.view">
+        <field name="name">mrp.workorder.ciclo.meta.real.list</field>
+        <field name="model">mrp.workorder</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="date_finished desc">
+                <field name="production_id"/>
+                <field name="product_id"/>
+                <field name="workcenter_id"/>
+                <field name="name" string="Operación"/>
+                <field name="state"/>
+                <field name="qty_production" string="Cantidad"/>
+                <field name="piezas_registradas" sum="Piezas"/>
+                <field name="ciclo_meta"/>
+                <field name="ciclo_real"/>
+                <field name="rendimiento_orden"/>
+                <field name="ciclo_meta_origen" optional="show"/>
+                <field name="date_finished" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ciclo_meta_real_pivot" model="ir.ui.view">
+        <field name="name">mrp.workorder.ciclo.meta.real.pivot</field>
+        <field name="model">mrp.workorder</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <pivot string="Ciclo meta vs real" disable_linking="0">
+                <field name="product_id" type="row"/>
+                <field name="ciclo_meta" type="measure"/>
+                <field name="ciclo_real" type="measure"/>
+                <field name="rendimiento_orden" type="measure"/>
+                <field name="piezas_registradas" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_ciclo_meta_real_search" model="ir.ui.view">
+        <field name="name">mrp.workorder.ciclo.meta.real.search</field>
+        <field name="model">mrp.workorder</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="workcenter_id"/>
+                <field name="production_id"/>
+                <filter name="terminadas" string="Terminadas" domain="[('state', '=', 'done')]"/>
+                <filter name="en_proceso" string="En proceso" domain="[('state', '=', 'progress')]"/>
+                <separator/>
+                <filter name="rapidas" string="Más rápidas que la meta (≥ 105 %)" domain="[('rendimiento_orden', '>=', 105)]"/>
+                <filter name="lentas" string="Más lentas que la meta (&lt; 90 %)" domain="[('rendimiento_orden', '&lt;', 90), ('rendimiento_orden', '>', 0)]"/>
+                <group>
+                    <filter name="por_producto" string="Producto" context="{'group_by': 'product_id'}"/>
+                    <filter name="por_ct" string="Centro de trabajo" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="por_origen" string="Molde / origen de la meta" context="{'group_by': 'ciclo_meta_origen'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ciclo_meta_real" model="ir.actions.act_window">
+        <field name="name">Ciclo meta vs real</field>
+        <field name="res_model">mrp.workorder</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="domain">[('piezas_registradas', '>', 0), ('ciclo_meta', '>', 0)]</field>
+        <field name="search_view_id" ref="view_ciclo_meta_real_search"/>
+        <field name="context">{'search_default_terminadas': 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_ciclo_meta_real_list')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_ciclo_meta_real_pivot')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin órdenes con piezas registradas</p>
+            <p>Compara el ciclo meta (fijado al iniciar cada orden) con el ciclo real.
+               Si un producto sale siempre más rápido o más lento que la meta en varias
+               órdenes, es candidato a ajustar el ciclo del molde o de la LdM.</p>
         </field>
     </record>
 </odoo>
