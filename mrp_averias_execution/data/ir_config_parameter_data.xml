@@ -7,5 +7,26 @@
             <field name="key">mrp_averias_execution.umbral_rendimiento</field>
             <field name="value">95</field>
         </record>
+        <!-- 1.8.0: colores y alertas. -->
+        <record id="param_rendimiento_verde" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.rendimiento_verde</field>
+            <field name="value">90</field>
+        </record>
+        <record id="param_rendimiento_amarillo" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.rendimiento_amarillo</field>
+            <field name="value">70</field>
+        </record>
+        <record id="param_rendimiento_revisar" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.rendimiento_revisar</field>
+            <field name="value">110</field>
+        </record>
+        <record id="param_horas_max_tramo" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.horas_max_tramo</field>
+            <field name="value">12</field>
+        </record>
+        <record id="param_tolerancia_cantidad" model="ir.config_parameter">
+            <field name="key">mrp_averias_execution.tolerancia_cantidad</field>
+            <field name="value">10</field>
+        </record>
     </data>
 </odoo>

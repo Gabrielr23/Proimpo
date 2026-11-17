@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
 
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -85,6 +87,13 @@ class MrpWorkorderProgressWizard(models.TransientModel):
         digits=(16, 0),
         help="Con las buenas. Las averías que se registren en la hoja se "
              "suman después y pueden subirlo.")
+    rendimiento_txt = fields.Char(
+        string="Rendimiento", compute='_compute_rendimiento')
+    rendimiento_nivel = fields.Selection([
+        ('na', "No se mide"), ('verde', "Verde"), ('amarillo', "Amarillo"),
+        ('rojo', "Rojo"), ('revisar', "Revisar"),
+    ], compute='_compute_rendimiento')
+    alertas_html = fields.Html(compute='_compute_rendimiento', sanitize=False)
     sin_produccion = fields.Boolean(compute='_compute_rendimiento')
     es_lento = fields.Boolean(compute='_compute_rendimiento')
     tipo_sugerido = fields.Char(
@@ -268,6 +277,41 @@ class MrpWorkorderProgressWizard(models.TransientModel):
             wiz.sin_produccion = sin_produccion
             wiz.es_lento = es_lento
             wiz.tipo_sugerido = tipo
+            valor = rendimiento if (estandar and not sin_produccion) else None
+            wiz.rendimiento_nivel = Productividad._nivel_rendimiento(valor)
+            wiz.rendimiento_txt = '—' if valor is None else '%d %%' % round(valor)
+            wiz.alertas_html = wiz._alertas(minutos, estandar, valor)
+
+    def _alertas(self, minutos, estandar, rendimiento):
+        """1.8.0: avisos en rojo antes de guardar. No bloquean."""
+        self.ensure_one()
+        from ..models.mrp_workorder import fmt
+        Productividad = self.env['mrp.workcenter.productivity']
+        avisos = []
+        if rendimiento is not None and rendimiento >= Productividad._parametro('rendimiento_revisar', 110):
+            avisos.append(_(
+                "Rendimiento %(r)s %%: en %(m)s min se esperan %(e)s piezas y registras %(c)s. "
+                "¿Ciclo desactualizado o cantidad mal digitada?",
+                r=fmt(rendimiento), m=fmt(minutos), e=fmt(estandar), c=fmt(self.cantidad)))
+        horas_max = Productividad._parametro('horas_max_tramo', 12)
+        if minutos > horas_max * 60:
+            avisos.append(_(
+                "El periodo dura %(h)s h: más que un turno (%(m)s h). ¿\"Desde\" es el inicio de este turno?",
+                h=fmt(minutos / 60.0, 1), m=fmt(horas_max)))
+        wo = self.workorder_id
+        if wo and wo.qty_production and self.cantidad:
+            tolerancia = Productividad._parametro('tolerancia_cantidad', 10) / 100.0
+            previas = sum(wo.time_ids.mapped('x_studio_cantidad')) - (self.linea_id.x_studio_cantidad or 0)
+            total = previas + self.cantidad
+            if total > wo.qty_production * (1 + tolerancia):
+                avisos.append(_(
+                    "La orden quedaría con %(t)s buenas de %(q)s programadas (%(p)s %%). "
+                    "Si es reposición, sigue; si no, revisa la cantidad.",
+                    t=fmt(total), q=fmt(wo.qty_production), p=fmt(total / wo.qty_production * 100)))
+        if not avisos:
+            return False
+        return Markup('<strong>%s</strong>') % _("Revisa antes de guardar") + Markup('').join(
+            Markup('<div>• %s</div>') % a for a in avisos)
 
     # ------------------------------------------------------------------
     def _vals_linea(self, inicio, fin, perdida, en_vivo=True):

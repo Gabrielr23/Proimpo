@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1.8.0: panel de avance, botón Registrar avance, rendimiento con
+         color en Seguimiento de tiempo y avisos al final, en la vista de
+         la orden de trabajo (mrp.production.work.order.form). -->
+    <record id="mrp_workorder_form_panel_avance" model="ir.ui.view">
+        <field name="name">mrp.workorder.form.panel.avance</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workorder_form_view_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="before">
+                <field name="panel_avance_html" nolabel="1" readonly="1"
+                       invisible="not panel_avance_html" class="w-100 mb-2"/>
+                <div class="mb-2">
+                    <button name="%(mrp_averias_execution.action_mrp_workorder_progress_wizard)d"
+                            type="action" string="Registrar avance" class="btn-primary"
+                            invisible="state not in ('ready', 'progress', 'done')"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='time_ids']/list/field[@name='loss_id']" position="after">
+                <field name="rendimiento_nivel" column_invisible="1"/>
+                <field name="rendimiento_txt" widget="badge" string="Rendimiento"
+                       decoration-success="rendimiento_nivel == 'verde'"
+                       decoration-warning="rendimiento_nivel == 'amarillo'"
+                       decoration-danger="rendimiento_nivel == 'rojo'"
+                       decoration-info="rendimiento_nivel == 'revisar'"/>
+            </xpath>
+            <xpath expr="//notebook" position="after">
+                <field name="avisos_html" nolabel="1" readonly="1"
+                       invisible="not avisos_html" class="w-100"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

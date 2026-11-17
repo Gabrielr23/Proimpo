@@ -53,6 +53,19 @@ class MrpWorkcenterProductivity(models.Model):
         help="(buenas + averías) × estándar por pieza ÷ minutos del "
              "tramo. Vacío si el tramo no está cerrado o no hay "
              "estándar de ciclo.")
+    # 1.8.0: rendimiento con color (verde / amarillo / rojo / revisar).
+    rendimiento_txt = fields.Char(
+        string="Rendimiento", compute='_compute_rendimiento_tramo',
+        help="Verde 90 % o más; amarillo de 70 % a 89 %; rojo menos de "
+             "70 %; morado 110 % o más (revisar ciclo o cantidad). Los "
+             "setups y paradas no se miden (—).")
+    rendimiento_nivel = fields.Selection([
+        ('na', "No se mide"),
+        ('verde', "Verde"),
+        ('amarillo', "Amarillo"),
+        ('rojo', "Rojo"),
+        ('revisar', "Revisar"),
+    ], compute='_compute_rendimiento_tramo')
 
     # Campos que se registran en la bitácora al corregir un tramo
     # cerrado (solo los que existen en esta base).
@@ -150,7 +163,34 @@ class MrpWorkcenterProductivity(models.Model):
                  'date_end', 'workorder_id')
     def _compute_rendimiento_tramo(self):
         for rec in self:
-            rec.rendimiento_tramo = rec._calcular_rendimiento() or 0.0
+            piezas = (rec.x_studio_cantidad or 0) + (rec.x_studio_averias or 0)
+            valor = rec._calcular_rendimiento() if piezas > 0 else None
+            rec.rendimiento_tramo = valor or 0.0
+            rec.rendimiento_nivel = self._nivel_rendimiento(valor)
+            rec.rendimiento_txt = '—' if valor is None else '%d %%' % round(valor)
+
+    @api.model
+    def _parametro(self, clave, defecto):
+        """Parámetros de alertas (Ajustes > Técnico > Parámetros del
+        sistema, prefijo mrp_averias_execution.)."""
+        valor = self.env['ir.config_parameter'].sudo().get_param(
+            'mrp_averias_execution.' + clave, str(defecto))
+        try:
+            return float(valor)
+        except (TypeError, ValueError):
+            return float(defecto)
+
+    @api.model
+    def _nivel_rendimiento(self, valor):
+        if valor is None:
+            return 'na'
+        if valor >= self._parametro('rendimiento_revisar', 110):
+            return 'revisar'
+        if valor >= self._parametro('rendimiento_verde', 90):
+            return 'verde'
+        if valor >= self._parametro('rendimiento_amarillo', 70):
+            return 'amarillo'
+        return 'rojo'
 
     def _calcular_rendimiento(self, minutos=None):
         """Rendimiento en % o None si no se puede calcular."""
