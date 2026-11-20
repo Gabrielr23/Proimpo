@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Ejecución en Piso - Averías",
-    'version': '18.0.1.7.0',
+    'version': '18.0.1.10.0',
     'category': 'Manufacturing',
     'summary': "Registrar avance, hoja de trabajo unificada de averías y "
                "razones de pérdida por Centro de Trabajo (PROIMPO)",
@@ -48,6 +48,26 @@ agrega:
     Catálogo editable de Tipos de Centro de Trabajo (Fabricación >
     Configuración). Una línea agregada a mano sin Fin ya no se borra
     al guardar (inverso nativo de Duración real).
+  * 18.0.1.8.0 (feedback de planta 06-11): en la orden de trabajo, panel
+    de avance (buenas vs programado, averías, rendimiento promedio, ciclo
+    efectivo, proyección A tiempo / En riesgo / Retrasada), rendimiento
+    con color por tramo y avisos al final (registros por revisar, orden
+    que supera la cantidad, consumo de materia prima por revisar). En
+    Registrar avance, rendimiento con color y alertas que no bloquean.
+    Botón Registrar avance en la vista de la orden de trabajo.
+  * 18.0.1.9.0: ciclo estándar meta congelado al registrar el primer
+    tiempo de la orden (respeta la variante del molde) y ciclo real;
+    recuadro Ciclo en el panel; proyección sin paradas autorizadas
+    (tablero OEE) ni setup del plan; informe Ciclo meta vs real
+    (Fabricación > Informes). La casilla Programada queda sin uso.
+  * 18.0.1.10.0: OEE de la orden en el panel (Disponibilidad x
+    Rendimiento x Calidad) con la regla del tablero OEE: tiempo en marcha
+    sin paradas autorizadas ni tramos de más de 12 h; color contra la
+    meta OEE del centro de trabajo. Rendimiento y ciclo real usan el
+    mismo tiempo en marcha. Tramos cruzados de la misma orden (líneas
+    puestas a mano): aviso al final de la orden y, en el OEE, el tiempo
+    repetido cuenta una vez. Registrar avance sigue bloqueando el cruce
+    en la misma orden y solo avisa con otras órdenes.
 
 No se toca ningún campo Studio existente (x_studio_*) — el módulo los
 referencia por nombre técnico y construye la funcionalidad nueva encima.
@@ -74,6 +94,7 @@ este módulo define un modelo con el mismo nombre técnico
         'data/mrp_workcenter_tipo_data.xml',
         'views/mrp_workcenter_tipo_views.xml',
         'views/mrp_workorder_progress_wizard_views.xml',
+        'views/mrp_workorder_panel_views.xml',
         'views/mrp_averia_categoria_views.xml',
         'views/mrp_averia_linea_views.xml',
         'views/quality_check_views.xml',

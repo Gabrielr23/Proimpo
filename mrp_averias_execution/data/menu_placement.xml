@@ -12,6 +12,9 @@
          la acción del wizard ya exista). -->
     <function model="mrp.averias.execution.setup" name="fix_registrar_avance_button" eval="[[]]"/>
 
+    <!-- 1.9.0: ciclo meta de las órdenes con tiempo ya registrado. -->
+    <function model="mrp.averias.execution.setup" name="fix_congelar_ciclo_meta" eval="[[]]"/>
+
     <!-- P03 / P10 partidas en dos razones (una sola vez). -->
     <function model="mrp.averias.execution.setup" name="fix_catalogo_p03_p10" eval="[[]]"/>
 </odoo>
